@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "CampusSwap",
     short_name: "CampusSwap",
-    description: "Student-only marketplace for Maastricht essentials.",
+  description: "Student-first marketplace for Maastricht essentials.",
     start_url: "/",
     display: "standalone",
     background_color: "#f7f4ee",

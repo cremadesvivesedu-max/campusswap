@@ -10,7 +10,7 @@ export default async function OnboardingPage() {
       <SectionHeading
         eyebrow="Onboarding"
         title="Shape your feed around what you actually need in Maastricht."
-        description="Category preferences, student status, and pickup areas help CampusSwap build a more useful home feed and recommendation mix from day one."
+        description="Category preferences, student status, and pickup areas help CampusSwap build a more useful home feed from day one. Student verification stays optional and can be handled separately."
       />
       <OnboardingForm user={user} categories={categories} />
     </div>

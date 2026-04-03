@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { getOptionalAuthUser } from "@/lib/auth/server";
-import { getCurrentUser } from "@/server/queries/marketplace";
+import { getAllowedEmailDomains, getCurrentUser } from "@/server/queries/marketplace";
+import { getVerificationStatusDescription } from "@/lib/verification";
 import { isLiveMode } from "@/lib/env";
 
 export default async function VerifyEmailPage({
@@ -14,39 +15,47 @@ export default async function VerifyEmailPage({
 }) {
   const params = await searchParams;
   const authUser = await getOptionalAuthUser();
-  const currentUser = authUser && isLiveMode ? await getCurrentUser() : null;
+  const [currentUser, allowedDomains] = await Promise.all([
+    authUser && isLiveMode ? getCurrentUser() : Promise.resolve(null),
+    getAllowedEmailDomains()
+  ]);
   const isVerified = currentUser?.verificationStatus === "verified";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-6 py-16">
       <SectionHeading
         eyebrow="Verify email"
-        title="Check your inbox and confirm your student status."
-        description="Supported student domains can auto-verify, while custom cases stay reviewable in admin settings."
+        title="Student verification is optional, but it strengthens trust."
+        description="You can already enter CampusSwap. Supported university domains can auto-verify or move into a pending-review trust state without blocking the rest of the app."
       />
       <Card className="bg-white">
         <CardHeader>
-          <Badge className="bg-emerald-100 text-emerald-900">
-            Verification flow
-          </Badge>
+          {currentUser ? (
+            <div className="flex items-center gap-3">
+              <VerificationStatusBadge status={currentUser.verificationStatus} />
+              <p className="text-sm text-slate-600">
+                {getVerificationStatusDescription(currentUser.verificationStatus)}
+              </p>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
-          <p>1. We send a one-time code to the supplied student email.</p>
+          <p>1. Any valid email can create and access a CampusSwap account.</p>
           <p>
-            2. Once confirmed, the verified badge appears on your profile and listings.
+            2. Supported student domains can unlock a verified badge or a pending-verification trust state.
           </p>
           <p>
-            3. Admin rules can optionally gate posting or messaging until verification
-            succeeds.
+            3. Verification stays visible on your profile, listings, and conversations, but it does not block basic app access.
           </p>
+          <p>Supported student domains: {allowedDomains.map((domain) => domain.domain).join(", ")}</p>
           {params.email ? (
             <p className="font-medium text-slate-950">
-              Verification email target: {params.email}
+              Account email: {params.email}
             </p>
           ) : null}
           <Button asChild type="button">
-            <Link href={isVerified ? "/onboarding" : authUser ? "/onboarding" : "/login"}>
-              {isVerified ? "Continue to onboarding" : "Open onboarding"}
+            <Link href={authUser ? "/app" : "/login"}>
+              {isVerified ? "Open the app" : "Continue into CampusSwap"}
             </Link>
           </Button>
         </CardContent>

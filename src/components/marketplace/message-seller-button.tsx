@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircleMore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOptionalCurrentUser } from "@/components/providers/current-user-provider";
+import { getVerificationStatusLabel } from "@/lib/verification";
 import { cn } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
 import { ensureConversationForListing } from "@/features/messaging/demo-messaging-store";
@@ -44,10 +45,10 @@ export function MessageSellerButton({
   const [isPending, startTransition] = useTransition();
   const unavailableLabel = mode === "chat" ? getUnavailableLabel(listingStatus) : null;
   const currentUserId = currentUser?.id;
-  const requiresVerification =
-    mode === "chat" &&
-    currentUser &&
-    currentUser.verificationStatus !== "verified";
+  const verificationNotice =
+    mode === "chat" && currentUser && currentUser.verificationStatus !== "verified"
+      ? `You are messaging as ${getVerificationStatusLabel(currentUser.verificationStatus).toLowerCase()}. Verification is optional, but it adds a stronger trust signal.`
+      : null;
 
   if (mode === "chat" && currentUserId === sellerId) {
     return (
@@ -84,11 +85,6 @@ export function MessageSellerButton({
                 return;
               }
 
-              if (requiresVerification) {
-                router.push("/verify-email");
-                return;
-              }
-
               const conversation = isLiveClientMode
                 ? await ensureLiveConversationForListing(listingId, currentUserId, sellerId)
                 : await ensureConversationForListing(listingId, currentUserId, sellerId);
@@ -108,12 +104,13 @@ export function MessageSellerButton({
         <MessageCircleMore className="mr-2 h-4 w-4" />
         {isPending
           ? "Opening..."
-          : requiresVerification
-            ? "Verify email to message"
           : mode === "signup"
-            ? "Verify to message"
+            ? "Sign up to message"
             : "Message seller"}
       </Button>
+      {verificationNotice ? (
+        <p className="text-xs font-medium text-slate-600">{verificationNotice}</p>
+      ) : null}
       {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
     </div>
   );

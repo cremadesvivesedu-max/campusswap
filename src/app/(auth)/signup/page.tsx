@@ -11,8 +11,8 @@ export default async function SignupPage() {
     <div className="mx-auto max-w-xl space-y-8 px-6 py-16">
       <SectionHeading
         eyebrow="Create account"
-        title="Start with a student email and unlock a safer marketplace."
-        description="CampusSwap uses university email verification and onboarding preferences to keep the marketplace local, useful, and trustworthy."
+        title="Create your CampusSwap account and enter the marketplace right away."
+        description="Any valid email can create an account. Student verification stays available as an optional trust layer for stronger badges and safer meetup signaling."
       />
       <SignupForm allowedDomains={allowedDomains.map((domain) => domain.domain)} />
     </div>

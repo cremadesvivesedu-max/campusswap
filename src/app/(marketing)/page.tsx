@@ -28,7 +28,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.2fr_0.8fr] lg:py-28">
           <div className="space-y-8">
             <Badge className="border-white/20 bg-white/10 text-white">
-              Student-only in Maastricht
+              Student-first in Maastricht
             </Badge>
             <div className="space-y-5">
               <h1 className="max-w-3xl font-display text-5xl font-semibold tracking-tight sm:text-6xl">
@@ -51,9 +51,9 @@ export default async function HomePage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <Card className="border-white/10 bg-white/10 text-white">
                 <CardContent className="pt-6">
-                  <p className="text-sm text-slate-200">Student-only access</p>
+                  <p className="text-sm text-slate-200">Student-first trust</p>
                   <p className="mt-2 font-display text-2xl font-semibold">
-                    Verified by email
+                    Verification available
                   </p>
                 </CardContent>
               </Card>
@@ -122,14 +122,14 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="How it works"
           title="Fast enough for moving week. Calm enough to trust."
-          description="Sign up with a student email, browse by what you need, and handle in-person pickup with visible verification and safe meetup guidance."
+          description="Create an account, browse by what you need, and handle in-person pickup with visible verification status and safe meetup guidance."
         />
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
               icon: ShieldCheck,
-              title: "Verify",
-              body: "Use a supported student email domain and unlock verified posting and messaging."
+              title: "Join",
+              body: "Create an account with any valid email, then add student verification when you want a stronger trust badge."
             },
             {
               icon: Sparkles,

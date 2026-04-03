@@ -73,7 +73,11 @@ export function ListingForm({ categories }: ListingFormProps) {
       <Button className="w-full" type="submit">
         Publish listing
       </Button>
-      {state.message ? <p className="text-sm text-slate-600">{state.message}</p> : null}
+      {state.message ? (
+        <p className={`text-sm ${state.success ? "text-slate-600" : "text-rose-700"}`}>
+          {state.message}
+        </p>
+      ) : null}
     </form>
   );
 }

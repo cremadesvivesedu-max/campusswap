@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
+import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import type { User } from "@/types/domain";
 
 interface UserIdentityButtonProps {
@@ -24,7 +25,9 @@ export function UserIdentityButton({ user }: UserIdentityButtonProps) {
       />
       <span className="hidden text-left sm:block">
         <span className="block text-sm font-semibold text-emerald-950">{user.profile.fullName}</span>
-        <span className="block text-xs text-emerald-800">{user.verificationStatus}</span>
+        <span className="block pt-1">
+          <VerificationStatusBadge status={user.verificationStatus} className="align-middle" />
+        </span>
       </span>
       <ChevronDown className="hidden h-4 w-4 text-emerald-900 sm:block" />
     </Link>

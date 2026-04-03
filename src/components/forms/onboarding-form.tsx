@@ -39,6 +39,10 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
       action={action}
       className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
     >
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+        You can finish onboarding and enter the marketplace right away. Student
+        verification is a separate trust signal, not a blocker for using CampusSwap.
+      </div>
       <Input
         name="fullName"
         placeholder="Your full name"

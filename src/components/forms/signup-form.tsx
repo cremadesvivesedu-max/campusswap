@@ -5,15 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
 import { buildSiteUrl } from "@/lib/site-url";
+import { getEmailDomain } from "@/lib/verification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface SignupFormProps {
   allowedDomains: string[];
-}
-
-function getEmailDomain(email: string) {
-  return email.trim().toLowerCase().split("@")[1] ?? "";
 }
 
 export function SignupForm({ allowedDomains }: SignupFormProps) {
@@ -45,13 +42,6 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
           const normalizedEmail = email.trim().toLowerCase();
           const emailDomain = getEmailDomain(normalizedEmail);
 
-          if (!allowedDomains.includes(emailDomain)) {
-            setError(
-              `Use a supported student email domain. Current allowlist: ${allowedDomains.join(", ")}.`
-            );
-            return;
-          }
-
           setError(null);
           setStatus(null);
 
@@ -80,7 +70,9 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
             return;
           }
 
-          setStatus("Account created. Check your inbox to verify the student email.");
+          setStatus(
+            "Account created. Check your inbox if email confirmation is enabled. Student verification stays optional."
+          );
           router.replace(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
           router.refresh();
         });
@@ -95,7 +87,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
       <Input
         name="email"
         type="email"
-        placeholder="student@maastrichtuniversity.nl"
+        placeholder="you@example.com"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
@@ -107,10 +99,11 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
         onChange={(event) => setPassword(event.target.value)}
       />
       <Button className="w-full" type="submit" disabled={isPending}>
-        {isPending ? "Creating account..." : "Create student account"}
+        {isPending ? "Creating account..." : "Create account"}
       </Button>
       <p className="text-xs leading-6 text-slate-500">
-        Supported domains: {allowedDomains.join(", ")}
+        Any valid email can sign up. Supported student domains for faster trust status:{" "}
+        {allowedDomains.join(", ")}
       </p>
       {status ? <p className="text-sm text-emerald-700">{status}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}

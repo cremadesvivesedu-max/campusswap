@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/server/queries/marketplace";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { UserIdentityButton } from "@/components/shared/user-identity-button";
 import { CurrentUserProvider } from "@/components/providers/current-user-provider";
+import { VerificationPromptCard } from "@/components/shared/verification-prompt-card";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function AppLayout({
             <div>
               <BrandLogo href="/app" tone="dark" imageClassName="h-9 sm:h-10" />
               <p className="text-sm text-slate-500">
-                Verified student marketplace for Maastricht
+                Student-first marketplace for Maastricht
               </p>
             </div>
             <nav className="flex flex-wrap gap-4 text-sm text-slate-600">
@@ -39,7 +40,10 @@ export default async function AppLayout({
             <UserIdentityButton user={user} />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
+        <main className="mx-auto max-w-7xl space-y-6 px-6 py-10">
+          <VerificationPromptCard user={user} />
+          {children}
+        </main>
       </div>
     </CurrentUserProvider>
   );

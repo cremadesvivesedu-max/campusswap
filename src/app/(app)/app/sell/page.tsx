@@ -1,10 +1,11 @@
 import { ListingForm } from "@/components/forms/listing-form";
+import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAllCategories } from "@/server/queries/marketplace";
+import { getAllCategories, getCurrentUser } from "@/server/queries/marketplace";
 
 export default async function SellPage() {
-  const categories = await getAllCategories();
+  const [categories, user] = await Promise.all([getAllCategories(), getCurrentUser()]);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
@@ -29,6 +30,21 @@ export default async function SellPage() {
             </p>
           </CardContent>
         </Card>
+        {user.verificationStatus !== "verified" ? (
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-700">
+              <div className="flex items-center gap-3">
+                <VerificationStatusBadge status={user.verificationStatus} />
+                <p className="font-semibold text-slate-950">Student verification is optional.</p>
+              </div>
+              <p>
+                You can publish listings now. Because your account is not student-verified
+                yet, new listings may go through a quick trust review before they appear
+                publicly.
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
       <ListingForm categories={categories} />
     </div>

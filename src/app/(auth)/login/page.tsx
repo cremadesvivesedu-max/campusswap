@@ -10,7 +10,7 @@ export default async function LoginPage() {
       <SectionHeading
         eyebrow="Login"
         title="Welcome back to CampusSwap."
-        description="Use your student account to pick up where you left off with saved listings, messages, and meetup planning."
+        description="Log in with your email and password to pick up where you left off with saved listings, messages, and meetup planning."
       />
       <LoginForm />
     </div>

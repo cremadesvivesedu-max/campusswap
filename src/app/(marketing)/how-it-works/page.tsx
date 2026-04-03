@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const steps = [
-  { title: "Verify your student email", body: "Supported Maastricht student domains unlock the verified badge and let CampusSwap keep trust signals visible across the marketplace." },
+  { title: "Create your account", body: "Any valid email can enter CampusSwap. Supported Maastricht student domains unlock verified or pending student-trust status when available." },
   { title: "Browse or list fast", body: "Use categories, featured inventory, outlet, and For You recommendations, or create a listing with urgency, negotiable, and promoted controls." },
   { title: "Arrange a meetup", body: "Messaging stays linked to the listing, quick actions reduce friction, and safe meetup prompts keep in-person exchanges front and center." },
   { title: "Close the loop", body: "Reserve items, mark the exchange complete, and leave reviews once the handoff is done." }

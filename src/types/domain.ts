@@ -1,5 +1,5 @@
 ﻿export type UserRole = "student" | "moderator" | "admin";
-export type VerificationStatus = "pending" | "verified" | "rejected";
+export type VerificationStatus = "unverified" | "pending" | "verified";
 export type ListingCondition = "new" | "like-new" | "good" | "fair" | "needs-love";
 export type ListingStatus = "active" | "reserved" | "sold" | "archived" | "pending-review" | "hidden";
 export type ExchangeStatus = "inquiry" | "negotiating" | "reserved" | "completed" | "cancelled" | "reported";

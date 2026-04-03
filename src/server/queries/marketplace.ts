@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireAuthUser } from "@/lib/auth/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
+import { getEmailDomain, resolveVerificationStatus } from "@/lib/verification";
 import { filterListings, type DiscoveryFilters } from "@/features/search/discovery";
 import { recommendListingsForUser as recommendDemoListings } from "@/server/services/recommendations";
 import { searchListings as searchDemoListings } from "@/server/services/search";
@@ -552,27 +553,31 @@ export async function searchMarketplaceListings(input: ListingSearchInput = {}) 
 async function ensurePublicUserRecord() {
   const authUser = await requireAuthUser("/app");
   const existing = await fetchUserRowById(authUser.id);
+  const admin = createAdminSupabaseClient();
 
-  if (existing) {
+  if (!admin) {
     return existing;
   }
 
-  const admin = createAdminSupabaseClient();
-  if (!admin) {
-    return null;
-  }
-
-  const email = authUser.email ?? "";
-  const domain = email.split("@")[1]?.toLowerCase() ?? "";
+  const email = authUser.email?.trim().toLowerCase() ?? "";
+  const domain = getEmailDomain(email);
   const { data: allowedDomain } = await admin
     .from("allowed_email_domains")
     .select("id, domain, university_id, auto_verify")
     .eq("domain", domain)
     .maybeSingle();
 
-  const verificationStatus: VerificationStatus = allowedDomain?.auto_verify
-    ? "verified"
-    : "pending";
+  const verificationStatus = resolveVerificationStatus(
+    email,
+    allowedDomain
+      ? [
+          {
+            domain: allowedDomain.domain,
+            autoVerify: allowedDomain.auto_verify
+          }
+        ]
+      : []
+  );
   const fullName =
     String(authUser.user_metadata.full_name ?? "").trim() ||
     email.split("@")[0] ||
@@ -584,6 +589,38 @@ async function ensurePublicUserRecord() {
   const neighborhood =
     String(authUser.user_metadata.neighborhood ?? "").trim() || "Maastricht";
   const bio = String(authUser.user_metadata.bio ?? "").trim();
+
+  if (existing) {
+    const nextStatus =
+      existing.verification_status === "verified"
+        ? "verified"
+        : verificationStatus;
+    const nextBadge = nextStatus === "verified";
+    const shouldSyncStatus = existing.verification_status !== nextStatus;
+    const shouldSyncBadge = (existing.profile?.verified_badge ?? false) !== nextBadge;
+
+    if (shouldSyncStatus || shouldSyncBadge) {
+      await admin
+        .from("users")
+        .update({
+          verification_status: nextStatus,
+          last_seen_at: new Date().toISOString()
+        })
+        .eq("id", authUser.id);
+
+      await admin
+        .from("profiles")
+        .update({
+          verified_badge: nextBadge,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", authUser.id);
+
+      return fetchUserRowById(authUser.id);
+    }
+
+    return existing;
+  }
 
   await admin.from("users").upsert({
     id: authUser.id,

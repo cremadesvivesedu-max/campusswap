@@ -9,7 +9,7 @@ export default async function AdminAnalyticsPage() {
       <MetricCard
         title="Verified users"
         value={String(metrics.verifiedUsers)}
-        hint="Student-only trust baseline"
+        hint="Student-trust baseline"
       />
       <MetricCard
         title="Conversations started"

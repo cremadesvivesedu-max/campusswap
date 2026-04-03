@@ -2,7 +2,7 @@
 import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["student", "moderator", "admin"]);
-export const verificationStatusEnum = pgEnum("verification_status", ["pending", "verified", "rejected"]);
+export const verificationStatusEnum = pgEnum("verification_status", ["unverified", "pending", "verified"]);
 export const listingConditionEnum = pgEnum("listing_condition", ["new", "like-new", "good", "fair", "needs-love"]);
 export const listingStatusEnum = pgEnum("listing_status", ["active", "reserved", "sold", "archived", "pending-review", "hidden"]);
 export const exchangeStatusEnum = pgEnum("exchange_status", ["inquiry", "negotiating", "reserved", "completed", "cancelled", "reported"]);
@@ -38,8 +38,8 @@ export const universityVerificationRules = pgTable("university_verification_rule
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   universityId: uuid("university_id").references(() => universities.id).notNull(),
   requireEmailOtp: boolean("require_email_otp").default(true).notNull(),
-  blockPostingUntilVerified: boolean("block_posting_until_verified").default(true).notNull(),
-  blockMessagingUntilVerified: boolean("block_messaging_until_verified").default(true).notNull(),
+  blockPostingUntilVerified: boolean("block_posting_until_verified").default(false).notNull(),
+  blockMessagingUntilVerified: boolean("block_messaging_until_verified").default(false).notNull(),
   notes: text("notes").notNull(),
   ...timestamps
 });
@@ -48,7 +48,7 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email", { length: 255 }).notNull(),
   role: userRoleEnum("role").default("student").notNull(),
-  verificationStatus: verificationStatusEnum("verification_status").default("pending").notNull(),
+  verificationStatus: verificationStatusEnum("verification_status").default("unverified").notNull(),
   avatarUrl: text("avatar_url"),
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),

@@ -13,6 +13,7 @@ import { MessageSellerButton } from "@/components/marketplace/message-seller-but
 import { PickupAreaMap } from "@/components/marketplace/pickup-area-map";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
+import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-button";
 import { ReportListingForm } from "@/components/marketplace/report-listing-form";
 
@@ -117,6 +118,9 @@ export default async function ListingDetailPage({
                     {seller.profile.fullName}
                   </p>
                   <p>{seller.profile.university}</p>
+                  <div className="pt-2">
+                    <VerificationStatusBadge status={seller.verificationStatus} />
+                  </div>
                 </div>
               </Link>
             ) : null}

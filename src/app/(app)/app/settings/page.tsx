@@ -35,7 +35,7 @@ export default async function SettingsPage() {
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
             <p>Request data export</p>
             <p>Request account deletion</p>
-            <p>Manage verified student profile</p>
+            <p>Review verification status and student-trust settings</p>
             <LogoutButton />
           </CardContent>
         </Card>

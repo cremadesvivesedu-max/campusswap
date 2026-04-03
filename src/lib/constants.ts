@@ -33,11 +33,11 @@ export const adminNav = [
 export const faqs = [
   {
     question: "Who can use CampusSwap?",
-    answer: "CampusSwap is built for students in Maastricht. Public visitors can browse, but selling and messaging are reserved for verified student accounts."
+    answer: "CampusSwap is built for student life in Maastricht. Any user can create an account and browse, while student verification adds stronger trust signals across the marketplace."
   },
   {
     question: "Do I need a university email?",
-    answer: "Yes. Verification rules are managed through approved student-email domains and OTP verification."
+    answer: "No. Any valid email can create an account. Supported university domains unlock verified or pending student status for additional trust."
   },
   {
     question: "How do payments work?",
@@ -50,7 +50,7 @@ export const faqs = [
 ];
 
 export const trustSignals = [
-  "Verified student badges on profiles and listings",
+  "Visible verification status on profiles, listings, and messages",
   "Moderation queue for suspicious listings and reports",
   "Safe meetup prompts near every conversation and exchange",
   "Ratings only unlock after a completed transaction"
@@ -68,7 +68,7 @@ export const defaultContentBlocks: ContentBlock[] = [
     id: "block-hero",
     key: "hero",
     type: "hero",
-    title: "Student-only resale that actually feels organized.",
+    title: "Student-first resale that actually feels organized.",
     body: "CampusSwap helps students arriving in Maastricht set up quickly, and students leaving sell fast without drowning in group chats.",
     cta: "Browse listings"
   },

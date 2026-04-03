@@ -63,7 +63,7 @@ export async function signupAction(_: unknown, formData: FormData) {
     return { success: false, message: "Email is required." } satisfies ActionState;
   }
 
-  redirect("/verify-email");
+  redirect(`/verify-email?email=${encodeURIComponent(email)}`);
 }
 
 export async function saveOnboardingAction(_: unknown, formData: FormData) {
@@ -242,7 +242,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
   const imageFiles = formData
     .getAll("images")
     .filter((value): value is File => value instanceof File && value.size > 0);
-  const needsReview = shouldModerateListing(title, description);
+  const flaggedForModeration = shouldModerateListing(title, description);
+  const requiresTrustReview = user.verificationStatus !== "verified";
+  const needsReview = flaggedForModeration || requiresTrustReview;
 
   if (!title || !description || !pickupArea || !categorySlug || !price) {
     return {
@@ -251,18 +253,11 @@ export async function createListingAction(_: unknown, formData: FormData) {
     } satisfies ActionState;
   }
 
-  if (!user.profile.verifiedBadge) {
-    return {
-      success: false,
-      message: "Verify your student profile before publishing a listing."
-    } satisfies ActionState;
-  }
-
   if (!isLiveMode) {
     return {
       success: true,
       message: needsReview
-        ? "Listing captured and queued for moderation review."
+        ? "Listing captured and queued for review."
         : "Listing draft captured in demo mode."
     } satisfies ActionState;
   }
@@ -353,7 +348,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
     type: "listing",
     title: needsReview ? "Listing submitted for review" : "Listing is live",
     body: needsReview
-      ? `${title} is waiting for moderation before it becomes visible.`
+      ? requiresTrustReview
+        ? `${title} is waiting for trust review because your account is not student-verified yet.`
+        : `${title} is waiting for moderation before it becomes visible.`
       : `${title} is now visible on CampusSwap.`
   });
 
@@ -364,7 +361,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
   return {
     success: true,
     message: needsReview
-      ? "Listing submitted and queued for moderation review."
+      ? requiresTrustReview
+        ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
+        : "Listing submitted and queued for moderation review."
       : "Listing published."
   } satisfies ActionState;
 }

@@ -5,7 +5,7 @@ import { ReviewCard } from "@/components/marketplace/review-card";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { StarRating } from "@/components/shared/star-rating";
-import { Badge } from "@/components/ui/badge";
+import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -58,14 +58,17 @@ export default async function ProfilePage({
                 <h1 className="font-display text-4xl font-semibold text-slate-950">
                   {profileUser.profile.fullName}
                 </h1>
-                {profileUser.profile.verifiedBadge ? (
-                  <Badge className="bg-emerald-100 text-emerald-900">
-                    Verified student
-                  </Badge>
-                ) : null}
+                <VerificationStatusBadge status={profileUser.verificationStatus} />
               </div>
               <p className="text-sm font-medium text-slate-600">
                 {profileUser.profile.university} - {profileUser.profile.neighborhood}
+              </p>
+              <p className="text-sm leading-6 text-slate-600">
+                {profileUser.verificationStatus === "verified"
+                  ? "Student verification is visible across listings and messages."
+                  : profileUser.verificationStatus === "pending"
+                    ? "This account is active while student verification is still pending."
+                    : "This account can use CampusSwap normally, but student verification has not been added yet."}
               </p>
               <StarRating
                 rating={profileUser.profile.ratingAverage}

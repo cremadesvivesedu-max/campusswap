@@ -10,8 +10,8 @@ export const demoData: DemoDataBundle = {
     { id: "domain-zuyd", domain: "zuyd.nl", universityId: "uni-zuyd", autoVerify: true }
   ],
   verificationRules: [
-    { id: "rule-um", universityId: "uni-um", requireEmailOtp: true, blockPostingUntilVerified: true, blockMessagingUntilVerified: true, notes: "Primary launch audience." },
-    { id: "rule-zuyd", universityId: "uni-zuyd", requireEmailOtp: true, blockPostingUntilVerified: true, blockMessagingUntilVerified: false, notes: "Fast browse to message." }
+    { id: "rule-um", universityId: "uni-um", requireEmailOtp: true, blockPostingUntilVerified: false, blockMessagingUntilVerified: false, notes: "Verification boosts trust, but access stays open for launch." },
+    { id: "rule-zuyd", universityId: "uni-zuyd", requireEmailOtp: true, blockPostingUntilVerified: false, blockMessagingUntilVerified: false, notes: "Soft verification during launch and testing." }
   ],
   users: [
     {
@@ -167,7 +167,7 @@ export const demoData: DemoDataBundle = {
     { id: "lead-1", email: "future@student.maastrichtuniversity.nl", intent: "both", createdAt: "2026-03-22T12:00:00.000Z" }
   ],
   contentBlocks: [
-    { id: "content-1", key: "hero", type: "hero", title: "Buy and sell student essentials in Maastricht.", body: "A student-only marketplace for bikes, furniture, textbooks, electronics, and everything in between.", cta: "Browse the marketplace" },
+    { id: "content-1", key: "hero", type: "hero", title: "Buy and sell student essentials in Maastricht.", body: "A student-first marketplace for bikes, furniture, textbooks, electronics, and everything in between.", cta: "Browse the marketplace" },
     { id: "content-2", key: "waitlist", type: "seo", title: "Join the CampusSwap community", body: "Get launch updates, featured drops, and student-first resale tips for Maastricht." }
   ],
   pricingSettings: [
