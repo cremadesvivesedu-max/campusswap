@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" rx="56" fill="#FFFBEB"/>
+  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#FFFDF6"/>
+  <ellipse cx="600" cy="560" rx="224" ry="144" fill="#E5E7EB"/>
+  <path d="M420 544c0-92 80-166 180-166s180 74 180 166" fill="#D1D5DB"/>
+  <rect x="552" y="328" width="96" height="36" rx="16" fill="#9CA3AF"/>
+  <circle cx="600" cy="536" r="18" fill="#F59E0B"/>
+  <text x="100" y="154" fill="#92400E" font-family="Arial, sans-serif" font-size="54" font-weight="700">Mini Rice Cooker</text>
+  <text x="100" y="220" fill="#B45309" font-family="Arial, sans-serif" font-size="30">Student-meal staple with outlet pricing</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" rx="56" fill="#0F172A"/>
+  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#111827"/>
+  <rect x="250" y="190" width="700" height="392" rx="34" fill="#1F2937"/>
+  <rect x="286" y="226" width="628" height="320" rx="22" fill="#70F0CB"/>
+  <rect x="528" y="582" width="144" height="42" rx="18" fill="#E2E8F0"/>
+  <rect x="472" y="624" width="256" height="48" rx="18" fill="#CBD5E1"/>
+  <path d="M352 472l122-114 108 88 160-136 108 162H352Z" fill="#0F766E"/>
+  <text x="100" y="154" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="54" font-weight="700">24 inch Monitor</text>
+  <text x="100" y="220" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="30">HDMI included • ideal second screen</text>
+</svg>

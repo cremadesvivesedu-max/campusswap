@@ -1,0 +1,119 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
+import { buildSiteUrl } from "@/lib/site-url";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+interface SignupFormProps {
+  allowedDomains: string[];
+}
+
+function getEmailDomain(email: string) {
+  return email.trim().toLowerCase().split("@")[1] ?? "";
+}
+
+export function SignupForm({ allowedDomains }: SignupFormProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <form
+      className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
+      onSubmit={(event) => {
+        event.preventDefault();
+
+        startTransition(async () => {
+          const supabase = createClient();
+
+          if (!isLiveClientMode || !hasSupabaseBrowserConfig || !supabase) {
+            setError(
+              "Supabase auth is not configured yet. Set live mode and the public Supabase keys to enable sign up."
+            );
+            return;
+          }
+
+          const normalizedEmail = email.trim().toLowerCase();
+          const emailDomain = getEmailDomain(normalizedEmail);
+
+          if (!allowedDomains.includes(emailDomain)) {
+            setError(
+              `Use a supported student email domain. Current allowlist: ${allowedDomains.join(", ")}.`
+            );
+            return;
+          }
+
+          setError(null);
+          setStatus(null);
+
+          const { data, error: signupError } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: {
+              emailRedirectTo: buildSiteUrl("/auth/callback?next=/onboarding"),
+              data: {
+                full_name: name.trim(),
+                university_email_domain: emailDomain
+              }
+            }
+          });
+
+          if (signupError) {
+            setError(signupError.message);
+            return;
+          }
+
+          const nextPath = searchParams.get("next") || "/app";
+
+          if (data.session) {
+            router.replace(nextPath === "/app" ? "/onboarding" : nextPath);
+            router.refresh();
+            return;
+          }
+
+          setStatus("Account created. Check your inbox to verify the student email.");
+          router.replace(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+          router.refresh();
+        });
+      }}
+    >
+      <Input
+        name="name"
+        placeholder="Full name"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+      <Input
+        name="email"
+        type="email"
+        placeholder="student@maastrichtuniversity.nl"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <Input
+        name="password"
+        type="password"
+        placeholder="Choose a password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
+      <Button className="w-full" type="submit" disabled={isPending}>
+        {isPending ? "Creating account..." : "Create student account"}
+      </Button>
+      <p className="text-xs leading-6 text-slate-500">
+        Supported domains: {allowedDomains.join(", ")}
+      </p>
+      {status ? <p className="text-sm text-emerald-700">{status}</p> : null}
+      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+    </form>
+  );
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" rx="56" fill="#F8FAFC"/>
+  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#FFFDF8"/>
+  <rect x="448" y="180" width="304" height="500" rx="26" fill="#B58153"/>
+  <path d="M448 316h304M448 452h304M448 588h304" stroke="#8B5E3C" stroke-width="18"/>
+  <rect x="496" y="234" width="78" height="58" rx="14" fill="#70F0CB"/>
+  <rect x="592" y="234" width="112" height="58" rx="14" fill="#BFDBFE"/>
+  <rect x="496" y="370" width="90" height="58" rx="14" fill="#FDE68A"/>
+  <rect x="602" y="370" width="102" height="58" rx="14" fill="#FCA5A5"/>
+  <text x="100" y="154" fill="#3C2415" font-family="Arial, sans-serif" font-size="54" font-weight="700">Narrow Bookcase</text>
+  <text x="100" y="220" fill="#7C5B43" font-family="Arial, sans-serif" font-size="30">Slim storage for textbooks, kitchen gear, or folded clothes</text>
+</svg>

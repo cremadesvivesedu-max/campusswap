@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" rx="56" fill="#FEF2F2"/>
+  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#FFF7F7"/>
+  <rect x="382" y="212" width="436" height="430" rx="34" fill="#E2E8F0"/>
+  <path d="M382 356h436M382 500h436" stroke="#CBD5E1" stroke-width="18"/>
+  <circle cx="472" cy="692" r="32" fill="#334155"/>
+  <circle cx="728" cy="692" r="32" fill="#334155"/>
+  <circle cx="816" cy="692" r="20" fill="#94A3B8"/>
+  <text x="100" y="154" fill="#7F1D1D" font-family="Arial, sans-serif" font-size="54" font-weight="700">Rolling Storage Unit</text>
+  <text x="100" y="220" fill="#991B1B" font-family="Arial, sans-serif" font-size="30">Outlet condition with one damaged wheel</text>
+</svg>

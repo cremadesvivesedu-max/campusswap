@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
+  <rect width="1200" height="900" rx="56" fill="#EFF6FF"/>
+  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#F8FAFC"/>
+  <rect x="240" y="360" width="720" height="252" rx="40" fill="#DBEAFE"/>
+  <rect x="286" y="310" width="240" height="94" rx="30" fill="#BFDBFE"/>
+  <rect x="564" y="310" width="240" height="94" rx="30" fill="#BFDBFE"/>
+  <path d="M240 500h720" stroke="#93C5FD" stroke-width="16" stroke-linecap="round"/>
+  <text x="100" y="154" fill="#0F172A" font-family="Arial, sans-serif" font-size="54" font-weight="700">Single Duvet Set</text>
+  <text x="100" y="220" fill="#475569" font-family="Arial, sans-serif" font-size="30">Freshly washed bedding for move-in week</text>
+</svg>
