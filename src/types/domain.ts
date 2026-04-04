@@ -103,6 +103,7 @@ export interface Listing {
   isSaved?: boolean;
   tags: string[];
   images: ListingImage[];
+  removedAt?: string;
 }
 
 export interface Favorite {
@@ -173,6 +174,7 @@ export interface ConversationThreadData {
   buyer: User;
   messages: Message[];
   unreadCount: number;
+  transaction?: Transaction;
 }
 
 export interface Transaction {
@@ -181,9 +183,29 @@ export interface Transaction {
   buyerId: string;
   sellerId: string;
   state: ExchangeStatus;
+  amount: number;
   meetupSpot: string;
   meetupWindow: string;
+  conversationId?: string;
+  createdAt: string;
+  updatedAt: string;
+  reservedAt?: string;
+  cancelledAt?: string;
   completedAt?: string;
+}
+
+export interface ListingTransactionContext {
+  activeTransaction?: Transaction;
+  viewerTransaction?: Transaction;
+  reservedForCurrentUser: boolean;
+  reservedForOtherBuyer: boolean;
+  buyer?: User;
+  seller?: User;
+}
+
+export interface SellerListingTransaction {
+  transaction: Transaction;
+  buyer: User;
 }
 
 export interface Review {

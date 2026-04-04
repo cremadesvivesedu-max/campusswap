@@ -1,16 +1,18 @@
 import { redirectIfAuthenticated } from "@/lib/auth/server";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { LoginForm } from "@/components/forms/login-form";
 import { SectionHeading } from "@/components/shared/section-heading";
 
 export default async function LoginPage() {
   await redirectIfAuthenticated("/app");
+  const dictionary = await getDictionaryForRequest();
 
   return (
     <div className="mx-auto max-w-xl space-y-8 px-6 py-16">
       <SectionHeading
-        eyebrow="Login"
-        title="Welcome back to CampusSwap."
-        description="Log in with your email and password to pick up where you left off with saved listings, messages, and meetup planning."
+        eyebrow={dictionary.auth.login.eyebrow}
+        title={dictionary.auth.login.title}
+        description={dictionary.auth.login.description}
       />
       <LoginForm />
     </div>

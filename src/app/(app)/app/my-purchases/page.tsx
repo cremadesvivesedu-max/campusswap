@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { TransactionReviewForm } from "@/components/marketplace/transaction-review-form";
+import { Button } from "@/components/ui/button";
+import { getDictionaryForRequest } from "@/lib/i18n";
+import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
   getListingById,
@@ -14,9 +17,10 @@ import {
 
 export default async function MyPurchasesPage() {
   const user = await getCurrentUser();
-  const [transactions, reviews] = await Promise.all([
+  const [transactions, reviews, dictionary] = await Promise.all([
     getTransactionsForUser(user.id),
-    getReviewsForUser(user.id)
+    getReviewsForUser(user.id),
+    getDictionaryForRequest()
   ]);
 
   const authoredReviewIds = new Set(
@@ -46,9 +50,9 @@ export default async function MyPurchasesPage() {
   return (
     <div className="space-y-8">
       <SectionHeading
-        eyebrow="Purchases & exchanges"
-        title="Meetup-first transaction tracking for student resale."
-        description="The MVP keeps handoff in person, but transaction data, review gating, and seller history now persist in Supabase."
+        eyebrow={dictionary.myPurchases.eyebrow}
+        title={dictionary.myPurchases.title}
+        description={dictionary.myPurchases.description}
       />
 
       {detailedTransactions.length ? (
@@ -63,7 +67,7 @@ export default async function MyPurchasesPage() {
                     </h2>
                     {counterpart ? (
                       <p className="text-sm text-slate-600">
-                        Counterpart:{" "}
+                        {transaction.buyerId === user.id ? "Seller" : "Buyer"}:{" "}
                         <Link
                           href={`/app/profile?userId=${counterpart.id}`}
                           className="font-medium text-slate-900 underline-offset-4 hover:underline"
@@ -78,9 +82,20 @@ export default async function MyPurchasesPage() {
               </CardHeader>
               <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
                 <div className="grid gap-3 md:grid-cols-2">
+                  <p>Recorded value: {formatCurrency(transaction.amount)}</p>
                   <p>Meetup spot: {transaction.meetupSpot}</p>
                   <p>Meetup window: {transaction.meetupWindow}</p>
+                  {transaction.reservedAt ? <p>Reserved at: {new Date(transaction.reservedAt).toLocaleString("en-GB")}</p> : null}
+                  {transaction.completedAt ? <p>Completed at: {new Date(transaction.completedAt).toLocaleString("en-GB")}</p> : null}
                 </div>
+
+                {transaction.conversationId ? (
+                  <Button asChild variant="outline">
+                    <Link href={`/app/messages/${transaction.conversationId}`}>
+                      Open conversation
+                    </Link>
+                  </Button>
+                ) : null}
 
                 {transaction.state === "completed" && counterpart ? (
                   hasAuthoredReview ? (

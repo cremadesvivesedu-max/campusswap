@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { Paperclip, Send } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
+import { StarRating } from "@/components/shared/star-rating";
 import {
   createAttachmentFromFile,
   sendConversationMessage,
@@ -19,52 +22,22 @@ import {
   useLiveConversationThread
 } from "@/features/messaging/live-messaging";
 import { demoData } from "@/lib/demo-data";
+import { formatCurrency } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
+import {
+  cancelTransactionAction,
+  completeTransactionAction,
+  releaseReservationAction,
+  reserveConversationBuyerAction
+} from "@/server/actions/marketplace";
+import type { Transaction, User } from "@/types/domain";
 
 interface ConversationThreadProps {
   conversationId: string;
   currentUserId: string;
 }
 
-export function ConversationThread({
-  conversationId,
-  currentUserId
-}: ConversationThreadProps) {
-  if (isLiveClientMode) {
-    return (
-      <LiveConversationThread
-        conversationId={conversationId}
-        currentUserId={currentUserId}
-      />
-    );
-  }
-
-  return (
-    <DemoConversationThread
-      conversationId={conversationId}
-      currentUserId={currentUserId}
-    />
-  );
-}
-
-function ConversationShell({
-  listingHref,
-  listingTitle,
-  listingDescription,
-  listingPickupArea,
-  listingImageSrc,
-  listingImageAlt,
-  sellerName,
-  sellerAvatar,
-  sellerId,
-  messages,
-  quickActions,
-  currentUserId,
-  onSend,
-  error,
-  isPending,
-  supportsAttachments
-}: {
+interface ConversationShellProps {
   listingHref: string;
   listingTitle: string;
   listingDescription: string;
@@ -88,10 +61,231 @@ function ConversationShell({
   error: string | null;
   isPending: boolean;
   supportsAttachments: boolean;
+  sidebar: ReactNode;
+}
+
+function formatTransactionState(state?: string) {
+  switch (state) {
+    case "hidden":
+      return "Removed";
+    case "sold":
+      return "Sold";
+    case "archived":
+      return "Archived";
+    case "pending-review":
+      return "Pending review";
+    case "inquiry":
+      return "Conversation started";
+    case "negotiating":
+      return "Purchase requested";
+    case "reserved":
+      return "Reserved";
+    case "completed":
+      return "Completed";
+    case "cancelled":
+      return "Cancelled";
+    case "reported":
+      return "Reported";
+    default:
+      return "Chat only";
+  }
+}
+
+function formatDateTime(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  return new Date(value).toLocaleString("en-GB", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function ExchangePanel({
+  conversationId,
+  currentUserId,
+  listingStatus,
+  transaction,
+  buyer,
+  seller
+}: {
+  conversationId: string;
+  currentUserId: string;
+  listingStatus: string;
+  transaction?: Transaction;
+  buyer: User;
+  seller: User;
 }) {
+  const router = useRouter();
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const isSeller = seller.id === currentUserId;
+  const counterpart = isSeller ? buyer : seller;
+
+  const runAction = (action: () => Promise<{ success: boolean; message: string }>) => {
+    startTransition(async () => {
+      try {
+        setActionError(null);
+        setFeedback(null);
+        const result = await action();
+
+        if (!result.success) {
+          setActionError(result.message);
+          return;
+        }
+
+        setFeedback(result.message);
+        router.refresh();
+      } catch (error) {
+        setActionError(
+          error instanceof Error ? error.message : "Unable to update the exchange right now."
+        );
+      }
+    });
+  };
+
+  const stateLabel = formatTransactionState(transaction?.state);
+  const canReserve = isSeller && (!transaction || ["inquiry", "negotiating"].includes(transaction.state));
+  const canRelease = isSeller && transaction?.state === "reserved";
+  const canComplete = isSeller && !!transaction && ["inquiry", "negotiating", "reserved"].includes(transaction.state);
+  const canCancel = !!transaction && transaction.state !== "completed" && transaction.state !== "cancelled";
+
+  return (
+    <Card className="bg-white">
+      <CardContent className="space-y-4 p-6 text-sm leading-7 text-slate-600">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-xl font-semibold text-slate-950">Exchange status</p>
+            <p className="text-sm text-slate-500">
+              {isSeller
+                ? "Reserve this item for the buyer in this thread, then mark it sold after the meetup."
+                : "Use this thread to confirm the meetup. Online payment is not taken in this MVP."}
+            </p>
+          </div>
+          <Badge className="bg-slate-950 text-white">{stateLabel}</Badge>
+        </div>
+
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center gap-3">
+            <ProfileAvatar
+              userId={counterpart.id}
+              name={counterpart.profile.fullName}
+              src={counterpart.avatar}
+              className="h-12 w-12"
+            />
+            <div>
+              <p className="font-medium text-slate-950">
+                {isSeller ? `Buyer: ${counterpart.profile.fullName}` : `Seller: ${counterpart.profile.fullName}`}
+              </p>
+              <StarRating
+                rating={counterpart.profile.ratingAverage}
+                reviewCount={counterpart.profile.reviewCount}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 text-sm text-slate-600">
+            <p>Listing status: {listingStatus}</p>
+            <p>Price: {transaction ? formatCurrency(transaction.amount) : "Pending confirmation"}</p>
+            <p>Meetup area: {transaction?.meetupSpot ?? "To be agreed in chat"}</p>
+            <p>Meetup window: {transaction?.meetupWindow ?? "To be scheduled"}</p>
+            {transaction?.reservedAt ? <p>Reserved at: {formatDateTime(transaction.reservedAt)}</p> : null}
+            {transaction?.completedAt ? <p>Completed at: {formatDateTime(transaction.completedAt)}</p> : null}
+            {transaction?.cancelledAt ? <p>Cancelled at: {formatDateTime(transaction.cancelledAt)}</p> : null}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {canReserve ? (
+            <Button
+              type="button"
+              onClick={() => runAction(() => reserveConversationBuyerAction(conversationId))}
+              disabled={isPending}
+            >
+              {isPending ? "Updating..." : "Reserve for this buyer"}
+            </Button>
+          ) : null}
+          {canRelease && transaction ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => runAction(() => releaseReservationAction(transaction.id))}
+              disabled={isPending}
+            >
+              {isPending ? "Updating..." : "Release reservation"}
+            </Button>
+          ) : null}
+          {canComplete && transaction ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => runAction(() => completeTransactionAction(transaction.id))}
+              disabled={isPending}
+            >
+              {isPending ? "Updating..." : "Mark sold"}
+            </Button>
+          ) : null}
+          {canCancel && transaction ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (!window.confirm("Cancel this exchange and reopen the listing if needed?")) {
+                  return;
+                }
+
+                runAction(() => cancelTransactionAction(transaction.id));
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "Updating..." : "Cancel exchange"}
+            </Button>
+          ) : null}
+          {transaction?.conversationId ? (
+            <Button asChild type="button" variant="ghost">
+              <Link href={`/app/listings/${transaction.listingId}`}>Open listing</Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
+        {actionError ? <p className="text-sm font-medium text-rose-700">{actionError}</p> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ConversationShell({
+  listingHref,
+  listingTitle,
+  listingDescription,
+  listingPickupArea,
+  listingImageSrc,
+  listingImageAlt,
+  sellerName,
+  sellerAvatar,
+  sellerId,
+  messages,
+  quickActions,
+  currentUserId,
+  onSend,
+  error,
+  isPending,
+  supportsAttachments,
+  sidebar
+}: ConversationShellProps) {
   const [composerValue, setComposerValue] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.72fr_0.28fr]">
@@ -131,51 +325,60 @@ function ConversationShell({
 
         <Card className="bg-white">
           <CardContent className="space-y-4 p-4 sm:p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Thread
-            </p>
-            {messages.map((message) => {
-              const isOwnMessage = message.senderId === currentUserId;
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                >
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Live thread
+              </p>
+              <p className="text-xs text-slate-500">
+                New messages appear here automatically.
+              </p>
+            </div>
+
+            <div className="max-h-[58vh] space-y-4 overflow-y-auto pr-1">
+              {messages.map((message) => {
+                const isOwnMessage = message.senderId === currentUserId;
+                return (
                   <div
-                    className={`max-w-[85%] rounded-[28px] px-4 py-3 text-sm leading-7 ${
-                      isOwnMessage
-                        ? "bg-slate-950 text-white"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
+                    key={message.id}
+                    className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                   >
-                    {message.text ? <p>{message.text}</p> : null}
-                    {message.attachmentUrl && message.attachmentName ? (
-                      <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={message.attachmentUrl}
-                          alt={message.attachmentName}
-                          className="max-h-64 w-full object-cover"
-                        />
-                        <p className="px-3 py-2 text-xs">{message.attachmentName}</p>
-                      </div>
-                    ) : null}
-                    <p
-                      className={`mt-2 text-xs ${
-                        isOwnMessage ? "text-slate-300" : "text-slate-500"
+                    <div
+                      className={`max-w-[85%] rounded-[28px] px-4 py-3 text-sm leading-7 shadow-sm ${
+                        isOwnMessage
+                          ? "bg-slate-950 text-white"
+                          : "border border-slate-200 bg-slate-100 text-slate-700"
                       }`}
                     >
-                      {new Date(message.sentAt).toLocaleString("en-GB", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      })}
-                    </p>
+                      {message.text ? <p>{message.text}</p> : null}
+                      {message.attachmentUrl && message.attachmentName ? (
+                        <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={message.attachmentUrl}
+                            alt={message.attachmentName}
+                            className="max-h-64 w-full object-cover"
+                          />
+                          <p className="px-3 py-2 text-xs">{message.attachmentName}</p>
+                        </div>
+                      ) : null}
+                      <p
+                        className={`mt-2 text-xs ${
+                          isOwnMessage ? "text-slate-300" : "text-slate-500"
+                        }`}
+                      >
+                        {new Date(message.sentAt).toLocaleString("en-GB", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+              <div ref={messagesBottomRef} />
+            </div>
           </CardContent>
         </Card>
 
@@ -233,11 +436,20 @@ function ConversationShell({
                         Attach
                       </Button>
                     </>
-                  ) : null}
+                  ) : (
+                    <Button type="button" variant="outline" disabled>
+                      <Paperclip className="mr-2 h-4 w-4" />
+                      Attach coming soon
+                    </Button>
+                  )}
                 </div>
                 <Button
                   type="button"
                   onClick={() => {
+                    if (!composerValue.trim() && !pendingAttachment) {
+                      return;
+                    }
+
                     onSend(composerValue, pendingAttachment ?? undefined);
                     setComposerValue("");
                     setPendingAttachment(null);
@@ -265,6 +477,7 @@ function ConversationShell({
             <p>Pickup area: {listingPickupArea}</p>
           </CardContent>
         </Card>
+        {sidebar}
         <Card className="bg-slate-950 text-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-300">
             <p className="font-display text-xl font-semibold text-white">
@@ -278,6 +491,27 @@ function ConversationShell({
         </Card>
       </div>
     </div>
+  );
+}
+
+export function ConversationThread({
+  conversationId,
+  currentUserId
+}: ConversationThreadProps) {
+  if (isLiveClientMode) {
+    return (
+      <LiveConversationThread
+        conversationId={conversationId}
+        currentUserId={currentUserId}
+      />
+    );
+  }
+
+  return (
+    <DemoConversationThread
+      conversationId={conversationId}
+      currentUserId={currentUserId}
+    />
   );
 }
 
@@ -346,6 +580,19 @@ function DemoConversationThread({
       error={error}
       isPending={isPending}
       supportsAttachments
+      sidebar={
+        <Card className="bg-white">
+          <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-600">
+            <p className="font-display text-xl font-semibold text-slate-950">
+              Demo exchange state
+            </p>
+            <p>
+              Switch to live mode to persist reservation, sold state, and mutual
+              review eligibility inside this conversation.
+            </p>
+          </CardContent>
+        </Card>
+      }
     />
   );
 }
@@ -406,6 +653,16 @@ function LiveConversationThread({
       error={error ?? threadError}
       isPending={isPending}
       supportsAttachments={false}
+      sidebar={
+        <ExchangePanel
+          conversationId={conversationId}
+          currentUserId={currentUserId}
+          listingStatus={thread.listing.status}
+          transaction={thread.transaction}
+          buyer={thread.buyer}
+          seller={thread.seller}
+        />
+      }
     />
   );
 }

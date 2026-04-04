@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
 import { buildSiteUrl } from "@/lib/site-url";
 import { getEmailDomain } from "@/lib/verification";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,6 +17,7 @@ interface SignupFormProps {
 export function SignupForm({ allowedDomains }: SignupFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { dictionary } = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,29 +82,31 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
     >
       <Input
         name="name"
-        placeholder="Full name"
+        placeholder={dictionary.auth.signup.namePlaceholder}
         value={name}
         onChange={(event) => setName(event.target.value)}
       />
       <Input
         name="email"
         type="email"
-        placeholder="you@example.com"
+        placeholder={dictionary.auth.signup.emailPlaceholder}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
       <Input
         name="password"
         type="password"
-        placeholder="Choose a password"
+        placeholder={dictionary.auth.signup.passwordPlaceholder}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
       <Button className="w-full" type="submit" disabled={isPending}>
-        {isPending ? "Creating account..." : "Create account"}
+        {isPending
+          ? dictionary.auth.signup.submitting
+          : dictionary.auth.signup.submit}
       </Button>
       <p className="text-xs leading-6 text-slate-500">
-        Any valid email can sign up. Supported student domains for faster trust status:{" "}
+        {dictionary.auth.signup.domainHint}{" "}
         {allowedDomains.join(", ")}
       </p>
       {status ? <p className="text-sm text-emerald-700">{status}</p> : null}

@@ -14,10 +14,12 @@ import type {
   Listing,
   ListingCondition,
   ListingSearchInput,
+  ListingTransactionContext,
   Notification,
   Profile,
   RecommendationBreakdown,
   Review,
+  SellerListingTransaction,
   SponsoredPlacement,
   Transaction,
   User,
@@ -90,6 +92,7 @@ interface DbListingRow {
   view_count: number;
   save_count: number;
   tags: string[] | null;
+  removed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -110,9 +113,20 @@ interface DbTransactionRow {
   buyer_id: string;
   seller_id: string;
   state: Transaction["state"];
+  amount: number | string;
+  conversation_id: string | null;
   meetup_spot: string;
   meetup_window: string;
+  created_at: string;
+  updated_at: string;
+  reserved_at: string | null;
+  cancelled_at: string | null;
   completed_at: string | null;
+}
+
+interface DbTransactionWithUsers extends DbTransactionRow {
+  buyer: DbUserWithProfile | null;
+  seller: DbUserWithProfile | null;
 }
 
 interface DbReviewRow {
@@ -170,6 +184,7 @@ const listingSelect = `
   view_count,
   save_count,
   tags,
+  removed_at,
   created_at,
   updated_at,
   listing_images (
@@ -328,6 +343,7 @@ function mapListing(
     saveCount: row.save_count,
     isSaved: options?.savedListingIds?.has(row.id) ?? false,
     tags: row.tags ?? [],
+    removedAt: row.removed_at ?? undefined,
     images: images.map((image) => ({
       id: image.id,
       url: image.url,
@@ -344,8 +360,14 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
     state: row.state,
+    amount: numberValue(row.amount),
     meetupSpot: row.meetup_spot,
     meetupWindow: row.meetup_window,
+    conversationId: row.conversation_id ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    reservedAt: row.reserved_at ?? undefined,
+    cancelledAt: row.cancelled_at ?? undefined,
     completedAt: row.completed_at ?? undefined
   };
 }
@@ -945,12 +967,284 @@ export async function getTransactionsForUser(userId?: string) {
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, meetup_spot, meetup_window, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, cancelled_at, completed_at"
     )
     .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
     .order("updated_at", { ascending: false });
 
   return ((data as unknown as DbTransactionRow[] | null) ?? []).map(mapTransaction);
+}
+
+export async function getTransactionForConversation(
+  conversationId: string
+): Promise<Transaction | undefined> {
+  if (!isLiveMode) {
+    return demoData.transactions.find(
+      (transaction) =>
+        demoData.conversations.find((conversation) => conversation.id === conversationId)
+          ?.listingId === transaction.listingId &&
+        demoData.conversations.find((conversation) => conversation.id === conversationId)
+          ?.buyerId === transaction.buyerId &&
+        demoData.conversations.find((conversation) => conversation.id === conversationId)
+          ?.sellerId === transaction.sellerId
+    );
+  }
+
+  const supabase = await getSupabaseClient();
+
+  if (!supabase) {
+    return undefined;
+  }
+
+  const { data } = await supabase
+    .from("transactions")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, cancelled_at, completed_at"
+    )
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+
+  const row = (data as unknown as DbTransactionRow | null) ?? null;
+  return row ? mapTransaction(row) : undefined;
+}
+
+export async function getListingTransactionContext(
+  listingId: string,
+  currentUserId: string
+): Promise<ListingTransactionContext> {
+  if (!isLiveMode) {
+    const activeTransaction =
+      demoData.transactions.find(
+        (transaction) =>
+          transaction.listingId === listingId &&
+          (transaction.state === "reserved" || transaction.state === "completed")
+      ) ??
+      demoData.transactions.find(
+        (transaction) =>
+          transaction.listingId === listingId &&
+          (transaction.state === "negotiating" || transaction.state === "inquiry")
+      );
+    const viewerTransaction = demoData.transactions.find(
+      (transaction) =>
+        transaction.listingId === listingId &&
+        transaction.buyerId === currentUserId &&
+        transaction.state !== "cancelled"
+    );
+    const buyer = activeTransaction
+      ? demoData.users.find((candidate) => candidate.id === activeTransaction.buyerId)
+      : undefined;
+    const seller = activeTransaction
+      ? demoData.users.find((candidate) => candidate.id === activeTransaction.sellerId)
+      : undefined;
+
+    return {
+      activeTransaction,
+      viewerTransaction,
+      reservedForCurrentUser: activeTransaction?.state === "reserved" && activeTransaction.buyerId === currentUserId,
+      reservedForOtherBuyer:
+        activeTransaction?.state === "reserved" &&
+        activeTransaction.buyerId !== currentUserId,
+      buyer,
+      seller
+    };
+  }
+
+  const supabase = await getSupabaseClient();
+
+  if (!supabase) {
+    return {
+      reservedForCurrentUser: false,
+      reservedForOtherBuyer: false
+    };
+  }
+
+  const { data } = await supabase
+    .from("transactions")
+    .select(
+      `
+        id,
+        listing_id,
+        buyer_id,
+        seller_id,
+        state,
+        amount,
+        conversation_id,
+        meetup_spot,
+        meetup_window,
+        created_at,
+        updated_at,
+        reserved_at,
+        cancelled_at,
+        completed_at,
+        buyer:users!transactions_buyer_id_fkey (
+          id,
+          email,
+          role,
+          verification_status,
+          avatar_url,
+          joined_at,
+          last_seen_at,
+          profile:profiles (
+            user_id,
+            full_name,
+            university,
+            student_status,
+            neighborhood,
+            bio,
+            preferred_categories,
+            buyer_intent,
+            seller_intent,
+            notification_preferences,
+            rating_average,
+            review_count,
+            response_rate,
+            verified_badge
+          )
+        ),
+        seller:users!transactions_seller_id_fkey (
+          id,
+          email,
+          role,
+          verification_status,
+          avatar_url,
+          joined_at,
+          last_seen_at,
+          profile:profiles (
+            user_id,
+            full_name,
+            university,
+            student_status,
+            neighborhood,
+            bio,
+            preferred_categories,
+            buyer_intent,
+            seller_intent,
+            notification_preferences,
+            rating_average,
+            review_count,
+            response_rate,
+            verified_badge
+          )
+        )
+      `
+    )
+    .eq("listing_id", listingId)
+    .in("state", ["inquiry", "negotiating", "reserved", "completed"])
+    .order("updated_at", { ascending: false });
+
+  const rows = (data as unknown as DbTransactionWithUsers[] | null) ?? [];
+  const activeRow =
+    rows.find((row) => row.state === "reserved") ??
+    rows.find((row) => row.state === "completed") ??
+    rows.find((row) => row.state === "negotiating") ??
+    rows.find((row) => row.state === "inquiry");
+  const viewerRow = rows.find(
+    (row) => row.buyer_id === currentUserId && row.state !== "cancelled"
+  );
+
+  return {
+    activeTransaction: activeRow ? mapTransaction(activeRow) : undefined,
+    viewerTransaction: viewerRow ? mapTransaction(viewerRow) : undefined,
+    reservedForCurrentUser:
+      activeRow?.state === "reserved" && activeRow.buyer_id === currentUserId,
+    reservedForOtherBuyer:
+      activeRow?.state === "reserved" && activeRow.buyer_id !== currentUserId,
+    buyer: activeRow?.buyer ? mapUser(activeRow.buyer) : undefined,
+    seller: activeRow?.seller ? mapUser(activeRow.seller) : undefined
+  };
+}
+
+export async function getSellerListingTransactions(
+  sellerId: string
+): Promise<Record<string, SellerListingTransaction>> {
+  if (!isLiveMode) {
+    return demoData.transactions
+      .filter(
+        (transaction) =>
+          transaction.sellerId === sellerId &&
+          ["inquiry", "negotiating", "reserved", "completed"].includes(transaction.state)
+      )
+      .reduce<Record<string, SellerListingTransaction>>((accumulator, transaction) => {
+        const buyer = demoData.users.find((candidate) => candidate.id === transaction.buyerId);
+
+        if (buyer) {
+          accumulator[transaction.listingId] = {
+            transaction,
+            buyer
+          };
+        }
+
+        return accumulator;
+      }, {});
+  }
+
+  const supabase = await getSupabaseClient();
+
+  if (!supabase) {
+    return {};
+  }
+
+  const { data } = await supabase
+    .from("transactions")
+    .select(
+      `
+        id,
+        listing_id,
+        buyer_id,
+        seller_id,
+        state,
+        amount,
+        conversation_id,
+        meetup_spot,
+        meetup_window,
+        created_at,
+        updated_at,
+        reserved_at,
+        cancelled_at,
+        completed_at,
+        buyer:users!transactions_buyer_id_fkey (
+          id,
+          email,
+          role,
+          verification_status,
+          avatar_url,
+          joined_at,
+          last_seen_at,
+          profile:profiles (
+            user_id,
+            full_name,
+            university,
+            student_status,
+            neighborhood,
+            bio,
+            preferred_categories,
+            buyer_intent,
+            seller_intent,
+            notification_preferences,
+            rating_average,
+            review_count,
+            response_rate,
+            verified_badge
+          )
+        )
+      `
+    )
+    .eq("seller_id", sellerId)
+    .in("state", ["inquiry", "negotiating", "reserved", "completed"])
+    .order("updated_at", { ascending: false });
+
+  return (((data as unknown as DbTransactionWithUsers[] | null) ?? [])).reduce<
+    Record<string, SellerListingTransaction>
+  >((accumulator, row) => {
+    if (!accumulator[row.listing_id] && row.buyer) {
+      accumulator[row.listing_id] = {
+        transaction: mapTransaction(row),
+        buyer: mapUser(row.buyer)
+      };
+    }
+
+    return accumulator;
+  }, {});
 }
 
 export async function getReviewsForUser(userId: string) {

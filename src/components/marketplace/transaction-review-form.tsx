@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { StarRatingInput } from "@/components/shared/star-rating-input";
 import { submitTransactionReviewAction } from "@/server/actions/marketplace";
 
 const initialState = {
@@ -30,17 +31,7 @@ export function TransactionReviewForm({
         <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
           Rating
         </span>
-        <select
-          name="rating"
-          defaultValue="5"
-          className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900"
-        >
-          <option value="5">5 stars</option>
-          <option value="4">4 stars</option>
-          <option value="3">3 stars</option>
-          <option value="2">2 stars</option>
-          <option value="1">1 star</option>
-        </select>
+        <StarRatingInput name="rating" defaultValue={5} />
       </label>
       <Textarea
         name="text"

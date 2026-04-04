@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ const notificationOptions = [
 
 export function OnboardingForm({ user, categories }: OnboardingFormProps) {
   const router = useRouter();
+  const { dictionary } = useLocale();
   const [state, action] = useActionState(saveOnboardingAction, {
     success: false,
     message: ""
@@ -40,12 +42,11 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
       className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
     >
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-        You can finish onboarding and enter the marketplace right away. Student
-        verification is a separate trust signal, not a blocker for using CampusSwap.
+        {dictionary.auth.onboarding.notice}
       </div>
       <Input
         name="fullName"
-        placeholder="Your full name"
+        placeholder={dictionary.auth.onboarding.fullName}
         defaultValue={user.profile.fullName}
       />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -54,25 +55,25 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
           defaultValue={user.profile.studentStatus}
           className="h-11 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
         >
-          <option value="incoming">Incoming</option>
-          <option value="current">Current</option>
-          <option value="outgoing">Outgoing</option>
-          <option value="graduated">Graduated</option>
+          <option value="incoming">{dictionary.auth.onboarding.status.incoming}</option>
+          <option value="current">{dictionary.auth.onboarding.status.current}</option>
+          <option value="outgoing">{dictionary.auth.onboarding.status.outgoing}</option>
+          <option value="graduated">{dictionary.auth.onboarding.status.graduated}</option>
         </select>
         <Input
           name="neighborhood"
-          placeholder="Preferred pickup area"
+          placeholder={dictionary.auth.onboarding.neighborhood}
           defaultValue={user.profile.neighborhood}
         />
       </div>
       <Textarea
         name="bio"
-        placeholder="Tell buyers and sellers what you are looking for"
+        placeholder={dictionary.auth.onboarding.bio}
         defaultValue={user.profile.bio}
       />
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-          Preferred categories
+          {dictionary.auth.onboarding.preferredCategories}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {categories.map((category) => (
@@ -100,7 +101,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
             name="buyerIntent"
             defaultChecked={user.profile.buyerIntent}
           />
-          Buyer intent
+          {dictionary.auth.onboarding.buyerIntent}
         </label>
         <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
@@ -109,12 +110,12 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
             name="sellerIntent"
             defaultChecked={user.profile.sellerIntent}
           />
-          Seller intent
+          {dictionary.auth.onboarding.sellerIntent}
         </label>
       </div>
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-          Notifications
+          {dictionary.auth.onboarding.notifications}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {notificationOptions.map((option) => (
@@ -129,13 +130,19 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
                 value={option.id}
                 defaultChecked={user.profile.notificationPreferences.includes(option.id)}
               />
-              {option.label}
+              {option.id === "messages"
+                ? dictionary.auth.onboarding.notificationOptions.messages
+                : option.id === "listing_updates"
+                  ? dictionary.auth.onboarding.notificationOptions.listingUpdates
+                  : option.id === "saved_searches"
+                    ? dictionary.auth.onboarding.notificationOptions.savedSearches
+                    : dictionary.auth.onboarding.notificationOptions.featuredDigest}
             </label>
           ))}
         </div>
       </div>
       <Button className="w-full" type="submit">
-        Save onboarding
+        {dictionary.auth.onboarding.save}
       </Button>
       {state.message ? <p className="text-sm text-slate-600">{state.message}</p> : null}
     </form>

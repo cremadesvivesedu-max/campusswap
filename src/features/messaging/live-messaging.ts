@@ -8,6 +8,7 @@ import type {
   ConversationThreadData,
   Listing,
   Message,
+  Transaction,
   User
 } from "@/types/domain";
 
@@ -63,16 +64,19 @@ interface DbListingRow {
   view_count: number;
   save_count: number;
   tags: string[] | null;
+  removed_at: string | null;
   created_at: string;
   category: {
     slug: string;
   } | null;
-  listing_images: {
-    id: string;
-    url: string;
-    alt: string;
-    is_primary: boolean;
-  }[] | null;
+  listing_images:
+    | {
+        id: string;
+        url: string;
+        alt: string;
+        is_primary: boolean;
+      }[]
+    | null;
   seller: DbUserWithProfile | null;
 }
 
@@ -83,6 +87,23 @@ interface DbMessageRow {
   text: string;
   sent_at: string;
   read: boolean;
+}
+
+interface DbTransactionRow {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  state: Transaction["state"];
+  amount: number | string;
+  conversation_id: string | null;
+  meetup_spot: string;
+  meetup_window: string;
+  created_at: string;
+  updated_at: string;
+  reserved_at: string | null;
+  cancelled_at: string | null;
+  completed_at: string | null;
 }
 
 interface DbConversationWithRelations {
@@ -98,6 +119,7 @@ interface DbConversationWithRelations {
   listing: DbListingRow | null;
   buyer: DbUserWithProfile | null;
   seller: DbUserWithProfile | null;
+  transaction: DbTransactionRow[] | DbTransactionRow | null;
   messages: DbMessageRow[] | null;
 }
 
@@ -125,6 +147,10 @@ function freshnessLabel(createdAt: string, status: Listing["status"], outlet: bo
 
   if (outlet) {
     return "Outlet";
+  }
+
+  if (status === "hidden") {
+    return "Removed";
   }
 
   const hours = Math.max(
@@ -195,6 +221,7 @@ function mapListing(row: DbListingRow): Listing {
     viewCount: row.view_count,
     saveCount: row.save_count,
     tags: row.tags ?? [],
+    removedAt: row.removed_at ?? undefined,
     images: images.map((image) => ({
       id: image.id,
       url: image.url,
@@ -212,6 +239,39 @@ function mapMessage(row: DbMessageRow): Message {
     text: row.text,
     sentAt: row.sent_at,
     read: row.read
+  };
+}
+
+function pickTransactionRow(
+  value: DbConversationWithRelations["transaction"]
+): DbTransactionRow | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+function mapTransaction(row: DbTransactionRow): Transaction {
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    state: row.state,
+    amount: numberValue(row.amount),
+    conversationId: row.conversation_id ?? undefined,
+    meetupSpot: row.meetup_spot,
+    meetupWindow: row.meetup_window,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    reservedAt: row.reserved_at ?? undefined,
+    cancelledAt: row.cancelled_at ?? undefined,
+    completedAt: row.completed_at ?? undefined
   };
 }
 
@@ -265,6 +325,7 @@ const conversationSelect = `
     view_count,
     save_count,
     tags,
+    removed_at,
     created_at,
     listing_images (
       id,
@@ -351,6 +412,22 @@ const conversationSelect = `
       verified_badge
     )
   ),
+  transaction:transactions!transactions_conversation_id_fkey (
+    id,
+    listing_id,
+    buyer_id,
+    seller_id,
+    state,
+    amount,
+    conversation_id,
+    meetup_spot,
+    meetup_window,
+    created_at,
+    updated_at,
+    reserved_at,
+    cancelled_at,
+    completed_at
+  ),
   messages (
     id,
     conversation_id,
@@ -383,8 +460,7 @@ async function fetchUserConversations(currentUserId: string) {
   for (const row of (data as unknown as DbConversationWithRelations[] | null) ?? []) {
     const conversation = mapConversation(row);
     const listing = row.listing ? mapListing(row.listing) : undefined;
-    const counterpartRow =
-      row.seller_id === currentUserId ? row.buyer : row.seller;
+    const counterpartRow = row.seller_id === currentUserId ? row.buyer : row.seller;
     const counterpart = counterpartRow ? mapUser(counterpartRow) : undefined;
 
     if (!listing || !counterpart) {
@@ -430,6 +506,7 @@ async function fetchConversationThread(conversationId: string, currentUserId: st
   }
 
   const conversation = mapConversation(row);
+  const transactionRow = pickTransactionRow(row.transaction);
 
   return {
     conversation: {
@@ -440,7 +517,8 @@ async function fetchConversationThread(conversationId: string, currentUserId: st
     buyer: mapUser(row.buyer),
     seller: mapUser(row.seller),
     messages: conversation.messages,
-    unreadCount: getUnreadCount(row, currentUserId)
+    unreadCount: getUnreadCount(row, currentUserId),
+    transaction: transactionRow ? mapTransaction(transactionRow) : undefined
   } satisfies ConversationThreadData;
 }
 
@@ -509,16 +587,6 @@ export async function sendLiveConversationMessage(
     throw new Error("Write a message before sending.");
   }
 
-  const { data: conversation, error: conversationError } = await supabase
-    .from("conversations")
-    .select("id, buyer_id, seller_id, buyer_unread_count, seller_unread_count")
-    .eq("id", conversationId)
-    .single();
-
-  if (conversationError) {
-    throw new Error(conversationError.message);
-  }
-
   const { error } = await supabase.from("messages").insert({
     conversation_id: conversationId,
     sender_id: senderId,
@@ -528,30 +596,6 @@ export async function sendLiveConversationMessage(
 
   if (error) {
     throw new Error(error.message);
-  }
-
-  const isBuyer = conversation.buyer_id === senderId;
-  const updatePayload = isBuyer
-    ? {
-        buyer_unread_count: 0,
-        seller_unread_count: (conversation.seller_unread_count ?? 0) + 1,
-        unread_count: (conversation.seller_unread_count ?? 0) + 1,
-        updated_at: new Date().toISOString()
-      }
-    : {
-        seller_unread_count: 0,
-        buyer_unread_count: (conversation.buyer_unread_count ?? 0) + 1,
-        unread_count: (conversation.buyer_unread_count ?? 0) + 1,
-        updated_at: new Date().toISOString()
-      };
-
-  const { error: updateError } = await supabase
-    .from("conversations")
-    .update(updatePayload)
-    .eq("id", conversationId);
-
-  if (updateError) {
-    throw new Error(updateError.message);
   }
 }
 
@@ -603,6 +647,7 @@ export function useLiveConversationPreviews(currentUserId: string) {
     const sync = async () => {
       try {
         const nextPreviews = await fetchUserConversations(currentUserId);
+
         if (active) {
           setPreviews(nextPreviews);
           setError(null);
@@ -628,20 +673,18 @@ export function useLiveConversationPreviews(currentUserId: string) {
 
     const channel = supabase
       .channel(`conversation-previews-${currentUserId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "conversations" },
-        () => {
-          void sync();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        () => {
-          void sync();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
+        void sync();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        void sync();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+        void sync();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "listings" }, () => {
+        void sync();
+      })
       .subscribe();
 
     return () => {
@@ -660,6 +703,7 @@ export function useLiveConversationThread(
   const [thread, setThread] = useState<ConversationThreadData | undefined>();
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+  const listingId = thread?.listing.id;
 
   useEffect(() => {
     let active = true;
@@ -714,20 +758,48 @@ export function useLiveConversationThread(
         {
           event: "*",
           schema: "public",
+          table: "transactions",
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        () => {
+          void sync();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
           table: "conversations",
           filter: `id=eq.${conversationId}`
         },
         () => {
           void sync();
         }
-      )
-      .subscribe();
+      );
+
+    const subscribedChannel = listingId
+      ? channel.on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "listings",
+            filter: `id=eq.${listingId}`
+          },
+          () => {
+            void sync();
+          }
+        )
+      : channel;
+
+    const activeChannel = subscribedChannel.subscribe();
 
     return () => {
       active = false;
-      void supabase.removeChannel(channel);
+      void supabase.removeChannel(activeChannel);
     };
-  }, [conversationId, currentUserId, supabase]);
+  }, [conversationId, currentUserId, listingId, supabase]);
 
   return { thread, error };
 }

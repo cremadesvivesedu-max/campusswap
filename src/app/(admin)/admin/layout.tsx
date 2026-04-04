@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { adminNav } from "@/lib/constants";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAdminUser } from "@/server/queries/admin";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,10 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const admin = await getAdminUser();
+  const [admin, dictionary] = await Promise.all([
+    getAdminUser(),
+    getDictionaryForRequest()
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -20,11 +25,11 @@ export default async function AdminLayout({
             <div className="flex items-center gap-3">
               <BrandLogo href="/admin" tone="light" imageClassName="h-9 sm:h-10" />
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200">
-                Admin
+                {dictionary.site.adminLabel}
               </span>
             </div>
             <p className="text-sm text-slate-300">
-              Moderation, growth, and monetization control center
+              {dictionary.site.adminTagline}
             </p>
           </div>
           <nav className="flex flex-wrap gap-4 text-sm text-slate-300">
@@ -34,12 +39,15 @@ export default async function AdminLayout({
                 href={item.href}
                 className="transition hover:text-white"
               >
-                {item.label}
+                {dictionary.nav.admin[item.key]}
               </Link>
             ))}
           </nav>
-          <div className="rounded-full bg-white/10 px-4 py-2 text-sm">
-            {admin.profile.fullName}
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher tone="light" />
+            <div className="rounded-full bg-white/10 px-4 py-2 text-sm">
+              {admin.profile.fullName}
+            </div>
           </div>
         </div>
       </header>

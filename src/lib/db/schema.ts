@@ -102,6 +102,8 @@ export const listings = pgTable("listings", {
   viewCount: integer("view_count").default(0).notNull(),
   saveCount: integer("save_count").default(0).notNull(),
   tags: jsonb("tags").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  removedBy: uuid("removed_by").references(() => users.id),
   ...timestamps
 }, (table) => ({ searchIdx: index("listings_status_category_idx").on(table.status, table.categoryId) }));
 
@@ -179,8 +181,12 @@ export const transactions = pgTable("transactions", {
   buyerId: uuid("buyer_id").references(() => users.id).notNull(),
   sellerId: uuid("seller_id").references(() => users.id).notNull(),
   state: exchangeStatusEnum("state").default("inquiry").notNull(),
+  conversationId: uuid("conversation_id").references(() => conversations.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).default("0").notNull(),
   meetupSpot: text("meetup_spot").notNull(),
   meetupWindow: text("meetup_window").notNull(),
+  reservedAt: timestamp("reserved_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps
 });

@@ -31,6 +31,7 @@ if (supabaseHostname) {
 }
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: process.cwd(),
   images: {
     remotePatterns
   }

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { appNav } from "@/lib/constants";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { UserIdentityButton } from "@/components/shared/user-identity-button";
 import { CurrentUserProvider } from "@/components/providers/current-user-provider";
 import { VerificationPromptCard } from "@/components/shared/verification-prompt-card";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, dictionary] = await Promise.all([
+    getCurrentUser(),
+    getDictionaryForRequest()
+  ]);
 
   return (
     <CurrentUserProvider user={user}>
@@ -23,7 +28,7 @@ export default async function AppLayout({
             <div>
               <BrandLogo href="/app" tone="dark" imageClassName="h-9 sm:h-10" />
               <p className="text-sm text-slate-500">
-                Student-first marketplace for Maastricht
+                {dictionary.site.publicTagline}
               </p>
             </div>
             <nav className="flex flex-wrap gap-4 text-sm text-slate-600">
@@ -33,11 +38,14 @@ export default async function AppLayout({
                   href={item.href}
                   className="transition hover:text-slate-950"
                 >
-                  {item.label}
+                  {dictionary.nav.app[item.key]}
                 </Link>
               ))}
             </nav>
-            <UserIdentityButton user={user} />
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher tone="dark" />
+              <UserIdentityButton user={user} />
+            </div>
           </div>
         </header>
         <main className="mx-auto max-w-7xl space-y-6 px-6 py-10">

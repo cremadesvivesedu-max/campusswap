@@ -4,31 +4,31 @@ export const siteName = "CampusSwap";
 export const siteTagline = "Buy and sell student essentials in Maastricht.";
 
 export const publicNav = [
-  { href: "/categories", label: "Categories" },
-  { href: "/featured", label: "Featured" },
-  { href: "/outlet", label: "Outlet" },
-  { href: "/trust-safety", label: "Trust & Safety" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/join", label: "Join" }
-];
+  { href: "/categories", key: "categories" },
+  { href: "/featured", key: "featured" },
+  { href: "/outlet", key: "outlet" },
+  { href: "/trust-safety", key: "trustSafety" },
+  { href: "/faq", key: "faq" },
+  { href: "/join", key: "join" }
+] as const;
 
 export const appNav = [
-  { href: "/app", label: "Home" },
-  { href: "/app/for-you", label: "For You" },
-  { href: "/app/search", label: "Search" },
-  { href: "/app/saved", label: "Saved" },
-  { href: "/app/messages", label: "Messages" },
-  { href: "/app/settings", label: "Settings" }
-];
+  { href: "/app", key: "home" },
+  { href: "/app/for-you", key: "forYou" },
+  { href: "/app/search", key: "search" },
+  { href: "/app/saved", key: "saved" },
+  { href: "/app/messages", key: "messages" },
+  { href: "/app/settings", key: "settings" }
+] as const;
 
 export const adminNav = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/listings", label: "Listings" },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/settings", label: "Settings" }
-];
+  { href: "/admin", key: "dashboard" },
+  { href: "/admin/users", key: "users" },
+  { href: "/admin/listings", key: "listings" },
+  { href: "/admin/reports", key: "reports" },
+  { href: "/admin/analytics", key: "analytics" },
+  { href: "/admin/settings", key: "settings" }
+] as const;
 
 export const faqs = [
   {

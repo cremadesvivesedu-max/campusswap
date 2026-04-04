@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { faqs, trustSignals } from "@/lib/constants";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories, getFeaturedListings } from "@/server/queries/marketplace";
 
 const testimonials = [
@@ -17,9 +18,10 @@ const testimonials = [
 ];
 
 export default async function HomePage() {
-  const [featured, categories] = await Promise.all([
+  const [featured, categories, dictionary] = await Promise.all([
     getFeaturedListings(),
-    getAllCategories()
+    getAllCategories(),
+    getDictionaryForRequest()
   ]);
 
   return (
@@ -28,24 +30,22 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.2fr_0.8fr] lg:py-28">
           <div className="space-y-8">
             <Badge className="border-white/20 bg-white/10 text-white">
-              Student-first in Maastricht
+              {dictionary.marketing.home.heroBadge}
             </Badge>
             <div className="space-y-5">
               <h1 className="max-w-3xl font-display text-5xl font-semibold tracking-tight sm:text-6xl">
-                Buy and sell student essentials in Maastricht without the chaos.
+                {dictionary.marketing.home.heroTitle}
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-slate-200">
-                CampusSwap gives incoming students a faster setup path, outgoing students
-                a faster sell-through path, and everyone a more trustworthy marketplace
-                than scattered WhatsApp and Facebook threads.
+                {dictionary.marketing.home.heroBody}
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
               <Button asChild>
-                <Link href="/featured">Browse items</Link>
+                <Link href="/featured">{dictionary.marketing.home.browseItems}</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link href="/signup">Sell / upload product</Link>
+                <Link href="/signup">{dictionary.marketing.home.sellUpload}</Link>
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">

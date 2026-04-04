@@ -1,5 +1,6 @@
 import { SearchExperience } from "@/components/marketplace/search-experience";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getAllCategories,
   getRecentSearches,
@@ -32,7 +33,7 @@ export default async function SearchPage({
       ? (params.conditions.split(",").filter(Boolean) as ListingCondition[])
       : undefined;
 
-  const [categories, listings, recentSearches, trendingSearches] = await Promise.all([
+  const [categories, listings, recentSearches, trendingSearches, dictionary] = await Promise.all([
     getAllCategories(),
     searchMarketplaceListings({
       query,
@@ -50,15 +51,16 @@ export default async function SearchPage({
       sort: typeof params.sort === "string" ? params.sort as never : undefined
     }),
     getRecentSearches(),
-    getTrendingSearches()
+    getTrendingSearches(),
+    getDictionaryForRequest()
   ]);
 
   return (
     <div className="space-y-8">
       <SectionHeading
-        eyebrow="Search & discovery"
-        title="Fast browsing for when you need to decide quickly."
-        description="Search, filters, subcategories, and sorting all update the result set in real time so buyers can compare options without friction."
+        eyebrow={dictionary.search.eyebrow}
+        title={dictionary.search.title}
+        description={dictionary.search.description}
       />
       <SearchExperience
         listings={listings}

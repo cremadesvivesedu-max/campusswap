@@ -1,16 +1,20 @@
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getOutletListings } from "@/server/queries/marketplace";
 
 export default async function OutletPage() {
-  const listings = await getOutletListings();
+  const [listings, dictionary] = await Promise.all([
+    getOutletListings(),
+    getDictionaryForRequest()
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 py-16">
       <SectionHeading
-        eyebrow="Outlet"
-        title="The lower-price, urgent, and imperfect items that still solve real student problems."
-        description="Outlet is not hidden. It is a core experience for affordability, fast clear-outs, and sustainability-minded reuse."
+        eyebrow={dictionary.marketing.outlet.eyebrow}
+        title={dictionary.marketing.outlet.title}
+        description={dictionary.marketing.outlet.description}
       />
       <div className="grid gap-6 lg:grid-cols-3">
         {listings.map((listing) => (

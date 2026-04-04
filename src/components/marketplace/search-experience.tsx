@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useLocale } from "@/components/providers/locale-provider";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ export function SearchExperience({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { dictionary } = useLocale();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [categorySlug, setCategorySlug] = useState(
     lockedCategorySlug ?? searchParams.get("category") ?? ""
@@ -297,12 +299,12 @@ export function SearchExperience({
         <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <SlidersHorizontal className="h-4 w-4" />
-            Discovery controls
+            {dictionary.search.controls}
           </div>
           <div className="mt-4 space-y-4">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Search
+                {dictionary.search.query}
               </span>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -310,7 +312,7 @@ export function SearchExperience({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   className="pl-10"
-                  placeholder="Search bikes, desks, bedding, or monitors"
+                  placeholder={dictionary.search.queryPlaceholder}
                 />
               </div>
             </label>
@@ -318,7 +320,7 @@ export function SearchExperience({
             {!lockedCategorySlug ? (
               <div className="space-y-2">
                 <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Categories
+                  {dictionary.search.categories}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((category) => (
@@ -345,7 +347,7 @@ export function SearchExperience({
             {subcategories.length ? (
               <div className="space-y-2">
                 <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Subcategories
+                  {dictionary.search.subcategories}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {subcategories.map((subcategory) => (
@@ -373,7 +375,7 @@ export function SearchExperience({
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Min price
+                  {dictionary.search.minPrice}
                 </span>
                 <Input
                   type="number"
@@ -384,7 +386,7 @@ export function SearchExperience({
               </label>
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Max price
+                  {dictionary.search.maxPrice}
                 </span>
                 <Input
                   type="number"
@@ -397,7 +399,7 @@ export function SearchExperience({
 
             <div className="space-y-2">
               <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Condition
+                {dictionary.search.condition}
               </span>
               <div className="flex flex-wrap gap-2">
                 {conditionOptions.map((condition) => (
@@ -431,7 +433,7 @@ export function SearchExperience({
                   checked={outletOnly}
                   onChange={(event) => setOutletOnly(event.target.checked)}
                 />
-                Outlet only
+                {dictionary.search.outletOnly}
               </label>
               <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
                 <input
@@ -440,13 +442,13 @@ export function SearchExperience({
                   checked={featuredOnly}
                   onChange={(event) => setFeaturedOnly(event.target.checked)}
                 />
-                Featured only
+                {dictionary.search.featuredOnly}
               </label>
             </div>
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Minimum seller rating
+                {dictionary.search.minimumSellerRating}
               </span>
               <Input
                 type="number"
@@ -461,7 +463,7 @@ export function SearchExperience({
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Sort
+                {dictionary.search.sort}
               </span>
               <select
                 className="h-11 w-full rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
@@ -470,11 +472,11 @@ export function SearchExperience({
                   setSort(event.target.value as DiscoveryFilters["sort"])
                 }
               >
-                <option value="recommended">Recommended</option>
-                <option value="relevance">Relevance</option>
-                <option value="newest">Newest</option>
-                <option value="price-low-high">Price low-high</option>
-                <option value="price-high-low">Price high-low</option>
+                <option value="recommended">{dictionary.search.sortOptions.recommended}</option>
+                <option value="relevance">{dictionary.search.sortOptions.relevance}</option>
+                <option value="newest">{dictionary.search.sortOptions.newest}</option>
+                <option value="price-low-high">{dictionary.search.sortOptions.priceLowHigh}</option>
+                <option value="price-high-low">{dictionary.search.sortOptions.priceHighLow}</option>
               </select>
             </label>
           </div>
@@ -482,7 +484,9 @@ export function SearchExperience({
 
         {trendingSearches.length ? (
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
-            <p className="font-display text-xl font-semibold text-slate-950">Trending</p>
+            <p className="font-display text-xl font-semibold text-slate-950">
+              {dictionary.search.trending}
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {trendingSearches.map((term) => (
                 <button key={term} type="button" onClick={() => setQuery(term)}>
@@ -495,7 +499,9 @@ export function SearchExperience({
 
         {recentSearches.length ? (
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
-            <p className="font-display text-xl font-semibold text-slate-950">Recent</p>
+            <p className="font-display text-xl font-semibold text-slate-950">
+              {dictionary.search.recent}
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {recentSearches.map((term) => (
                 <button key={term} type="button" onClick={() => setQuery(term)}>
@@ -512,11 +518,10 @@ export function SearchExperience({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="font-display text-2xl font-semibold text-slate-950">
-                {results.length} results
+                {results.length} {dictionary.search.results}
               </p>
               <p className="text-sm leading-6 text-slate-600">
-                Discovery updates instantly as filters change, so buyers can move
-                faster during move-in and move-out weeks.
+                {dictionary.search.resultsDescription}
               </p>
             </div>
             <button
@@ -537,7 +542,7 @@ export function SearchExperience({
                 setSort("recommended");
               }}
             >
-              Clear all filters
+              {dictionary.search.clearAll}
             </button>
           </div>
 
@@ -572,8 +577,8 @@ export function SearchExperience({
           </div>
         ) : (
           <EmptyState
-            title="No listings match these filters yet"
-            description="Try widening the price range, clearing a condition filter, or switching off featured-only to surface more CampusSwap inventory."
+            title={dictionary.search.emptyTitle}
+            description={dictionary.search.emptyDescription}
           />
         )}
       </div>

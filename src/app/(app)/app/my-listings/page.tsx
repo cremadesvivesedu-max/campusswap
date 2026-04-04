@@ -1,21 +1,28 @@
 import { ListingCard } from "@/components/marketplace/listing-card";
+import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { ListingStatusActions } from "@/components/marketplace/listing-status-actions";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getCurrentUser,
-  getListingsForSeller
+  getListingsForSeller,
+  getSellerListingTransactions
 } from "@/server/queries/marketplace";
 
 export default async function MyListingsPage() {
   const user = await getCurrentUser();
-  const listings = await getListingsForSeller(user.id);
+  const [listings, transactionsByListing, dictionary] = await Promise.all([
+    getListingsForSeller(user.id),
+    getSellerListingTransactions(user.id),
+    getDictionaryForRequest()
+  ]);
 
   return (
     <div className="space-y-8">
       <SectionHeading
-        eyebrow="My listings"
-        title="Manage availability, urgency, and sell-through."
-        description="Listing lifecycle controls support available, reserved, sold, archived, relist, urgent, and promotion-ready states."
+        eyebrow={dictionary.myListings.eyebrow}
+        title={dictionary.myListings.title}
+        description={dictionary.myListings.description}
       />
       <div className="grid gap-6 lg:grid-cols-3">
         {listings.map((listing) => (
@@ -24,6 +31,11 @@ export default async function MyListingsPage() {
             <ListingStatusActions
               listingId={listing.id}
               currentStatus={listing.status}
+              transaction={transactionsByListing[listing.id]}
+            />
+            <RemoveListingButton
+              listingId={listing.id}
+              listingTitle={listing.title}
             />
           </div>
         ))}

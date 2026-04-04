@@ -9,6 +9,7 @@ import { VerificationStatusBadge } from "@/components/shared/verification-status
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getCurrentUser,
   getListingsForSeller,
@@ -30,9 +31,10 @@ export default async function ProfilePage({
   }
 
   const isOwnProfile = profileUser.id === currentUser.id;
-  const [receivedReviews, sellerListings] = await Promise.all([
+  const [receivedReviews, sellerListings, dictionary] = await Promise.all([
     getReviewsForUser(profileUser.id),
-    getListingsForSeller(profileUser.id)
+    getListingsForSeller(profileUser.id),
+    getDictionaryForRequest()
   ]);
   const filteredReviews = receivedReviews.filter(
     (review) => review.targetUserId === profileUser.id
@@ -90,7 +92,7 @@ export default async function ProfilePage({
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-white">
           <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">Active listings</p>
+            <p className="text-sm text-slate-500">{dictionary.profile.activeListings}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {activeListings.length}
             </p>
@@ -98,7 +100,7 @@ export default async function ProfilePage({
         </Card>
         <Card className="bg-white">
           <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">Reserved</p>
+            <p className="text-sm text-slate-500">{dictionary.profile.reserved}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {reservedListings.length}
             </p>
@@ -106,7 +108,7 @@ export default async function ProfilePage({
         </Card>
         <Card className="bg-white">
           <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">Sold items</p>
+            <p className="text-sm text-slate-500">{dictionary.profile.soldItems}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {soldListings.length}
             </p>
@@ -114,7 +116,7 @@ export default async function ProfilePage({
         </Card>
         <Card className="bg-white">
           <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">Response rate</p>
+            <p className="text-sm text-slate-500">{dictionary.profile.responseRate}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {Math.round(profileUser.profile.responseRate * 100)}%
             </p>
@@ -124,9 +126,9 @@ export default async function ProfilePage({
 
       <section className="space-y-6">
         <SectionHeading
-          eyebrow="Active inventory"
-          title="Listings currently live on CampusSwap."
-          description="These are the items a buyer can still act on right now."
+          eyebrow={dictionary.profile.activeInventoryEyebrow}
+          title={dictionary.profile.activeInventoryTitle}
+          description={dictionary.profile.activeInventoryDescription}
         />
         {activeListings.length ? (
           <div className="grid gap-6 lg:grid-cols-3">
@@ -148,9 +150,9 @@ export default async function ProfilePage({
 
       <section className="space-y-6">
         <SectionHeading
-          eyebrow="Reserved"
-          title="Items currently on hold."
-          description="Reserved listings stay visible so buyers can understand what is already in progress."
+          eyebrow={dictionary.profile.reservedEyebrow}
+          title={dictionary.profile.reservedTitle}
+          description={dictionary.profile.reservedDescription}
         />
         {reservedListings.length ? (
           <div className="grid gap-6 lg:grid-cols-3">
@@ -172,9 +174,9 @@ export default async function ProfilePage({
 
       <section className="space-y-6">
         <SectionHeading
-          eyebrow="Sold items"
-          title="Recent completed exchanges."
-          description="Sold listings make seller history more credible and help buyers understand what this profile successfully moves."
+          eyebrow={dictionary.profile.soldEyebrow}
+          title={dictionary.profile.soldTitle}
+          description={dictionary.profile.soldDescription}
         />
         {soldListings.length ? (
           <div className="grid gap-6 lg:grid-cols-3">
@@ -193,9 +195,9 @@ export default async function ProfilePage({
       {archivedListings.length ? (
         <section className="space-y-6">
           <SectionHeading
-            eyebrow="Archived"
-            title="Older inventory no longer in circulation."
-            description="Archived listings are kept separate so the active profile stays clean."
+            eyebrow={dictionary.profile.archivedEyebrow}
+            title={dictionary.profile.archivedTitle}
+            description={dictionary.profile.archivedDescription}
           />
           <div className="grid gap-6 lg:grid-cols-3">
             {archivedListings.map((listing) => (
@@ -207,9 +209,9 @@ export default async function ProfilePage({
 
       <section className="space-y-6">
         <SectionHeading
-          eyebrow="Reviews"
-          title="Trust signals from completed exchanges."
-          description="Ratings are only collected after a transaction is completed."
+          eyebrow={dictionary.profile.reviewsEyebrow}
+          title={dictionary.profile.reviewsTitle}
+          description={dictionary.profile.reviewsDescription}
         />
         {filteredReviews.length ? (
           <div className="grid gap-4 lg:grid-cols-2">

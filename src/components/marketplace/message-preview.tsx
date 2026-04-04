@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import type { ConversationPreview } from "@/types/domain";
 
@@ -40,6 +41,17 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
         ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {preview.listing.status !== "active" ? (
+            <Badge className="bg-slate-950 text-white">{preview.listing.status}</Badge>
+          ) : null}
+          {preview.listing.outlet ? (
+            <Badge className="bg-rose-100 text-rose-900">Outlet</Badge>
+          ) : null}
+          {preview.listing.featured ? (
+            <Badge className="bg-amber-200 text-slate-900">Featured</Badge>
+          ) : null}
+        </div>
         <p className="line-clamp-2 text-sm leading-6 text-slate-600">
           {latest?.text || "No messages yet."}
         </p>

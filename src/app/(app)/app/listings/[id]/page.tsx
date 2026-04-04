@@ -2,13 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
   getListingById,
+  getListingTransactionContext,
   getUserById
 } from "@/server/queries/marketplace";
 import { ListingImage } from "@/components/marketplace/listing-image";
+import { ListingTransactionPanel } from "@/components/marketplace/listing-transaction-panel";
 import { MessageSellerButton } from "@/components/marketplace/message-seller-button";
 import { PickupAreaMap } from "@/components/marketplace/pickup-area-map";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
@@ -16,6 +19,7 @@ import { StarRating } from "@/components/shared/star-rating";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-button";
 import { ReportListingForm } from "@/components/marketplace/report-listing-form";
+import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 
 export default async function ListingDetailPage({
   params
@@ -29,11 +33,13 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  const [seller, currentUser] = await Promise.all([
+  const [seller, currentUser, dictionary] = await Promise.all([
     getUserById(listing.sellerId),
-    getCurrentUser()
+    getCurrentUser(),
+    getDictionaryForRequest()
   ]);
   const isOwnListing = currentUser.id === listing.sellerId;
+  const transactionContext = await getListingTransactionContext(listing.id, currentUser.id);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_0.42fr]">
@@ -88,6 +94,16 @@ export default async function ListingDetailPage({
                 />
               ) : null}
             </div>
+            {!isOwnListing && listing.status === "reserved" && transactionContext.reservedForOtherBuyer ? (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                This item is currently reserved for another buyer. You can still follow the listing, but a new purchase request cannot start until the seller releases the reservation.
+              </p>
+            ) : null}
+            {isOwnListing && listing.status === "hidden" ? (
+              <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                This listing is hidden from public browse pages. You can relist it from My listings or keep it removed while preserving past chat and review history.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
         <PickupAreaMap
@@ -99,7 +115,9 @@ export default async function ListingDetailPage({
       <div className="space-y-6">
         <Card className="bg-white">
           <CardHeader>
-            <h2 className="font-display text-2xl font-semibold text-slate-950">Seller</h2>
+            <h2 className="font-display text-2xl font-semibold text-slate-950">
+              {dictionary.listing.seller}
+            </h2>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
             {seller ? (
@@ -131,18 +149,36 @@ export default async function ListingDetailPage({
             <p>Response rate {Math.round(listing.sellerResponseRate * 100)}%</p>
             <p>Pickup area: {listing.pickupArea}</p>
             {isOwnListing ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                This is your listing. Manage its lifecycle from My listings.
-              </p>
+              <>
+                <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  {dictionary.listing.ownListing}
+                </p>
+                <RemoveListingButton
+                  listingId={listing.id}
+                  listingTitle={listing.title}
+                />
+              </>
             ) : (
               <ReportListingForm listingId={listing.id} />
             )}
           </CardContent>
         </Card>
+        {seller ? (
+          <ListingTransactionPanel
+            listingId={listing.id}
+            listingTitle={listing.title}
+            listingPrice={listing.price}
+            listingStatus={listing.status}
+            currentUserId={currentUser.id}
+            seller={seller}
+            context={transactionContext}
+            isOwnListing={isOwnListing}
+          />
+        ) : null}
         <Card className="bg-slate-950 text-white">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold">
-              Safe meetup guidance
+              {dictionary.listing.safeMeetup}
             </h2>
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-7 text-slate-300">
