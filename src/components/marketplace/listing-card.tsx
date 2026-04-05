@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +27,15 @@ export function ListingCard({
   messageActionMode = "chat"
 }: ListingCardProps) {
   const showChatAction = showMessageAction && listing.status !== "sold";
+  const listingHref = `/app/listings/${listing.id}`;
 
   return (
-    <Card className="overflow-hidden bg-white">
+    <Card className="relative overflow-hidden bg-white transition hover:-translate-y-0.5 hover:shadow-glow">
+      <Link
+        href={listingHref}
+        aria-label={`Open listing: ${listing.title}`}
+        className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+      />
       <div className="relative aspect-[4/3] overflow-hidden rounded-t-[28px] bg-slate-100">
         <ListingImage
           src={listing.images[0]?.url}
@@ -53,12 +61,7 @@ export function ListingCard({
       <div className="space-y-4 p-5">
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-4">
-            <Link
-              href={`/app/listings/${listing.id}`}
-              className="font-display text-lg font-semibold text-slate-950 transition hover:text-slate-700"
-            >
-              {listing.title}
-            </Link>
+            <p className="font-display text-lg font-semibold text-slate-950">{listing.title}</p>
             <p className="text-base font-semibold text-slate-950">
               {formatCurrency(listing.price)}
             </p>
@@ -87,9 +90,9 @@ export function ListingCard({
             Why you are seeing this: {reason.join(", ")}
           </p>
         ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative z-20 flex flex-col gap-3 sm:flex-row">
           <Button asChild className="sm:flex-1" variant="secondary">
-            <Link href={`/app/listings/${listing.id}`}>View listing</Link>
+            <Link href={listingHref}>View listing</Link>
           </Button>
           {showChatAction ? (
             <MessageSellerButton

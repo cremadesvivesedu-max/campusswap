@@ -20,18 +20,6 @@ interface MessageSellerButtonProps {
   className?: string;
 }
 
-function getUnavailableLabel(status?: ListingStatus) {
-  if (status === "sold") {
-    return "Item sold";
-  }
-
-  if (status && status !== "active" && status !== "reserved") {
-    return "Listing unavailable";
-  }
-
-  return null;
-}
-
 export function MessageSellerButton({
   listingId,
   sellerId,
@@ -43,7 +31,14 @@ export function MessageSellerButton({
   const currentUser = useOptionalCurrentUser();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const unavailableLabel = mode === "chat" ? getUnavailableLabel(listingStatus) : null;
+  const unavailableLabel =
+    mode !== "chat"
+      ? null
+      : listingStatus === "sold"
+        ? "Item sold"
+        : listingStatus && listingStatus !== "active" && listingStatus !== "reserved"
+          ? "Listing unavailable"
+          : null;
   const currentUserId = currentUser?.id;
   const verificationNotice =
     mode === "chat" && currentUser && currentUser.verificationStatus !== "verified"

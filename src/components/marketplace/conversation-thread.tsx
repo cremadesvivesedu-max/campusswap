@@ -281,14 +281,33 @@ function ConversationShell({
   const [composerValue, setComposerValue] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesBottomRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
 
   useEffect(() => {
-    messagesBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages]);
+    const container = messageListRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const isFirstPaint = previousMessageCountRef.current === 0;
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const shouldStickToBottom = isFirstPaint || distanceToBottom < 120;
+
+    if (shouldStickToBottom) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: isFirstPaint ? "auto" : "smooth"
+      });
+    }
+
+    previousMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[0.72fr_0.28fr]">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(300px,0.28fr)]">
       <div className="space-y-4">
         <Card className="overflow-hidden bg-white">
           <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
@@ -319,22 +338,26 @@ function ConversationShell({
                 />
                 {sellerName}
               </Link>
+              <p className="text-sm leading-6 text-slate-500">{listingPickupArea}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
-          <CardContent className="space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Live thread
-              </p>
-              <p className="text-xs text-slate-500">
-                New messages appear here automatically.
-              </p>
+        <Card className="overflow-hidden bg-white">
+          <div className="flex min-h-[min(78dvh,760px)] flex-col">
+            <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Live thread
+                </p>
+                <p className="text-xs text-slate-500">New messages appear here automatically.</p>
+              </div>
             </div>
 
-            <div className="max-h-[58vh] space-y-4 overflow-y-auto pr-1">
+            <div
+              ref={messageListRef}
+              className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6"
+            >
               {messages.map((message) => {
                 const isOwnMessage = message.senderId === currentUserId;
                 return (
@@ -343,7 +366,7 @@ function ConversationShell({
                     className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-[28px] px-4 py-3 text-sm leading-7 shadow-sm ${
+                      className={`max-w-[88%] rounded-[28px] px-4 py-3 text-sm leading-7 shadow-sm sm:max-w-[78%] ${
                         isOwnMessage
                           ? "bg-slate-950 text-white"
                           : "border border-slate-200 bg-slate-100 text-slate-700"
@@ -377,93 +400,94 @@ function ConversationShell({
                   </div>
                 );
               })}
-              <div ref={messagesBottomRef} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="sticky bottom-4 bg-white">
-          <CardContent className="space-y-4 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Quick replies
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {quickActions.map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  className="rounded-full bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                  onClick={() => onSend(action)}
-                  disabled={isPending}
-                >
-                  {action}
-                </button>
-              ))}
             </div>
 
-            {supportsAttachments && pendingAttachment ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                Attachment ready: {pendingAttachment.name}
-              </div>
-            ) : null}
-
-            <div className="flex flex-col gap-3">
-              <Textarea
-                value={composerValue}
-                onChange={(event) => setComposerValue(event.target.value)}
-                placeholder="Write a message about timing, price, or pickup details"
-                className="min-h-[110px]"
-              />
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  {supportsAttachments ? (
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(event) =>
-                          setPendingAttachment(event.target.files?.[0] ?? null)
-                        }
-                      />
-                      <Button
+            <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Quick replies
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {quickActions.map((action) => (
+                      <button
+                        key={action}
                         type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
+                        className="rounded-full bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                        onClick={() => onSend(action)}
+                        disabled={isPending}
                       >
-                        <Paperclip className="mr-2 h-4 w-4" />
-                        Attach
-                      </Button>
-                    </>
-                  ) : (
-                    <Button type="button" variant="outline" disabled>
-                      <Paperclip className="mr-2 h-4 w-4" />
-                      Attach coming soon
-                    </Button>
-                  )}
+                        {action}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (!composerValue.trim() && !pendingAttachment) {
-                      return;
-                    }
 
-                    onSend(composerValue, pendingAttachment ?? undefined);
-                    setComposerValue("");
-                    setPendingAttachment(null);
-                  }}
-                  disabled={isPending}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  {isPending ? "Sending..." : "Send"}
-                </Button>
+                {supportsAttachments && pendingAttachment ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Attachment ready: {pendingAttachment.name}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-col gap-3">
+                  <Textarea
+                    value={composerValue}
+                    onChange={(event) => setComposerValue(event.target.value)}
+                    placeholder="Write a message about timing, price, or pickup details"
+                    className="min-h-[112px] resize-none"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {supportsAttachments ? (
+                        <>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(event) =>
+                              setPendingAttachment(event.target.files?.[0] ?? null)
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Paperclip className="mr-2 h-4 w-4" />
+                            Attach
+                          </Button>
+                        </>
+                      ) : (
+                        <Button type="button" variant="outline" disabled>
+                          <Paperclip className="mr-2 h-4 w-4" />
+                          Attach coming soon
+                        </Button>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (!composerValue.trim() && !pendingAttachment) {
+                          return;
+                        }
+
+                        onSend(composerValue, pendingAttachment ?? undefined);
+                        setComposerValue("");
+                        setPendingAttachment(null);
+                      }}
+                      disabled={isPending}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {isPending ? "Sending..." : "Send"}
+                    </Button>
+                  </div>
+                </div>
+
+                {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
               </div>
             </div>
-
-            {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
-          </CardContent>
+          </div>
         </Card>
       </div>
 

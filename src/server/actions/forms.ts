@@ -6,6 +6,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   avatarsBucket,
+  extractPublicStoragePath,
   listingImagesBucket,
   uploadPublicFile
 } from "@/lib/supabase/storage";
@@ -16,6 +17,117 @@ import { shouldModerateListing } from "@/server/services/moderation";
 interface ActionState {
   success: boolean;
   message: string;
+}
+
+interface ListingFormValues {
+  listingId?: string;
+  title: string;
+  description: string;
+  pickupArea: string;
+  categorySlug: string;
+  condition: string;
+  price: number;
+  negotiable: boolean;
+  outlet: boolean;
+  urgent: boolean;
+  replaceImages: boolean;
+  imageFiles: File[];
+}
+
+function readListingFormValues(formData: FormData): ListingFormValues {
+  return {
+    listingId: String(formData.get("listingId") ?? "").trim() || undefined,
+    title: String(formData.get("title") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    pickupArea: String(formData.get("pickupArea") ?? "").trim(),
+    categorySlug: String(formData.get("category") ?? "").trim(),
+    condition: String(formData.get("condition") ?? "good").trim(),
+    price: Number(formData.get("price") ?? 0),
+    negotiable: formData.get("negotiable") === "on",
+    outlet: formData.get("outlet") === "on",
+    urgent: formData.get("urgent") === "on",
+    replaceImages: formData.get("replaceImages") === "on",
+    imageFiles: formData
+      .getAll("images")
+      .filter((value): value is File => value instanceof File && value.size > 0)
+  };
+}
+
+async function resolveCategoryId(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  categorySlug: string
+) {
+  const { data: category } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", categorySlug)
+    .maybeSingle();
+
+  return category?.id;
+}
+
+async function replaceListingImagesIfNeeded(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  listingId: string,
+  title: string,
+  userId: string,
+  imageFiles: File[],
+  replaceImages: boolean
+) {
+  if (!imageFiles.length) {
+    return;
+  }
+
+  if (replaceImages) {
+    const { data: existingImages } = await supabase
+      .from("listing_images")
+      .select("id, url")
+      .eq("listing_id", listingId);
+
+    const removablePaths =
+      existingImages
+        ?.map((image) => extractPublicStoragePath(listingImagesBucket, image.url))
+        .filter((value): value is string => Boolean(value)) ?? [];
+
+    if (removablePaths.length) {
+      await supabase.storage.from(listingImagesBucket).remove(removablePaths);
+    }
+
+    if (existingImages?.length) {
+      await supabase.from("listing_images").delete().eq("listing_id", listingId);
+    }
+  }
+
+  const { count } = await supabase
+    .from("listing_images")
+    .select("*", { count: "exact", head: true })
+    .eq("listing_id", listingId);
+
+  const uploadedImages = await Promise.all(
+    imageFiles.map(async (file, index) => {
+      const upload = await uploadPublicFile(
+        supabase,
+        listingImagesBucket,
+        [userId, listingId],
+        file
+      );
+
+      return {
+        listing_id: listingId,
+        url: upload.publicUrl,
+        alt: title,
+        is_primary: (count ?? 0) === 0 && index === 0
+      };
+    })
+  );
+
+  const { error: imagesError } = await supabase
+    .from("listing_images")
+    .insert(uploadedImages);
+
+  if (imagesError) {
+    throw new Error(imagesError.message);
+  }
 }
 
 export async function joinWaitlistAction(_: unknown, formData: FormData) {
@@ -230,18 +342,18 @@ export async function clearProfileAvatarAction() {
 
 export async function createListingAction(_: unknown, formData: FormData) {
   const user = await getCurrentUser();
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const pickupArea = String(formData.get("pickupArea") ?? "").trim();
-  const categorySlug = String(formData.get("category") ?? "").trim();
-  const condition = String(formData.get("condition") ?? "good").trim();
-  const price = Number(formData.get("price") ?? 0);
-  const negotiable = formData.get("negotiable") === "on";
-  const outlet = formData.get("outlet") === "on";
-  const urgent = formData.get("urgent") === "on";
-  const imageFiles = formData
-    .getAll("images")
-    .filter((value): value is File => value instanceof File && value.size > 0);
+  const {
+    title,
+    description,
+    pickupArea,
+    categorySlug,
+    condition,
+    price,
+    negotiable,
+    outlet,
+    urgent,
+    imageFiles
+  } = readListingFormValues(formData);
   const flaggedForModeration = shouldModerateListing(title, description);
   const requiresTrustReview = user.verificationStatus !== "verified";
   const needsReview = flaggedForModeration || requiresTrustReview;
@@ -271,13 +383,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
     } satisfies ActionState;
   }
 
-  const { data: category } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", categorySlug)
-    .maybeSingle();
+  const categoryId = await resolveCategoryId(supabase, categorySlug);
 
-  if (!category?.id) {
+  if (!categoryId) {
     return {
       success: false,
       message: "That category could not be found."
@@ -288,7 +396,7 @@ export async function createListingAction(_: unknown, formData: FormData) {
     .from("listings")
     .insert({
       seller_id: user.id,
-      category_id: category.id,
+      category_id: categoryId,
       title,
       description,
       condition,
@@ -313,32 +421,19 @@ export async function createListingAction(_: unknown, formData: FormData) {
   }
 
   if (imageFiles.length > 0) {
-    const uploadedImages = await Promise.all(
-      imageFiles.map(async (file, index) => {
-        const upload = await uploadPublicFile(
-          supabase,
-          listingImagesBucket,
-          [user.id, listing.id],
-          file
-        );
-
-        return {
-          listing_id: listing.id,
-          url: upload.publicUrl,
-          alt: title,
-          is_primary: index === 0
-        };
-      })
-    );
-
-    const { error: imagesError } = await supabase
-      .from("listing_images")
-      .insert(uploadedImages);
-
-    if (imagesError) {
+    try {
+      await replaceListingImagesIfNeeded(
+        supabase,
+        listing.id,
+        title,
+        user.id,
+        imageFiles,
+        false
+      );
+    } catch (error) {
       return {
         success: false,
-        message: imagesError.message
+        message: error instanceof Error ? error.message : "Unable to upload listing images."
       } satisfies ActionState;
     }
   }
@@ -365,5 +460,171 @@ export async function createListingAction(_: unknown, formData: FormData) {
         ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
         : "Listing submitted and queued for moderation review."
       : "Listing published."
+  } satisfies ActionState;
+}
+
+export async function updateListingAction(_: unknown, formData: FormData) {
+  const user = await getCurrentUser();
+  const {
+    listingId,
+    title,
+    description,
+    pickupArea,
+    categorySlug,
+    condition,
+    price,
+    negotiable,
+    outlet,
+    urgent,
+    replaceImages,
+    imageFiles
+  } = readListingFormValues(formData);
+
+  if (!listingId) {
+    return {
+      success: false,
+      message: "That listing could not be found."
+    } satisfies ActionState;
+  }
+
+  if (!title || !description || !pickupArea || !categorySlug || !price) {
+    return {
+      success: false,
+      message: "Fill in the required title, description, price, category, and pickup area."
+    } satisfies ActionState;
+  }
+
+  if (replaceImages && imageFiles.length === 0) {
+    return {
+      success: false,
+      message: "Upload at least one replacement image before clearing the current gallery."
+    } satisfies ActionState;
+  }
+
+  if (!isLiveMode) {
+    return {
+      success: true,
+      message: "Listing changes saved in demo mode."
+    } satisfies ActionState;
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return {
+      success: false,
+      message: "Supabase is not configured for listing updates."
+    } satisfies ActionState;
+  }
+
+  const { data: listing, error: listingError } = await supabase
+    .from("listings")
+    .select("id, seller_id, status")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (listingError || !listing) {
+    return {
+      success: false,
+      message: listingError?.message ?? "That listing could not be found."
+    } satisfies ActionState;
+  }
+
+  const canEdit = listing.seller_id === user.id || user.role === "admin";
+
+  if (!canEdit) {
+    return {
+      success: false,
+      message: "Only the seller or an admin can edit this listing."
+    } satisfies ActionState;
+  }
+
+  const categoryId = await resolveCategoryId(supabase, categorySlug);
+
+  if (!categoryId) {
+    return {
+      success: false,
+      message: "That category could not be found."
+    } satisfies ActionState;
+  }
+
+  const flaggedForModeration = shouldModerateListing(title, description);
+  const requiresTrustReview = user.verificationStatus !== "verified";
+  const shouldReturnToReview =
+    ["active", "pending-review"].includes(listing.status) &&
+    (flaggedForModeration || requiresTrustReview);
+  const nextStatus = shouldReturnToReview
+    ? "pending-review"
+    : listing.status === "pending-review"
+      ? "active"
+      : listing.status;
+
+  const { error: updateError } = await supabase
+    .from("listings")
+    .update({
+      category_id: categoryId,
+      title,
+      description,
+      condition,
+      price,
+      negotiable,
+      pickup_area: pickupArea,
+      outlet,
+      urgent,
+      status: nextStatus,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", listingId);
+
+  if (updateError) {
+    return {
+      success: false,
+      message: updateError.message
+    } satisfies ActionState;
+  }
+
+  if (imageFiles.length > 0) {
+    try {
+      await replaceListingImagesIfNeeded(
+        supabase,
+        listingId,
+        title,
+        listing.seller_id,
+        imageFiles,
+        replaceImages
+      );
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unable to update listing images."
+      } satisfies ActionState;
+    }
+  }
+
+  await supabase.from("notifications").insert({
+    user_id: listing.seller_id,
+    type: "listing",
+    title: nextStatus === "pending-review" ? "Listing updated and queued for review" : "Listing updated",
+    body:
+      nextStatus === "pending-review"
+        ? `${title} was updated and moved back into review before returning to public browse.`
+        : `${title} was updated successfully.`
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/search");
+  revalidatePath("/app/for-you");
+  revalidatePath("/app/saved");
+  revalidatePath("/app/my-listings");
+  revalidatePath("/app/profile");
+  revalidatePath("/app/sell");
+  revalidatePath(`/app/listings/${listingId}`);
+
+  return {
+    success: true,
+    message:
+      nextStatus === "pending-review"
+        ? "Listing updated. It will return to browse after a quick trust or moderation review."
+        : "Listing updated."
   } satisfies ActionState;
 }

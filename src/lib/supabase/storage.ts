@@ -31,3 +31,14 @@ export async function uploadPublicFile(
     publicUrl: data.publicUrl
   };
 }
+
+export function extractPublicStoragePath(bucket: string, publicUrl: string) {
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const markerIndex = publicUrl.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  return publicUrl.slice(markerIndex + marker.length);
+}

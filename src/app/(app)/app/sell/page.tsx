@@ -2,18 +2,54 @@ import { ListingForm } from "@/components/forms/listing-form";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAllCategories, getCurrentUser } from "@/server/queries/marketplace";
+import {
+  getAllCategories,
+  getCurrentUser,
+  getListingById
+} from "@/server/queries/marketplace";
+import { notFound } from "next/navigation";
 
-export default async function SellPage() {
-  const [categories, user] = await Promise.all([getAllCategories(), getCurrentUser()]);
+export default async function SellPage({
+  searchParams
+}: {
+  searchParams: Promise<{ listingId?: string }>;
+}) {
+  const { listingId } = await searchParams;
+  const [categories, user] = await Promise.all([
+    getAllCategories(),
+    getCurrentUser()
+  ]);
+  const listingToEdit = listingId ? await getListingById(listingId) : null;
+
+  if (listingId && !listingToEdit) {
+    notFound();
+  }
+
+  if (
+    listingToEdit &&
+    listingToEdit.sellerId !== user.id &&
+    user.role !== "admin"
+  ) {
+    notFound();
+  }
+
+  const isEditing = Boolean(listingToEdit);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
       <div className="space-y-6">
         <SectionHeading
           eyebrow="Sell"
-          title="List quickly, promote when needed, and keep the pickup story clear."
-          description="The seller flow is optimized for fast move-out windows with support for negotiable pricing, urgency, outlet, and future promotion checkout."
+          title={
+            isEditing
+              ? "Update your listing without losing chat or exchange context."
+              : "List quickly, promote when needed, and keep the pickup story clear."
+          }
+          description={
+            isEditing
+              ? "Edit the core listing details buyers rely on, then save changes back into the live marketplace."
+              : "The seller flow is optimized for fast move-out windows with support for negotiable pricing, urgency, outlet, and future promotion checkout."
+          }
         />
         <Card className="bg-white">
           <CardContent className="space-y-3 p-8 text-sm leading-7 text-slate-600">
@@ -46,7 +82,7 @@ export default async function SellPage() {
           </Card>
         ) : null}
       </div>
-      <ListingForm categories={categories} />
+      <ListingForm categories={categories} initialListing={listingToEdit ?? undefined} />
     </div>
   );
 }

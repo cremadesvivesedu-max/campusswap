@@ -20,6 +20,7 @@ import { VerificationStatusBadge } from "@/components/shared/verification-status
 import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-button";
 import { ReportListingForm } from "@/components/marketplace/report-listing-form";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
+import { Button } from "@/components/ui/button";
 
 export default async function ListingDetailPage({
   params
@@ -153,10 +154,17 @@ export default async function ListingDetailPage({
                 <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   {dictionary.listing.ownListing}
                 </p>
-                <RemoveListingButton
-                  listingId={listing.id}
-                  listingTitle={listing.title}
-                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button asChild variant="secondary">
+                    <Link href={`/app/sell?listingId=${listing.id}`}>
+                      Edit listing
+                    </Link>
+                  </Button>
+                  <RemoveListingButton
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                  />
+                </div>
               </>
             ) : (
               <ReportListingForm listingId={listing.id} />
