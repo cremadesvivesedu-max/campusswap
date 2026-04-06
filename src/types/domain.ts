@@ -6,6 +6,11 @@ export type ExchangeStatus = "inquiry" | "negotiating" | "reserved" | "completed
 export type ReportTargetType = "listing" | "user" | "conversation";
 export type ReportStatus = "open" | "in-review" | "actioned" | "dismissed";
 export type PromotionType = "featured" | "seller-boost";
+export type PromotionPurchaseStatus =
+  | "pending"
+  | "checkout_opened"
+  | "paid"
+  | "cancelled";
 export type NotificationType = "message" | "promotion" | "review" | "listing" | "safety" | "system";
 export type ContentBlockType = "hero" | "faq" | "trust" | "testimonial" | "footer" | "seo";
 export type MonetizationModule = "promoted-listings" | "seller-boost" | "sponsor-cards" | "commission-ready";
@@ -253,8 +258,14 @@ export interface PromotionPurchase {
   sellerId: string;
   type: PromotionType;
   amount: number;
+  status: PromotionPurchaseStatus;
   active: boolean;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
   createdAt: string;
+  updatedAt?: string;
+  paidAt?: string;
+  cancelledAt?: string;
 }
 
 export interface Notification {

@@ -1,9 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getConditionLabel } from "@/lib/i18n-shared";
-import { createListingAction, updateListingAction } from "@/server/actions/forms";
+import {
+  createListingAction,
+  startFeaturedPromotionCheckoutAction,
+  updateListingAction
+} from "@/server/actions/forms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,22 +18,38 @@ interface ListingFormProps {
   categories: Category[];
   initialListing?: Listing;
   featuredPrice?: number;
-  promotionState?: "none" | "pending" | "active";
+  promotionState?: "none" | "pending" | "active" | "cancelled";
+  paymentConfigured?: boolean;
 }
 
 export function ListingForm({
   categories,
   initialListing,
   featuredPrice = 2,
-  promotionState = "none"
+  promotionState = "none",
+  paymentConfigured = false
 }: ListingFormProps) {
   const { dictionary } = useLocale();
   const formActionHandler = initialListing ? updateListingAction : createListingAction;
   const [state, action] = useActionState(formActionHandler, {
     success: false,
-    message: ""
+    message: "",
+    redirectTo: undefined,
+    promotionStatus: undefined
   });
   const isEditing = Boolean(initialListing);
+  const redirectedTo = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      state.redirectTo &&
+      redirectedTo.current !== state.redirectTo &&
+      typeof window !== "undefined"
+    ) {
+      redirectedTo.current = state.redirectTo;
+      window.location.assign(state.redirectTo);
+    }
+  }, [state.redirectTo]);
 
   return (
     <form
@@ -155,6 +175,7 @@ export function ListingForm({
             name="requestFeatured"
             type="checkbox"
             defaultChecked={promotionState !== "none"}
+            disabled={promotionState === "active"}
           />
           {dictionary.listingForm.featuredRequestLabel.replace(
             "EUR 2",
@@ -167,10 +188,36 @@ export function ListingForm({
             {dictionary.listingForm.featuredPendingNote}
           </p>
         ) : null}
+        {promotionState === "cancelled" ? (
+          <p className="font-medium text-rose-700">
+            {dictionary.listingForm.featuredCancelledNote}
+          </p>
+        ) : null}
         {promotionState === "active" ? (
           <p className="font-medium text-emerald-700">
             {dictionary.listingForm.featuredActiveNote}
           </p>
+        ) : null}
+        {(promotionState === "pending" || promotionState === "cancelled") &&
+        isEditing &&
+        initialListing ? (
+          paymentConfigured ? (
+            <Button
+              type="submit"
+              formAction={startFeaturedPromotionCheckoutAction}
+              variant="secondary"
+              className="w-full border border-amber-300 bg-white text-slate-900 hover:bg-amber-100"
+            >
+              {dictionary.listingForm.featuredCheckoutButton.replace(
+                "EUR 2",
+                `EUR ${featuredPrice}`
+              )}
+            </Button>
+          ) : (
+            <p className="font-medium text-slate-600">
+              {dictionary.listingForm.featuredPaymentUnavailable}
+            </p>
+          )
         ) : null}
       </div>
       <Button className="w-full" type="submit">

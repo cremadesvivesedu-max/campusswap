@@ -11,12 +11,16 @@ import {
   uploadPublicFile
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
+import { createFeaturedCheckoutSession, stripe } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { shouldModerateListing } from "@/server/services/moderation";
+import type { PromotionPurchaseStatus } from "@/types/domain";
 
 interface ActionState {
   success: boolean;
   message: string;
+  redirectTo?: string;
+  promotionStatus?: "none" | "pending" | "active" | "cancelled";
 }
 
 interface ListingFormValues {
@@ -33,6 +37,14 @@ interface ListingFormValues {
   requestFeatured: boolean;
   replaceImages: boolean;
   imageFiles: File[];
+}
+
+interface PromotionPurchaseRow {
+  id: string;
+  amount: number | string;
+  active: boolean;
+  status: PromotionPurchaseStatus;
+  stripe_checkout_session_id?: string | null;
 }
 
 function readListingFormValues(formData: FormData): ListingFormValues {
@@ -53,6 +65,37 @@ function readListingFormValues(formData: FormData): ListingFormValues {
       .getAll("images")
       .filter((value): value is File => value instanceof File && value.size > 0)
   };
+}
+
+function toNumber(value: number | string | null | undefined) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function toPromotionUiState(
+  purchase?: Pick<PromotionPurchaseRow, "active" | "status"> | null
+) {
+  if (!purchase) {
+    return "none" as const;
+  }
+
+  if (purchase.active || purchase.status === "paid") {
+    return "active" as const;
+  }
+
+  if (purchase.status === "cancelled") {
+    return "cancelled" as const;
+  }
+
+  return "pending" as const;
 }
 
 async function resolveCategoryId(
@@ -151,24 +194,22 @@ async function getFeaturedListingPrice() {
   return Number(data?.value ?? 2);
 }
 
-async function syncFeaturedPromotionRequest({
+async function getLatestFeaturedPromotionPurchase({
   listingId,
-  sellerId,
-  requestFeatured
+  sellerId
 }: {
   listingId: string;
   sellerId: string;
-  requestFeatured: boolean;
 }) {
   const admin = createAdminSupabaseClient();
 
   if (!admin) {
-    return "none" as const;
+    return null;
   }
 
-  const { data: existing } = await admin
+  const { data } = await admin
     .from("promotion_purchases")
-    .select("id, active")
+    .select("id, amount, active, status, stripe_checkout_session_id")
     .eq("listing_id", listingId)
     .eq("seller_id", sellerId)
     .eq("type", "featured")
@@ -176,37 +217,176 @@ async function syncFeaturedPromotionRequest({
     .limit(1)
     .maybeSingle();
 
-  if (!requestFeatured) {
-    if (existing?.id && existing.active === false) {
-      await admin.from("promotion_purchases").delete().eq("id", existing.id);
-    }
+  return (data as PromotionPurchaseRow | null) ?? null;
+}
 
-    return "none" as const;
+async function createFeaturedCheckoutForPurchase({
+  listingId,
+  listingTitle,
+  purchaseId,
+  sellerId,
+  amount
+}: {
+  listingId: string;
+  listingTitle: string;
+  purchaseId: string;
+  sellerId: string;
+  amount: number;
+}) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin || !stripe) {
+    return null;
   }
 
-  if (existing?.active === true) {
-    return "active" as const;
-  }
-
-  if (!existing?.id) {
-    const amount = await getFeaturedListingPrice();
-    await admin.from("promotion_purchases").insert({
-      listing_id: listingId,
-      seller_id: sellerId,
-      type: "featured",
-      amount,
-      active: false
-    });
-  }
-
-  await admin.from("notifications").insert({
-    user_id: sellerId,
-    type: "promotion",
-    title: "Promotion request recorded",
-    body: "CampusSwap saved your EUR 2 highlight request. The listing stays non-featured until payment or admin activation is completed."
+  const session = await createFeaturedCheckoutSession({
+    listingId,
+    sellerId,
+    promotionPurchaseId: purchaseId,
+    listingTitle,
+    amount
   });
 
-  return "pending" as const;
+  const { error } = await admin
+    .from("promotion_purchases")
+    .update({
+      status: "checkout_opened",
+      active: false,
+      stripe_checkout_session_id: session.id,
+      cancelled_at: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", purchaseId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return session.url;
+}
+
+async function syncFeaturedPromotionRequest({
+  listingId,
+  listingTitle,
+  sellerId,
+  requestFeatured
+}: {
+  listingId: string;
+  listingTitle: string;
+  sellerId: string;
+  requestFeatured: boolean;
+}) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return {
+      state: "none" as const,
+      shouldLaunchCheckout: false
+    };
+  }
+
+  const existing = await getLatestFeaturedPromotionPurchase({ listingId, sellerId });
+
+  if (!requestFeatured) {
+    if (existing?.id && !existing.active && existing.status !== "paid") {
+      await admin
+        .from("promotion_purchases")
+        .update({
+          status: "cancelled",
+          active: false,
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", existing.id);
+    }
+
+    return {
+      state: existing?.active ? ("active" as const) : ("none" as const),
+      shouldLaunchCheckout: false
+    };
+  }
+
+  if (existing?.active || existing?.status === "paid") {
+    return {
+      state: "active" as const,
+      purchaseId: existing.id,
+      amount: toNumber(existing.amount),
+      shouldLaunchCheckout: false
+    };
+  }
+
+  const amount = existing ? toNumber(existing.amount) : await getFeaturedListingPrice();
+  const now = new Date().toISOString();
+
+  if (!existing?.id) {
+    const { data: created, error } = await admin
+      .from("promotion_purchases")
+      .insert({
+        listing_id: listingId,
+        seller_id: sellerId,
+        type: "featured",
+        amount,
+        status: "pending",
+        active: false
+      })
+      .select("id")
+      .single();
+
+    if (error || !created?.id) {
+      throw new Error(error?.message ?? "Unable to save the promotion request.");
+    }
+
+    await admin.from("notifications").insert({
+      user_id: sellerId,
+      type: "promotion",
+      title: "Promotion request recorded",
+      body: `CampusSwap saved your EUR ${amount} highlight request for ${listingTitle}. The listing stays non-featured until payment is completed.`
+    });
+
+    return {
+      state: "pending" as const,
+      purchaseId: created.id,
+      amount,
+      shouldLaunchCheckout: true
+    };
+  }
+
+  if (existing.status === "cancelled") {
+    await admin
+      .from("promotion_purchases")
+      .update({
+        status: "pending",
+        active: false,
+        cancelled_at: null,
+        updated_at: now
+      })
+      .eq("id", existing.id);
+
+    return {
+      state: "pending" as const,
+      purchaseId: existing.id,
+      amount,
+      shouldLaunchCheckout: true
+    };
+  }
+
+  if (existing.status !== "pending") {
+    await admin
+      .from("promotion_purchases")
+      .update({
+        status: "pending",
+        active: false,
+        updated_at: now
+      })
+      .eq("id", existing.id);
+  }
+
+  return {
+    state: "pending" as const,
+    purchaseId: existing.id,
+    amount,
+    shouldLaunchCheckout: false
+  };
 }
 
 export async function joinWaitlistAction(_: unknown, formData: FormData) {
@@ -518,11 +698,39 @@ export async function createListingAction(_: unknown, formData: FormData) {
     }
   }
 
-  const promotionState = await syncFeaturedPromotionRequest({
+  const promotionResult = await syncFeaturedPromotionRequest({
     listingId: listing.id,
+    listingTitle: title,
     sellerId: user.id,
     requestFeatured
   });
+
+  let checkoutUrl: string | null = null;
+
+  if (
+    requestFeatured &&
+    promotionResult.purchaseId &&
+    promotionResult.amount &&
+    promotionResult.shouldLaunchCheckout
+  ) {
+    try {
+      checkoutUrl = await createFeaturedCheckoutForPurchase({
+        listingId: listing.id,
+        listingTitle: title,
+        purchaseId: promotionResult.purchaseId,
+        sellerId: user.id,
+        amount: promotionResult.amount
+      });
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to start Stripe Checkout for this promotion."
+      } satisfies ActionState;
+    }
+  }
 
   await supabase.from("notifications").insert({
     user_id: user.id,
@@ -545,11 +753,15 @@ export async function createListingAction(_: unknown, formData: FormData) {
       ? requiresTrustReview
         ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
         : "Listing submitted and queued for moderation review."
-      : "Listing published."}${
-      promotionState === "pending"
-        ? " Promotion request recorded. The listing will only appear as featured after payment or admin activation."
+        : "Listing published."}${
+      promotionResult.state === "pending"
+        ? checkoutUrl
+          ? " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment."
+          : " Promotion request recorded. The listing will only appear as featured after payment is completed."
         : ""
-    }`
+    }`,
+    redirectTo: checkoutUrl ?? undefined,
+    promotionStatus: promotionResult.state
   } satisfies ActionState;
 }
 
@@ -692,11 +904,39 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     }
   }
 
-  const promotionState = await syncFeaturedPromotionRequest({
+  const promotionResult = await syncFeaturedPromotionRequest({
     listingId,
+    listingTitle: title,
     sellerId: listing.seller_id,
     requestFeatured
   });
+
+  let checkoutUrl: string | null = null;
+
+  if (
+    requestFeatured &&
+    promotionResult.purchaseId &&
+    promotionResult.amount &&
+    promotionResult.shouldLaunchCheckout
+  ) {
+    try {
+      checkoutUrl = await createFeaturedCheckoutForPurchase({
+        listingId,
+        listingTitle: title,
+        purchaseId: promotionResult.purchaseId,
+        sellerId: listing.seller_id,
+        amount: promotionResult.amount
+      });
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to start Stripe Checkout for this promotion."
+      } satisfies ActionState;
+    }
+  }
 
   await supabase.from("notifications").insert({
     user_id: listing.seller_id,
@@ -724,9 +964,91 @@ export async function updateListingAction(_: unknown, formData: FormData) {
         ? "Listing updated. It will return to browse after a quick trust or moderation review."
         : "Listing updated."
     }${
-      promotionState === "pending"
-        ? " Promotion request is pending payment or admin activation."
+      promotionResult.state === "pending"
+        ? checkoutUrl
+          ? " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment."
+          : " Promotion request is pending payment."
         : ""
-    }`
+    }`,
+    redirectTo: checkoutUrl ?? undefined,
+    promotionStatus: promotionResult.state
   } satisfies ActionState;
+}
+
+export async function startFeaturedPromotionCheckoutAction(formData: FormData) {
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const user = await getCurrentUser();
+
+  if (!listingId) {
+    redirect("/app/sell?promotion=error");
+  }
+
+  if (!isLiveMode) {
+    redirect(`/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=error`);
+  }
+
+  if (!stripe) {
+    redirect(
+      `/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=payment-unavailable`
+    );
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    redirect(
+      `/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=payment-unavailable`
+    );
+  }
+
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .select("id, title, seller_id")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (error || !listing) {
+    redirect("/app/my-listings?promotion=error");
+  }
+
+  if (listing.seller_id !== user.id && user.role !== "admin") {
+    redirect(`/app/listings/${listingId}`);
+  }
+
+  const promotionResult = await syncFeaturedPromotionRequest({
+    listingId,
+    listingTitle: listing.title,
+    sellerId: listing.seller_id,
+    requestFeatured: true
+  });
+
+  if (promotionResult.state === "active") {
+    redirect(`/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=paid`);
+  }
+
+  if (!promotionResult.purchaseId || !promotionResult.amount) {
+    redirect(`/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=error`);
+  }
+
+  let checkoutUrl: string | null = null;
+
+  try {
+    checkoutUrl = await createFeaturedCheckoutForPurchase({
+      listingId,
+      listingTitle: listing.title,
+      purchaseId: promotionResult.purchaseId,
+      sellerId: listing.seller_id,
+      amount: promotionResult.amount
+    });
+  } catch {
+    redirect(`/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=error`);
+  }
+
+  if (!checkoutUrl) {
+    redirect(
+      `/app/sell?listingId=${encodeURIComponent(listingId)}&promotion=payment-unavailable`
+    );
+  }
+
+  redirect(checkoutUrl);
 }

@@ -1,19 +1,175 @@
-﻿import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { stripe } from "@/lib/payments/stripe";
+import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { env } from "@/lib/env";
+import { stripe } from "@/lib/payments/stripe";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+
+function getCheckoutMetadata(session: Stripe.Checkout.Session) {
+  return {
+    listingId: session.metadata?.listing_id ?? "",
+    sellerId: session.metadata?.seller_id ?? "",
+    purchaseId:
+      session.metadata?.promotion_purchase_id ?? session.client_reference_id ?? "",
+    promotionType: session.metadata?.promotion_type ?? ""
+  };
+}
+
+function getPaymentIntentId(session: Stripe.Checkout.Session) {
+  return typeof session.payment_intent === "string"
+    ? session.payment_intent
+    : session.payment_intent?.id;
+}
+
+async function handleCompletedCheckout(session: Stripe.Checkout.Session) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    throw new Error("Supabase admin client is not configured.");
+  }
+
+  const metadata = getCheckoutMetadata(session);
+
+  if (
+    !metadata.listingId ||
+    !metadata.sellerId ||
+    !metadata.purchaseId ||
+    metadata.promotionType !== "featured"
+  ) {
+    return;
+  }
+
+  const { data: purchase } = await admin
+    .from("promotion_purchases")
+    .select("id, status, active")
+    .eq("id", metadata.purchaseId)
+    .eq("listing_id", metadata.listingId)
+    .eq("seller_id", metadata.sellerId)
+    .eq("type", "featured")
+    .maybeSingle();
+
+  if (!purchase) {
+    return;
+  }
+
+  if (purchase.active || purchase.status === "paid") {
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  await admin
+    .from("promotion_purchases")
+    .update({
+      status: "paid",
+      active: true,
+      stripe_checkout_session_id: session.id,
+      stripe_payment_intent_id: getPaymentIntentId(session) ?? null,
+      paid_at: now,
+      cancelled_at: null,
+      updated_at: now
+    })
+    .eq("id", purchase.id);
+
+  await admin
+    .from("listings")
+    .update({
+      featured: true,
+      updated_at: now
+    })
+    .eq("id", metadata.listingId)
+    .eq("seller_id", metadata.sellerId);
+
+  await admin.from("notifications").insert({
+    user_id: metadata.sellerId,
+    type: "promotion",
+    title: "Featured listing payment received",
+    body: "Your listing is now active across CampusSwap featured discovery surfaces."
+  });
+}
+
+async function handleExpiredCheckout(session: Stripe.Checkout.Session) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    throw new Error("Supabase admin client is not configured.");
+  }
+
+  const metadata = getCheckoutMetadata(session);
+  const purchaseId = metadata.purchaseId;
+
+  if (!purchaseId) {
+    return;
+  }
+
+  const { data: purchase } = await admin
+    .from("promotion_purchases")
+    .select("id, status, active")
+    .eq("id", purchaseId)
+    .maybeSingle();
+
+  if (!purchase || purchase.active || purchase.status === "paid") {
+    return;
+  }
+
+  await admin
+    .from("promotion_purchases")
+    .update({
+      status: "cancelled",
+      active: false,
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", purchase.id);
+}
 
 export async function POST(request: Request) {
   if (!stripe || !env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ ok: false, message: "Stripe not configured." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Stripe not configured." },
+      { status: 400 }
+    );
   }
 
   const signature = (await headers()).get("stripe-signature");
   const body = await request.text();
+
   if (!signature) {
-    return NextResponse.json({ ok: false, message: "Missing signature." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Missing signature." },
+      { status: 400 }
+    );
   }
 
-  stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          error instanceof Error ? error.message : "Invalid Stripe signature."
+      },
+      { status: 400 }
+    );
+  }
+
+  switch (event.type) {
+    case "checkout.session.completed":
+      await handleCompletedCheckout(event.data.object as Stripe.Checkout.Session);
+      break;
+    case "checkout.session.expired":
+      await handleExpiredCheckout(event.data.object as Stripe.Checkout.Session);
+      break;
+    default:
+      break;
+  }
+
   return NextResponse.json({ ok: true });
 }

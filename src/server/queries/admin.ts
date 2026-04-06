@@ -179,7 +179,7 @@ export async function getAdminMetrics() {
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("outlet", true),
     supabase.from("conversations").select("*", { count: "exact", head: true }),
     supabase.from("reviews").select("*", { count: "exact", head: true }),
-    supabase.from("promotion_purchases").select("amount"),
+    supabase.from("promotion_purchases").select("amount, active, status"),
     supabase.from("sponsored_placements").select("id").eq("active", true),
     supabase.from("search_events").select("query").order("created_at", { ascending: false }).limit(200),
     supabase.from("listings").select("id, price, category:categories(name)"),
@@ -188,8 +188,12 @@ export async function getAdminMetrics() {
 
   const ratingRows = await supabase.from("profiles").select("rating_average, response_rate");
 
-  const promotedRevenue = (((promotionRows.data as { amount: number | string }[] | null) ?? [])).reduce(
-    (sum, row) => sum + numberValue(row.amount),
+  const promotedRevenue = (
+    ((promotionRows.data as { amount: number | string; active: boolean; status?: string }[] | null) ??
+      [])
+  ).reduce(
+    (sum, row) =>
+      row.active || row.status === "paid" ? sum + numberValue(row.amount) : sum,
     0
   );
 

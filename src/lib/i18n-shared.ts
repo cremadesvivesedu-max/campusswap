@@ -376,8 +376,15 @@ export const dictionaries = {
       saveChanges: "Save changes",
       featuredRequestLabel: "Highlight this listing for EUR 2",
       featuredRequestHelp: "We will record a promotion request now. If payment is not completed yet, the request stays pending and the listing is not marked featured automatically.",
-      featuredPendingNote: "Promotion request pending review or payment.",
-      featuredActiveNote: "This listing is already featured in discovery surfaces."
+      featuredPendingNote: "Payment is still pending. This listing will stay non-featured until checkout is completed.",
+      featuredActiveNote: "This listing is already featured in discovery surfaces.",
+      featuredCancelledNote: "The previous payment attempt did not complete. You can start checkout again whenever you are ready.",
+      featuredCheckoutButton: "Pay EUR 2 and feature this listing",
+      featuredPaymentUnavailable: "Stripe payment is not configured yet. The request stays pending until checkout is available.",
+      featuredProcessingBanner: "Stripe is confirming your payment. The listing will turn featured as soon as the webhook marks it paid.",
+      featuredPaidBanner: "Payment received. This listing is now active in featured discovery surfaces.",
+      featuredCancelledBanner: "Payment was cancelled. The listing stayed non-featured and the request is saved as not completed.",
+      featuredCheckoutError: "We could not start Stripe Checkout for this listing right now. Please try again."
     },
     appHome: {
       welcomeBack: "Welcome back",
@@ -768,8 +775,15 @@ mutableDictionaries.es = {
     saveChanges: "Guardar cambios",
     featuredRequestLabel: "Destacar este anuncio por EUR 2",
     featuredRequestHelp: "Registraremos ahora la solicitud de promocion. Si el pago no esta completado, seguira pendiente y el anuncio no se marcara como destacado automaticamente.",
-    featuredPendingNote: "Solicitud de promocion pendiente de revision o pago.",
-    featuredActiveNote: "Este anuncio ya aparece como destacado."
+    featuredPendingNote: "El pago sigue pendiente. Este anuncio no se destacara hasta que completes el checkout.",
+    featuredActiveNote: "Este anuncio ya aparece como destacado.",
+    featuredCancelledNote: "El intento de pago anterior no se completo. Puedes iniciar el checkout otra vez cuando quieras.",
+    featuredCheckoutButton: "Pagar EUR 2 y destacar este anuncio",
+    featuredPaymentUnavailable: "Stripe todavia no esta configurado. La solicitud seguira pendiente hasta que el pago este disponible.",
+    featuredProcessingBanner: "Stripe esta confirmando tu pago. El anuncio se marcara como destacado en cuanto el webhook lo deje como pagado.",
+    featuredPaidBanner: "Pago recibido. Este anuncio ya esta activo en las superficies destacadas.",
+    featuredCancelledBanner: "El pago se cancelo. El anuncio sigue sin destacarse y la solicitud queda marcada como no completada.",
+    featuredCheckoutError: "No hemos podido iniciar Stripe Checkout para este anuncio ahora mismo. Vuelve a intentarlo."
   },
   appHome: {
     ...mutableDictionaries.en.appHome,
@@ -1146,8 +1160,15 @@ mutableDictionaries.nl = {
     saveChanges: "Wijzigingen opslaan",
     featuredRequestLabel: "Deze advertentie uitlichten voor EUR 2",
     featuredRequestHelp: "We registreren nu een promotieverzoek. Als de betaling nog niet is afgerond, blijft het verzoek in behandeling en wordt de advertentie niet automatisch uitgelicht.",
-    featuredPendingNote: "Promotieverzoek wacht op review of betaling.",
-    featuredActiveNote: "Deze advertentie is al uitgelicht in discovery."
+    featuredPendingNote: "De betaling staat nog open. Deze advertentie blijft niet-uitgelicht tot Checkout is afgerond.",
+    featuredActiveNote: "Deze advertentie is al uitgelicht in discovery.",
+    featuredCancelledNote: "De vorige betaalpoging is niet afgerond. Je kunt Checkout opnieuw starten wanneer je wilt.",
+    featuredCheckoutButton: "Betaal EUR 2 en licht deze advertentie uit",
+    featuredPaymentUnavailable: "Stripe-betaling is nog niet geconfigureerd. Het verzoek blijft in behandeling tot Checkout beschikbaar is.",
+    featuredProcessingBanner: "Stripe bevestigt je betaling. De advertentie wordt uitgelicht zodra de webhook de betaling als voltooid markeert.",
+    featuredPaidBanner: "Betaling ontvangen. Deze advertentie is nu actief in uitgelichte discovery-oppervlakken.",
+    featuredCancelledBanner: "De betaling is geannuleerd. De advertentie blijft niet-uitgelicht en het verzoek staat als niet voltooid.",
+    featuredCheckoutError: "We konden Stripe Checkout voor deze advertentie nu niet starten. Probeer het opnieuw."
   },
   appHome: {
     ...mutableDictionaries.en.appHome,

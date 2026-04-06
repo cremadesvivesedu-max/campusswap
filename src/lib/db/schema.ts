@@ -9,6 +9,12 @@ export const exchangeStatusEnum = pgEnum("exchange_status", ["inquiry", "negotia
 export const reportTargetTypeEnum = pgEnum("report_target_type", ["listing", "user", "conversation"]);
 export const reportStatusEnum = pgEnum("report_status", ["open", "in-review", "actioned", "dismissed"]);
 export const promotionTypeEnum = pgEnum("promotion_type", ["featured", "seller-boost"]);
+export const promotionPurchaseStatusEnum = pgEnum("promotion_purchase_status", [
+  "pending",
+  "checkout_opened",
+  "paid",
+  "cancelled"
+]);
 export const notificationTypeEnum = pgEnum("notification_type", ["message", "promotion", "review", "listing", "safety", "system"]);
 export const contentBlockTypeEnum = pgEnum("content_block_type", ["hero", "faq", "trust", "testimonial", "footer", "seo"]);
 export const monetizationModuleEnum = pgEnum("monetization_module", ["promoted-listings", "seller-boost", "sponsor-cards", "commission-ready"]);
@@ -237,8 +243,14 @@ export const promotionPurchases = pgTable("promotion_purchases", {
   sellerId: uuid("seller_id").references(() => users.id).notNull(),
   type: promotionTypeEnum("type").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  status: promotionPurchaseStatusEnum("status").default("pending").notNull(),
   active: boolean("active").default(true).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const notifications = pgTable("notifications", {

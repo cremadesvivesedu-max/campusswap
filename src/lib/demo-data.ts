@@ -156,8 +156,8 @@ export const demoData: DemoDataBundle = {
     { id: "sponsor-2", name: "Cycle Fix Maastricht", label: "Demo sponsor", location: "Bike category", copy: "Affordable same-day puncture fixes. Demo placement.", cta: "Book repair", href: "/trust-safety", active: true }
   ],
   promotionPurchases: [
-    { id: "promo-1", listingId: "listing-bike-1", sellerId: "user-lina", type: "featured", amount: 2, active: true, createdAt: "2026-04-01T08:05:00.000Z" },
-    { id: "promo-2", listingId: "listing-monitor-1", sellerId: "user-sanne", type: "seller-boost", amount: 5, active: true, createdAt: "2026-04-01T06:35:00.000Z" }
+    { id: "promo-1", listingId: "listing-bike-1", sellerId: "user-lina", type: "featured", amount: 2, status: "paid", active: true, createdAt: "2026-04-01T08:05:00.000Z", updatedAt: "2026-04-01T08:06:00.000Z", paidAt: "2026-04-01T08:06:00.000Z" },
+    { id: "promo-2", listingId: "listing-monitor-1", sellerId: "user-sanne", type: "seller-boost", amount: 5, status: "paid", active: true, createdAt: "2026-04-01T06:35:00.000Z", updatedAt: "2026-04-01T06:35:00.000Z", paidAt: "2026-04-01T06:35:00.000Z" }
   ],
   notifications: [
     { id: "notif-1", userId: "user-omar", type: "message", title: "Lina replied about the Gazelle bike", body: "She can meet near the station tomorrow afternoon.", read: false, createdAt: "2026-04-01T18:11:00.000Z" },
