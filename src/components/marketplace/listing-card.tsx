@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Images, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/locale-provider";
+import { getListingStatusLabel } from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 import { ListingImage } from "@/components/marketplace/listing-image";
@@ -26,6 +28,7 @@ export function ListingCard({
   showMessageAction = false,
   messageActionMode = "chat"
 }: ListingCardProps) {
+  const { dictionary } = useLocale();
   const showChatAction = showMessageAction && listing.status !== "sold";
   const listingHref = `/app/listings/${listing.id}`;
 
@@ -45,18 +48,34 @@ export function ListingCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/20 to-transparent" />
         <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
           {listing.featured ? (
-            <Badge className="bg-amber-200 text-slate-900">Featured</Badge>
+            <Badge className="bg-amber-200 text-slate-900">
+              {dictionary.listing.featured}
+            </Badge>
           ) : null}
           {listing.outlet ? (
-            <Badge className="bg-rose-100 text-rose-900">Outlet</Badge>
+            <Badge className="bg-rose-100 text-rose-900">
+              {dictionary.listing.outlet}
+            </Badge>
           ) : null}
           {listing.urgent ? (
-            <Badge className="bg-orange-100 text-orange-900">Urgent</Badge>
+            <Badge className="bg-orange-100 text-orange-900">
+              {dictionary.listing.urgent}
+            </Badge>
           ) : null}
           {listing.status !== "active" ? (
-            <Badge className="bg-slate-950 text-white">{listing.status}</Badge>
+            <Badge className="bg-slate-950 text-white">
+              {getListingStatusLabel(dictionary, listing.status)}
+            </Badge>
           ) : null}
         </div>
+        {listing.images.length > 1 ? (
+          <div className="absolute right-4 top-4 z-10">
+            <Badge className="bg-white/90 text-slate-900">
+              <Images className="mr-1 h-3.5 w-3.5" />
+              {listing.images.length}
+            </Badge>
+          </div>
+        ) : null}
       </div>
       <div className="space-y-4 p-5">
         <div className="space-y-2">
@@ -87,12 +106,12 @@ export function ListingCard({
         ) : null}
         {reason?.length ? (
           <p className="text-xs font-medium text-emerald-700">
-            Why you are seeing this: {reason.join(", ")}
+            {dictionary.search.recommendationPrefix}: {reason.join(", ")}
           </p>
         ) : null}
         <div className="relative z-20 flex flex-col gap-3 sm:flex-row">
           <Button asChild className="sm:flex-1" variant="secondary">
-            <Link href={listingHref}>View listing</Link>
+            <Link href={listingHref}>{dictionary.common.actions.viewListing}</Link>
           </Button>
           {showChatAction ? (
             <MessageSellerButton

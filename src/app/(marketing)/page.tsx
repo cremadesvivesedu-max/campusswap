@@ -7,15 +7,8 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { faqs, trustSignals } from "@/lib/constants";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories, getFeaturedListings } from "@/server/queries/marketplace";
-
-const testimonials = [
-  "Demo testimonial: I arrived in Maastricht on a Thursday and had a desk, lamp, and bike by Sunday.",
-  "Demo testimonial: Selling my studio essentials in one place was much calmer than juggling group chats.",
-  "Demo testimonial: The outlet section helped me furnish a room without blowing my first-month budget."
-];
 
 export default async function HomePage() {
   const [featured, categories, dictionary] = await Promise.all([
@@ -49,30 +42,16 @@ export default async function HomePage() {
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <Card className="border-white/10 bg-white/10 text-white">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-200">Student-first trust</p>
-                  <p className="mt-2 font-display text-2xl font-semibold">
-                    Verification available
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-white/10 bg-white/10 text-white">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-200">Safer exchanges</p>
-                  <p className="mt-2 font-display text-2xl font-semibold">
-                    Moderated marketplace
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-white/10 bg-white/10 text-white">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-slate-200">Affordable and green</p>
-                  <p className="mt-2 font-display text-2xl font-semibold">
-                    Outlet included
-                  </p>
-                </CardContent>
-              </Card>
+              {dictionary.marketing.home.valueCards.map((card) => (
+                <Card key={card.title} className="border-white/10 bg-white/10 text-white">
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-slate-200">{card.eyebrow}</p>
+                    <p className="mt-2 font-display text-2xl font-semibold">
+                      {card.title}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
           <WaitlistForm />
@@ -81,29 +60,12 @@ export default async function HomePage() {
 
       <section className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-2">
         <SectionHeading
-          eyebrow="Why CampusSwap"
-          title="Built around the exact student moment broad marketplaces miss."
-          description="Move-in and move-out periods in Maastricht are time-sensitive. CampusSwap keeps the inventory local, the categories organized, and the trust signals visible so students can act quickly."
+          eyebrow={dictionary.marketing.home.whyEyebrow}
+          title={dictionary.marketing.home.whyTitle}
+          description={dictionary.marketing.home.whyDescription}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          {[
-            {
-              title: "Incoming students",
-              body: "Find bikes, desks, bedding, and kitchen basics before classes start."
-            },
-            {
-              title: "Outgoing students",
-              body: "Sell quickly before lease end with urgency and featured tools."
-            },
-            {
-              title: "Budget-focused buyers",
-              body: "Use Outlet to find honest discounts on heavily used but useful items."
-            },
-            {
-              title: "Community-minded users",
-              body: "Trade within a student network rather than a city-wide free-for-all."
-            }
-          ].map((item) => (
+          {dictionary.marketing.home.audiences.map((item) => (
             <Card key={item.title} className="bg-white">
               <CardHeader>
                 <h3 className="font-display text-xl font-semibold text-slate-950">
@@ -120,27 +82,15 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="How it works"
-          title="Fast enough for moving week. Calm enough to trust."
-          description="Create an account, browse by what you need, and handle in-person pickup with visible verification status and safe meetup guidance."
+          eyebrow={dictionary.marketing.home.howEyebrow}
+          title={dictionary.marketing.home.howTitle}
+          description={dictionary.marketing.home.howDescription}
         />
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            {
-              icon: ShieldCheck,
-              title: "Join",
-              body: "Create an account with any valid email, then add student verification when you want a stronger trust badge."
-            },
-            {
-              icon: Sparkles,
-              title: "Discover",
-              body: "Browse featured drops, category pages, outlet deals, and a For You feed shaped by real interactions."
-            },
-            {
-              icon: Leaf,
-              title: "Reuse",
-              body: "Reserve, meet, and review after completion so more useful items stay in circulation."
-            }
+            { icon: ShieldCheck, ...dictionary.marketing.home.steps[0] },
+            { icon: Sparkles, ...dictionary.marketing.home.steps[1] },
+            { icon: Leaf, ...dictionary.marketing.home.steps[2] }
           ].map((step) => (
             <Card key={step.title} className="bg-white">
               <CardHeader className="space-y-4">
@@ -159,9 +109,9 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="Categories"
-          title="Furniture, bikes, textbooks, electronics, and the everyday essentials in between."
-          description="The category model is tuned for student life in Maastricht, not generic second-hand browsing."
+          eyebrow={dictionary.marketing.home.categoriesEyebrow}
+          title={dictionary.marketing.home.categoriesTitle}
+          description={dictionary.marketing.home.categoriesDescription}
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {categories
@@ -174,9 +124,9 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="Featured preview"
-          title="Promoted listings and strong inventory, without losing trust."
-          description="Featured listings stay clearly labeled, and sellers can boost visibility without making the feed feel deceptive."
+          eyebrow={dictionary.marketing.home.featuredEyebrow}
+          title={dictionary.marketing.home.featuredTitle}
+          description={dictionary.marketing.home.featuredDescription}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {featured.slice(0, 3).map((listing) => (
@@ -192,41 +142,39 @@ export default async function HomePage() {
 
       <section className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr]">
         <SectionHeading
-          eyebrow="Trust and safety"
-          title="Visible trust markers beat vague promises."
-          description="Verification, moderation, seller ratings, and safe meetup prompts are woven directly into browsing and messaging."
+          eyebrow={dictionary.marketing.home.trustEyebrow}
+          title={dictionary.marketing.home.trustTitle}
+          description={dictionary.marketing.home.trustDescription}
         />
         <div className="grid gap-4">
-          {trustSignals.map((signal) => (
+          {dictionary.marketing.home.trustSignals.map((signal) => (
             <Card key={signal} className="bg-white">
               <CardContent className="pt-6">
-                <p className="text-sm leading-6 text-slate-700">{signal}</p>
-              </CardContent>
-            </Card>
-          ))}
+              <p className="text-sm leading-6 text-slate-700">{signal}</p>
+            </CardContent>
+          </Card>
+        ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="Affordable and green"
-          title="Outlet gives lower-cost items a smarter second life."
-          description="Damaged-but-usable and urgent sell-off items deserve a dedicated experience, not a buried filter."
+          eyebrow={dictionary.marketing.home.outletEyebrow}
+          title={dictionary.marketing.home.outletTitle}
+          description={dictionary.marketing.home.outletDescription}
         />
         <Card className="overflow-hidden bg-slate-950 text-white">
           <CardContent className="grid gap-6 p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-3">
               <p className="font-display text-3xl font-semibold">
-                Outlet helps students save quickly and sustainably.
+                {dictionary.marketing.home.outletTitle}
               </p>
               <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                CampusSwap treats Outlet as a strategic differentiator for lower
-                budgets, urgent move-outs, and practical reuse. That makes the
-                marketplace more useful and more honest.
+                {dictionary.marketing.home.outletBody}
               </p>
             </div>
             <Button asChild>
-              <Link href="/outlet">Explore Outlet</Link>
+              <Link href="/outlet">{dictionary.marketing.home.outletCta}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -234,12 +182,12 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="Demo testimonials"
-          title="Seeded proof points for launch storytelling."
-          description="These are demo testimonials included to help shape launch-ready content and layout. Replace them with real student feedback after launch."
+          eyebrow={dictionary.marketing.home.testimonialsEyebrow}
+          title={dictionary.marketing.home.testimonialsTitle}
+          description={dictionary.marketing.home.testimonialsDescription}
         />
         <div className="grid gap-4 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
+          {dictionary.marketing.home.testimonials.map((testimonial) => (
             <Card key={testimonial} className="bg-white">
               <CardContent className="pt-6">
                 <p className="text-sm leading-7 text-slate-700">{testimonial}</p>
@@ -251,12 +199,12 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-5xl space-y-8 px-6">
         <SectionHeading
-          eyebrow="FAQ"
-          title="Questions students usually ask before they trust a new marketplace."
-          description="The marketing site keeps the core trust and onboarding questions clear, especially for incoming international students."
+          eyebrow={dictionary.marketing.home.faqEyebrow}
+          title={dictionary.marketing.home.faqTitle}
+          description={dictionary.marketing.home.faqDescription}
         />
         <div className="space-y-4">
-          {faqs.map((faq) => (
+          {dictionary.marketing.faq.items.map((faq) => (
             <Card key={faq.question} className="bg-white">
               <CardHeader>
                 <h3 className="font-display text-xl font-semibold text-slate-950">

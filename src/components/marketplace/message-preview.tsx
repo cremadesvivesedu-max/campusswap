@@ -4,9 +4,12 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
+import { useLocale } from "@/components/providers/locale-provider";
+import { getListingStatusLabel } from "@/lib/i18n-shared";
 import type { ConversationPreview } from "@/types/domain";
 
 export function MessagePreview({ preview }: { preview: ConversationPreview }) {
+  const { dictionary } = useLocale();
   const latest = preview.latestMessage;
   const latestLabel = latest?.sentAt
     ? new Date(latest.sentAt).toLocaleString("en-GB", {
@@ -15,7 +18,7 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
         hour: "2-digit",
         minute: "2-digit"
       })
-    : "No messages yet";
+    : dictionary.messages.actions.noMessagesYet;
 
   return (
     <Link
@@ -42,26 +45,30 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
           </div>
           {preview.unreadCount ? (
             <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-slate-950">
-              {preview.unreadCount} unread
+              {preview.unreadCount} {dictionary.messages.actions.unread}
             </span>
           ) : null}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {preview.listing.status !== "active" ? (
-              <Badge className="bg-slate-950 text-white">{preview.listing.status}</Badge>
+              <Badge className="bg-slate-950 text-white">
+                {getListingStatusLabel(dictionary, preview.listing.status)}
+              </Badge>
             ) : null}
             {preview.listing.outlet ? (
-              <Badge className="bg-rose-100 text-rose-900">Outlet</Badge>
+              <Badge className="bg-rose-100 text-rose-900">{dictionary.listing.outlet}</Badge>
             ) : null}
             {preview.listing.featured ? (
-              <Badge className="bg-amber-200 text-slate-900">Featured</Badge>
+              <Badge className="bg-amber-200 text-slate-900">{dictionary.listing.featured}</Badge>
             ) : null}
           </div>
           <p className="line-clamp-2 text-sm leading-6 text-slate-600">
-            {latest?.text || "No messages yet."}
+            {latest?.text || dictionary.messages.actions.noMessagesYet}
           </p>
-          <p className="text-sm font-semibold text-slate-950">Open conversation</p>
+          <p className="text-sm font-semibold text-slate-950">
+            {dictionary.messages.actions.openConversation}
+          </p>
         </CardContent>
       </Card>
     </Link>

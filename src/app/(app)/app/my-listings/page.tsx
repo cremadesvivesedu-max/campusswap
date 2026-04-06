@@ -31,7 +31,9 @@ export default async function MyListingsPage() {
           <div key={listing.id} className="space-y-4">
             <ListingCard listing={listing} compact />
             <Button asChild className="w-full" variant="secondary">
-              <Link href={`/app/sell?listingId=${listing.id}`}>Edit listing</Link>
+              <Link href={`/app/sell?listingId=${listing.id}`}>
+                {dictionary.myListings.editListing}
+              </Link>
             </Button>
             <ListingStatusActions
               listingId={listing.id}

@@ -17,6 +17,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const resetWasSuccessful = searchParams.get("reset") === "success";
 
   return (
     <form
@@ -64,9 +65,17 @@ export function LoginForm() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-sm font-medium text-slate-600 hover:text-slate-950">
+          {dictionary.auth.login.forgotPassword}
+        </Link>
+      </div>
       <Button className="w-full" type="submit" disabled={isPending}>
         {isPending ? dictionary.auth.login.submitting : dictionary.auth.login.submit}
       </Button>
+      {resetWasSuccessful ? (
+        <p className="text-sm text-emerald-700">{dictionary.auth.resetPassword.success}</p>
+      ) : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       <p className="text-sm text-slate-500">
         {dictionary.auth.login.noAccount}{" "}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircleMore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOptionalCurrentUser } from "@/components/providers/current-user-provider";
+import { useLocale } from "@/components/providers/locale-provider";
 import { getVerificationStatusLabel } from "@/lib/verification";
 import { cn } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
@@ -28,6 +29,7 @@ export function MessageSellerButton({
   className
 }: MessageSellerButtonProps) {
   const router = useRouter();
+  const { dictionary } = useLocale();
   const currentUser = useOptionalCurrentUser();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,21 +37,23 @@ export function MessageSellerButton({
     mode !== "chat"
       ? null
       : listingStatus === "sold"
-        ? "Item sold"
+        ? dictionary.messages.actions.itemSold
         : listingStatus && listingStatus !== "active" && listingStatus !== "reserved"
-          ? "Listing unavailable"
+          ? dictionary.messages.actions.listingUnavailable
           : null;
   const currentUserId = currentUser?.id;
   const verificationNotice =
     mode === "chat" && currentUser && currentUser.verificationStatus !== "verified"
-      ? `You are messaging as ${getVerificationStatusLabel(currentUser.verificationStatus).toLowerCase()}. Verification is optional, but it adds a stronger trust signal.`
+      ? `${dictionary.messages.actions.verificationNoticePrefix} ${getVerificationStatusLabel(
+          currentUser.verificationStatus
+        ).toLowerCase()}. ${dictionary.messages.actions.verificationNoticeSuffix}`
       : null;
 
   if (mode === "chat" && currentUserId === sellerId) {
     return (
       <div className={cn("space-y-2", className)}>
         <Button className="w-full" type="button" variant="outline" disabled>
-          Your listing
+          {dictionary.messages.actions.yourListing}
         </Button>
       </div>
     );
@@ -98,10 +102,10 @@ export function MessageSellerButton({
       >
         <MessageCircleMore className="mr-2 h-4 w-4" />
         {isPending
-          ? "Opening..."
+          ? dictionary.common.actions.opening
           : mode === "signup"
-            ? "Sign up to message"
-            : "Message seller"}
+            ? dictionary.messages.actions.signUpToMessage
+            : dictionary.messages.actions.messageSeller}
       </Button>
       {verificationNotice ? (
         <p className="text-xs font-medium text-slate-600">{verificationNotice}</p>

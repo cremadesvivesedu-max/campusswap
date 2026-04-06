@@ -72,6 +72,7 @@ interface DbListingImageRow {
   url: string;
   alt: string;
   is_primary: boolean;
+  created_at?: string;
 }
 
 interface DbListingRow {
@@ -191,7 +192,8 @@ const listingSelect = `
     id,
     url,
     alt,
-    is_primary
+    is_primary,
+    created_at
   ),
   seller:users!listings_seller_id_fkey (
     id,
@@ -317,7 +319,8 @@ function mapListing(
   }
 ): Listing {
   const images = [...(row.listing_images ?? [])].sort((left, right) =>
-    Number(right.is_primary) - Number(left.is_primary)
+    Number(right.is_primary) - Number(left.is_primary) ||
+    Date.parse(left.created_at ?? "") - Date.parse(right.created_at ?? "")
   );
 
   return {

@@ -14,6 +14,7 @@ import {
   getSubcategories,
   type DiscoveryFilters
 } from "@/features/search/discovery";
+import { getConditionLabel } from "@/lib/i18n-shared";
 import { recordSearchEventAction } from "@/server/actions/marketplace";
 import type { Category, Listing, ListingCondition } from "@/types/domain";
 
@@ -203,14 +204,14 @@ export function SearchExperience({
     if (query) {
       chips.push({
         key: "query",
-        label: `Search: ${query}`,
+        label: `${dictionary.search.filterLabels.search}: ${query}`,
         clear: () => setQuery("")
       });
     }
     if (categorySlug && !lockedCategorySlug) {
       chips.push({
         key: "category",
-        label: `Category: ${
+        label: `${dictionary.search.filterLabels.category}: ${
           categories.find((category) => category.slug === categorySlug)?.name ?? categorySlug
         }`,
         clear: () => setCategorySlug("")
@@ -219,7 +220,7 @@ export function SearchExperience({
     if (subcategorySlug) {
       chips.push({
         key: "subcategory",
-        label: `Subcategory: ${
+        label: `${dictionary.search.filterLabels.subcategory}: ${
           subcategories.find((subcategory) => subcategory.slug === subcategorySlug)?.label ??
           subcategorySlug
         }`,
@@ -229,49 +230,59 @@ export function SearchExperience({
     if (priceMin) {
       chips.push({
         key: "min",
-        label: `Min EUR ${priceMin}`,
+        label: `${dictionary.search.filterLabels.min} ${priceMin}`,
         clear: () => setPriceMin("")
       });
     }
     if (priceMax) {
       chips.push({
         key: "max",
-        label: `Max EUR ${priceMax}`,
+        label: `${dictionary.search.filterLabels.max} ${priceMax}`,
         clear: () => setPriceMax("")
       });
     }
     if (conditions.length) {
       chips.push({
         key: "conditions",
-        label: `Condition: ${conditions.join(", ")}`,
+        label: `${dictionary.search.filterLabels.condition}: ${conditions
+          .map((condition) => getConditionLabel(dictionary, condition))
+          .join(", ")}`,
         clear: () => setConditions([])
       });
     }
     if (outletOnly) {
       chips.push({
         key: "outlet",
-        label: "Outlet only",
+        label: dictionary.search.outletOnly,
         clear: () => setOutletOnly(false)
       });
     }
     if (featuredOnly) {
       chips.push({
         key: "featured",
-        label: "Featured only",
+        label: dictionary.search.featuredOnly,
         clear: () => setFeaturedOnly(false)
       });
     }
     if (minimumSellerRating) {
       chips.push({
         key: "rating",
-        label: `Seller rating ${minimumSellerRating}+`,
+        label: `${dictionary.search.filterLabels.sellerRating} ${minimumSellerRating}+`,
         clear: () => setMinimumSellerRating("")
       });
     }
     if (sort !== "recommended") {
       chips.push({
         key: "sort",
-        label: `Sort: ${sort}`,
+        label: `${dictionary.search.filterLabels.sort}: ${
+          sort === "relevance"
+            ? dictionary.search.sortOptions.relevance
+            : sort === "newest"
+              ? dictionary.search.sortOptions.newest
+              : sort === "price-low-high"
+                ? dictionary.search.sortOptions.priceLowHigh
+                : dictionary.search.sortOptions.priceHighLow
+        }`,
         clear: () => setSort("recommended")
       });
     }
@@ -281,6 +292,7 @@ export function SearchExperience({
     categories,
     categorySlug,
     conditions,
+    dictionary,
     featuredOnly,
     lockedCategorySlug,
     minimumSellerRating,
@@ -419,7 +431,7 @@ export function SearchExperience({
                       )
                     }
                   >
-                    {condition}
+                    {getConditionLabel(dictionary, condition)}
                   </button>
                 ))}
               </div>

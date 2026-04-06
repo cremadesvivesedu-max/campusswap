@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useLocale } from "@/components/providers/locale-provider";
+import { getExchangeStatusLabel, getListingStatusLabel } from "@/lib/i18n-shared";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import {
@@ -17,33 +19,6 @@ import {
 } from "@/server/actions/marketplace";
 import { formatCurrency } from "@/lib/utils";
 import type { ListingTransactionContext, ListingStatus, User } from "@/types/domain";
-
-function formatTransactionState(state?: string) {
-  switch (state) {
-    case "active":
-      return "Available";
-    case "sold":
-      return "Sold";
-    case "archived":
-      return "Archived";
-    case "hidden":
-      return "Removed";
-    case "pending-review":
-      return "Pending review";
-    case "inquiry":
-      return "Conversation open";
-    case "negotiating":
-      return "Purchase requested";
-    case "reserved":
-      return "Reserved";
-    case "completed":
-      return "Sold";
-    case "cancelled":
-      return "Cancelled";
-    default:
-      return "Available";
-  }
-}
 
 function formatEventTime(value?: string) {
   if (!value) {
@@ -77,6 +52,7 @@ export function ListingTransactionPanel({
   context: ListingTransactionContext;
   isOwnListing: boolean;
 }) {
+  const { dictionary } = useLocale();
   const router = useRouter();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +86,7 @@ export function ListingTransactionPanel({
         setError(
           caughtError instanceof Error
             ? caughtError.message
-            : "Unable to update the purchase flow right now."
+            : dictionary.messages.inbox.loadErrorTitle
         );
       }
     });
@@ -128,10 +104,12 @@ export function ListingTransactionPanel({
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-2xl font-semibold text-slate-950">
-              Seller controls
+              {dictionary.listing.seller}
             </h2>
             <Badge className="bg-slate-950 text-white">
-              {formatTransactionState(transaction?.state ?? listingStatus)}
+              {transaction?.state
+                ? getExchangeStatusLabel(dictionary, transaction.state)
+                : getListingStatusLabel(dictionary, listingStatus)}
             </Badge>
           </div>
         </CardHeader>
@@ -155,24 +133,26 @@ export function ListingTransactionPanel({
                 </div>
               </div>
               <div className="mt-3 grid gap-1">
-                <p>Offer value: {formatCurrency(transaction?.amount ?? listingPrice)}</p>
-                <p>Meetup area: {transaction?.meetupSpot ?? "To be agreed in chat"}</p>
-                <p>Meetup window: {transaction?.meetupWindow ?? "To be scheduled"}</p>
+                <p>{dictionary.messages.exchange.price}: {formatCurrency(transaction?.amount ?? listingPrice)}</p>
+                <p>{dictionary.messages.exchange.meetupArea}: {transaction?.meetupSpot ?? dictionary.messages.exchange.meetupTbd}</p>
+                <p>{dictionary.messages.exchange.meetupWindow}: {transaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}</p>
                 {transaction?.reservedAt ? (
-                  <p>Reserved at: {formatEventTime(transaction.reservedAt)}</p>
+                  <p>{dictionary.messages.exchange.reservedAt}: {formatEventTime(transaction.reservedAt)}</p>
                 ) : null}
               </div>
             </div>
           ) : (
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              No buyer is linked yet. When someone starts a purchase request, it will appear here.
+              {dictionary.messages.exchange.noBuyerLinked}
             </div>
           )}
 
           <div className="flex flex-wrap gap-2">
             {transaction?.conversationId ? (
               <Button asChild type="button" variant="secondary">
-                <Link href={`/app/messages/${transaction.conversationId}`}>Open buyer chat</Link>
+                <Link href={`/app/messages/${transaction.conversationId}`}>
+                  {dictionary.common.actions.openBuyerChat}
+                </Link>
               </Button>
             ) : null}
             {canReserve && transaction?.conversationId ? (
@@ -183,7 +163,7 @@ export function ListingTransactionPanel({
                 }
                 disabled={isPending}
               >
-                {isPending ? "Updating..." : "Reserve for buyer"}
+                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.reserveForBuyer}
               </Button>
             ) : null}
             {canRelease && transaction ? (
@@ -193,7 +173,7 @@ export function ListingTransactionPanel({
                 onClick={() => runAction(() => releaseReservationAction(transaction.id))}
                 disabled={isPending}
               >
-                {isPending ? "Updating..." : "Release reservation"}
+                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.releaseReservation}
               </Button>
             ) : null}
             {canComplete && transaction ? (
@@ -202,7 +182,7 @@ export function ListingTransactionPanel({
                 onClick={() => runAction(() => completeTransactionAction(transaction.id))}
                 disabled={isPending}
               >
-                {isPending ? "Updating..." : "Mark sold"}
+                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.markSold}
               </Button>
             ) : null}
             {transaction ? (
@@ -212,7 +192,7 @@ export function ListingTransactionPanel({
                 onClick={() => {
                   if (
                     !window.confirm(
-                      "Cancel this exchange? The listing will reopen for other buyers if it was reserved."
+                      dictionary.messages.exchange.confirmCancel
                     )
                   ) {
                     return;
@@ -222,13 +202,13 @@ export function ListingTransactionPanel({
                 }}
                 disabled={isPending}
               >
-                {isPending ? "Updating..." : "Cancel exchange"}
+                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.cancelExchange}
               </Button>
             ) : null}
           </div>
 
           <p className="text-xs text-slate-500">
-            Removal is a soft hide for safety. Chats, completed reviews, and audit history stay intact.
+            {dictionary.messages.thread.meetupSafelyBody}
           </p>
           {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
           {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
@@ -248,13 +228,15 @@ export function ListingTransactionPanel({
     <Card className="bg-white">
       <CardHeader className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-2xl font-semibold text-slate-950">Purchase flow</h2>
+          <h2 className="font-display text-2xl font-semibold text-slate-950">
+            {dictionary.messages.exchange.title}
+          </h2>
           <Badge className="bg-slate-950 text-white">
-            {formatTransactionState(
-              context.viewerTransaction?.state ??
-                context.activeTransaction?.state ??
-                listingStatus
-            )}
+            {context.viewerTransaction?.state
+              ? getExchangeStatusLabel(dictionary, context.viewerTransaction.state)
+              : context.activeTransaction?.state
+                ? getExchangeStatusLabel(dictionary, context.activeTransaction.state)
+                : getListingStatusLabel(dictionary, listingStatus)}
           </Badge>
         </div>
       </CardHeader>
@@ -277,21 +259,26 @@ export function ListingTransactionPanel({
             </div>
           </div>
           <div className="mt-3 grid gap-1">
-            <p>Listing price: {formatCurrency(context.viewerTransaction?.amount ?? listingPrice)}</p>
-            <p>Meetup area: {context.viewerTransaction?.meetupSpot ?? "To be agreed in chat"}</p>
-            <p>Meetup window: {context.viewerTransaction?.meetupWindow ?? "To be scheduled"}</p>
+            <p>{dictionary.messages.exchange.price}: {formatCurrency(context.viewerTransaction?.amount ?? listingPrice)}</p>
+            <p>{dictionary.messages.exchange.meetupArea}: {context.viewerTransaction?.meetupSpot ?? dictionary.messages.exchange.meetupTbd}</p>
+            <p>{dictionary.messages.exchange.meetupWindow}: {context.viewerTransaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}</p>
           </div>
         </div>
 
         {context.reservedForOtherBuyer ? (
           <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            This item is currently reserved for another buyer. You can still browse the listing, but you cannot start a new purchase request until it is released.
+            {dictionary.messages.exchange.reservedForOtherBuyer}
           </div>
         ) : null}
 
         {listingStatus === "sold" || context.activeTransaction?.state === "completed" ? (
           <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            This listing has already been completed. Reviews unlock only for the buyer and seller involved in the finished exchange.
+            {dictionary.messages.exchange.completedReviewInfo}
+            <div className="mt-3">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/app/my-purchases">{dictionary.messages.exchange.completedReviewCta}</Link>
+              </Button>
+            </div>
           </div>
         ) : null}
 
@@ -302,13 +289,15 @@ export function ListingTransactionPanel({
               onClick={() => runAction(() => startPurchaseIntentAction(listingId))}
               disabled={isPending}
             >
-              {isPending ? "Starting..." : "Buy now / request reservation"}
+              {isPending
+                ? dictionary.messages.exchange.startingPurchase
+                : dictionary.messages.exchange.startPurchase}
             </Button>
           ) : null}
           {context.viewerTransaction?.conversationId ? (
             <Button asChild type="button" variant="secondary">
               <Link href={`/app/messages/${context.viewerTransaction.conversationId}`}>
-                Open purchase chat
+                {dictionary.common.actions.openPurchaseChat}
               </Link>
             </Button>
           ) : null}
@@ -317,7 +306,7 @@ export function ListingTransactionPanel({
               type="button"
               variant="outline"
               onClick={() => {
-                if (!window.confirm(`Cancel your purchase request for "${listingTitle}"?`)) {
+                if (!window.confirm(dictionary.messages.exchange.confirmBuyerCancel)) {
                   return;
                 }
 
@@ -325,13 +314,13 @@ export function ListingTransactionPanel({
               }}
               disabled={isPending}
             >
-              {isPending ? "Updating..." : "Cancel request"}
+              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.cancelRequest}
             </Button>
           ) : null}
         </div>
 
         <p className="text-xs text-slate-500">
-          No online payment is collected yet. CampusSwap records purchase intent, reservation, and completion so both sides can coordinate the meetup clearly.
+          {dictionary.messages.exchange.noOnlinePayment}
         </p>
         {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
         {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}

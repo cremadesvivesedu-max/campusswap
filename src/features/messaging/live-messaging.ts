@@ -75,6 +75,7 @@ interface DbListingRow {
         url: string;
         alt: string;
         is_primary: boolean;
+        created_at?: string;
       }[]
     | null;
   seller: DbUserWithProfile | null;
@@ -196,7 +197,9 @@ function mapUser(row: DbUserWithProfile): User {
 
 function mapListing(row: DbListingRow): Listing {
   const images = [...(row.listing_images ?? [])].sort(
-    (left, right) => Number(right.is_primary) - Number(left.is_primary)
+    (left, right) =>
+      Number(right.is_primary) - Number(left.is_primary) ||
+      Date.parse(left.created_at ?? "") - Date.parse(right.created_at ?? "")
   );
 
   return {
@@ -331,7 +334,8 @@ const conversationSelect = `
       id,
       url,
       alt,
-      is_primary
+      is_primary,
+      created_at
     ),
     category:categories (
       slug

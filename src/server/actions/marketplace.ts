@@ -1023,10 +1023,10 @@ export async function submitTransactionReviewAction(
   const reviewText = String(formData.get("text") ?? "").trim();
   const rating = Number(formData.get("rating") ?? 0);
 
-  if (!transactionId || !targetUserId || rating < 1 || rating > 5 || !reviewText) {
+  if (!transactionId || !targetUserId || rating < 1 || rating > 5) {
     return {
       success: false,
-      message: "Choose a rating and share a short review before submitting."
+      message: "Choose a rating before submitting."
     };
   }
 

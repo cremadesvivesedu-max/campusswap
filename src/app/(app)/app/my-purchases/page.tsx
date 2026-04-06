@@ -5,7 +5,10 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { TransactionReviewForm } from "@/components/marketplace/transaction-review-form";
 import { Button } from "@/components/ui/button";
-import { getDictionaryForRequest } from "@/lib/i18n";
+import {
+  getDictionaryForRequest,
+  getExchangeStatusLabel
+} from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
@@ -67,7 +70,10 @@ export default async function MyPurchasesPage() {
                     </h2>
                     {counterpart ? (
                       <p className="text-sm text-slate-600">
-                        {transaction.buyerId === user.id ? "Seller" : "Buyer"}:{" "}
+                        {transaction.buyerId === user.id
+                          ? dictionary.myPurchases.sellerLabel
+                          : dictionary.myPurchases.buyerLabel}
+                        :{" "}
                         <Link
                           href={`/app/profile?userId=${counterpart.id}`}
                           className="font-medium text-slate-900 underline-offset-4 hover:underline"
@@ -77,22 +83,39 @@ export default async function MyPurchasesPage() {
                       </p>
                     ) : null}
                   </div>
-                  <Badge>{transaction.state}</Badge>
+                  <Badge>{getExchangeStatusLabel(dictionary, transaction.state)}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <p>Recorded value: {formatCurrency(transaction.amount)}</p>
-                  <p>Meetup spot: {transaction.meetupSpot}</p>
-                  <p>Meetup window: {transaction.meetupWindow}</p>
-                  {transaction.reservedAt ? <p>Reserved at: {new Date(transaction.reservedAt).toLocaleString("en-GB")}</p> : null}
-                  {transaction.completedAt ? <p>Completed at: {new Date(transaction.completedAt).toLocaleString("en-GB")}</p> : null}
+                  <p>
+                    {dictionary.myPurchases.recordedValue}:{" "}
+                    {formatCurrency(transaction.amount)}
+                  </p>
+                  <p>
+                    {dictionary.myPurchases.meetupSpot}: {transaction.meetupSpot}
+                  </p>
+                  <p>
+                    {dictionary.myPurchases.meetupWindow}: {transaction.meetupWindow}
+                  </p>
+                  {transaction.reservedAt ? (
+                    <p>
+                      {dictionary.myPurchases.reservedAt}:{" "}
+                      {new Date(transaction.reservedAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
+                  {transaction.completedAt ? (
+                    <p>
+                      {dictionary.myPurchases.completedAt}:{" "}
+                      {new Date(transaction.completedAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
                 </div>
 
                 {transaction.conversationId ? (
                   <Button asChild variant="outline">
                     <Link href={`/app/messages/${transaction.conversationId}`}>
-                      Open conversation
+                      {dictionary.myPurchases.openConversation}
                     </Link>
                   </Button>
                 ) : null}
@@ -100,17 +123,26 @@ export default async function MyPurchasesPage() {
                 {transaction.state === "completed" && counterpart ? (
                   hasAuthoredReview ? (
                     <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                      You already reviewed this exchange.
+                      {dictionary.myPurchases.alreadyReviewed}
                     </div>
                   ) : (
-                    <TransactionReviewForm
-                      transactionId={transaction.id}
-                      targetUserId={counterpart.id}
-                    />
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-slate-700">
+                        {dictionary.reviews.leaveReview}:{" "}
+                        {transaction.buyerId === user.id
+                          ? dictionary.myPurchases.sellerLabel
+                          : dictionary.myPurchases.buyerLabel}{" "}
+                        {counterpart.profile.fullName}
+                      </p>
+                      <TransactionReviewForm
+                        transactionId={transaction.id}
+                        targetUserId={counterpart.id}
+                      />
+                    </div>
                   )
                 ) : (
                   <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    Reviews unlock once the exchange is marked completed.
+                    {dictionary.myPurchases.reviewsUnlock}
                   </div>
                 )}
               </CardContent>
@@ -119,8 +151,8 @@ export default async function MyPurchasesPage() {
         </div>
       ) : (
         <EmptyState
-          title="No exchanges yet"
-          description="Once you start conversations and complete handoffs, they will appear here with review status."
+          title={dictionary.myPurchases.emptyTitle}
+          description={dictionary.myPurchases.emptyDescription}
         />
       )}
     </div>

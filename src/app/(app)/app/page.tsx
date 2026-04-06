@@ -4,6 +4,7 @@ import { ListingCard } from "@/components/marketplace/listing-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getActiveSponsoredPlacements,
   getCurrentUser,
@@ -12,11 +13,12 @@ import {
 } from "@/server/queries/marketplace";
 
 export default async function AppHomePage() {
-  const [user, feed, featuredListings, sponsors] = await Promise.all([
+  const [user, feed, featuredListings, sponsors, dictionary] = await Promise.all([
     getCurrentUser(),
     getHomeFeed(),
     getFeaturedListings(),
-    getActiveSponsoredPlacements("Home feed")
+    getActiveSponsoredPlacements("Home feed"),
+    getDictionaryForRequest()
   ]);
   const sponsor = sponsors[0];
 
@@ -27,19 +29,18 @@ export default async function AppHomePage() {
           <CardContent className="space-y-6 p-8">
             <div className="space-y-3">
               <p className="font-display text-4xl font-semibold">
-                Welcome back, {user.profile.fullName.split(" ")[0]}.
+                {dictionary.appHome.welcomeBack}, {user.profile.fullName.split(" ")[0]}.
               </p>
               <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                Your feed prioritizes bikes, furniture, kitchen equipment, and fast
-                pickup listings based on your profile, saved items, and recent searches.
+                {dictionary.appHome.feedDescription}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/app/sell">Sell / upload product</Link>
+                <Link href="/app/sell">{dictionary.appHome.sellUpload}</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link href="/app/search">Search all listings</Link>
+                <Link href="/app/search">{dictionary.appHome.searchAllListings}</Link>
               </Button>
             </div>
           </CardContent>
@@ -67,19 +68,19 @@ export default async function AppHomePage() {
             <CardContent className="flex items-center justify-between gap-4 p-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                  Seller momentum
+                  {dictionary.appHome.sellerMomentumEyebrow}
                 </p>
                 <p className="font-display text-2xl font-semibold text-slate-950">
-                  Need to sell before moving out?
+                  {dictionary.appHome.sellerMomentumTitle}
                 </p>
                 <p className="text-sm leading-6 text-slate-600">
-                  Launch your listing, mark it urgent, and promote it if timing is tight.
+                  {dictionary.appHome.sellerMomentumDescription}
                 </p>
               </div>
               <Button asChild variant="secondary">
                 <Link href="/app/sell">
                   <Megaphone className="mr-2 h-4 w-4" />
-                  Start selling
+                  {dictionary.common.actions.startSelling}
                 </Link>
               </Button>
             </CardContent>
@@ -89,9 +90,9 @@ export default async function AppHomePage() {
 
       <section className="space-y-6">
         <SectionHeading
-          eyebrow="Featured right now"
-          title="High-intent inventory across the city."
-          description="A mix of boosted, fast-moving, and student-relevant listings from across Maastricht."
+          eyebrow={dictionary.appHome.featuredEyebrow}
+          title={dictionary.appHome.featuredTitle}
+          description={dictionary.appHome.featuredDescription}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {featuredListings.slice(0, 3).map((listing) => (
@@ -103,13 +104,13 @@ export default async function AppHomePage() {
       <section className="space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <SectionHeading
-            eyebrow="Home feed"
-            title="What is moving now."
-            description="Fresh listings, practical essentials, and value-oriented items that tend to convert quickly."
+            eyebrow={dictionary.appHome.homeFeedEyebrow}
+            title={dictionary.appHome.homeFeedTitle}
+            description={dictionary.appHome.homeFeedDescription}
           />
           <Button asChild variant="outline">
             <Link href="/app/search">
-              Browse every category
+              {dictionary.common.actions.browseEveryCategory}
               <ArrowUpRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

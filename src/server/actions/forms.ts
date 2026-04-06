@@ -30,6 +30,7 @@ interface ListingFormValues {
   negotiable: boolean;
   outlet: boolean;
   urgent: boolean;
+  requestFeatured: boolean;
   replaceImages: boolean;
   imageFiles: File[];
 }
@@ -46,6 +47,7 @@ function readListingFormValues(formData: FormData): ListingFormValues {
     negotiable: formData.get("negotiable") === "on",
     outlet: formData.get("outlet") === "on",
     urgent: formData.get("urgent") === "on",
+    requestFeatured: formData.get("requestFeatured") === "on",
     replaceImages: formData.get("replaceImages") === "on",
     imageFiles: formData
       .getAll("images")
@@ -128,6 +130,83 @@ async function replaceListingImagesIfNeeded(
   if (imagesError) {
     throw new Error(imagesError.message);
   }
+}
+
+async function getFeaturedListingPrice() {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return 2;
+  }
+
+  const { data } = await admin
+    .from("pricing_settings")
+    .select("value")
+    .eq("module", "promoted-listings")
+    .eq("active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return Number(data?.value ?? 2);
+}
+
+async function syncFeaturedPromotionRequest({
+  listingId,
+  sellerId,
+  requestFeatured
+}: {
+  listingId: string;
+  sellerId: string;
+  requestFeatured: boolean;
+}) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return "none" as const;
+  }
+
+  const { data: existing } = await admin
+    .from("promotion_purchases")
+    .select("id, active")
+    .eq("listing_id", listingId)
+    .eq("seller_id", sellerId)
+    .eq("type", "featured")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!requestFeatured) {
+    if (existing?.id && existing.active === false) {
+      await admin.from("promotion_purchases").delete().eq("id", existing.id);
+    }
+
+    return "none" as const;
+  }
+
+  if (existing?.active === true) {
+    return "active" as const;
+  }
+
+  if (!existing?.id) {
+    const amount = await getFeaturedListingPrice();
+    await admin.from("promotion_purchases").insert({
+      listing_id: listingId,
+      seller_id: sellerId,
+      type: "featured",
+      amount,
+      active: false
+    });
+  }
+
+  await admin.from("notifications").insert({
+    user_id: sellerId,
+    type: "promotion",
+    title: "Promotion request recorded",
+    body: "CampusSwap saved your EUR 2 highlight request. The listing stays non-featured until payment or admin activation is completed."
+  });
+
+  return "pending" as const;
 }
 
 export async function joinWaitlistAction(_: unknown, formData: FormData) {
@@ -352,6 +431,7 @@ export async function createListingAction(_: unknown, formData: FormData) {
     negotiable,
     outlet,
     urgent,
+    requestFeatured,
     imageFiles
   } = readListingFormValues(formData);
   const flaggedForModeration = shouldModerateListing(title, description);
@@ -438,6 +518,12 @@ export async function createListingAction(_: unknown, formData: FormData) {
     }
   }
 
+  const promotionState = await syncFeaturedPromotionRequest({
+    listingId: listing.id,
+    sellerId: user.id,
+    requestFeatured
+  });
+
   await supabase.from("notifications").insert({
     user_id: user.id,
     type: "listing",
@@ -455,11 +541,15 @@ export async function createListingAction(_: unknown, formData: FormData) {
 
   return {
     success: true,
-    message: needsReview
+    message: `${needsReview
       ? requiresTrustReview
         ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
         : "Listing submitted and queued for moderation review."
-      : "Listing published."
+      : "Listing published."}${
+      promotionState === "pending"
+        ? " Promotion request recorded. The listing will only appear as featured after payment or admin activation."
+        : ""
+    }`
   } satisfies ActionState;
 }
 
@@ -476,6 +566,7 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     negotiable,
     outlet,
     urgent,
+    requestFeatured,
     replaceImages,
     imageFiles
   } = readListingFormValues(formData);
@@ -601,6 +692,12 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     }
   }
 
+  const promotionState = await syncFeaturedPromotionRequest({
+    listingId,
+    sellerId: listing.seller_id,
+    requestFeatured
+  });
+
   await supabase.from("notifications").insert({
     user_id: listing.seller_id,
     type: "listing",
@@ -622,9 +719,14 @@ export async function updateListingAction(_: unknown, formData: FormData) {
 
   return {
     success: true,
-    message:
+    message: `${
       nextStatus === "pending-review"
         ? "Listing updated. It will return to browse after a quick trust or moderation review."
         : "Listing updated."
+    }${
+      promotionState === "pending"
+        ? " Promotion request is pending payment or admin activation."
+        : ""
+    }`
   } satisfies ActionState;
 }

@@ -2,6 +2,7 @@
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { MessagePreview } from "@/components/marketplace/message-preview";
+import { useLocale } from "@/components/providers/locale-provider";
 import { useDemoConversations } from "@/features/messaging/demo-messaging-store";
 import { useLiveConversationPreviews } from "@/features/messaging/live-messaging";
 import { demoData } from "@/lib/demo-data";
@@ -16,6 +17,7 @@ export function MessagesInbox({ currentUserId }: { currentUserId: string }) {
 }
 
 function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
+  const { dictionary } = useLocale();
   const conversations = useDemoConversations(currentUserId);
   const previews = conversations
     .map((conversation) => {
@@ -45,8 +47,8 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
   if (!previews.length) {
     return (
       <EmptyState
-        title="No conversations yet"
-        description="When you message a seller from a listing, the thread will appear here with the listing context attached."
+        title={dictionary.messages.inbox.emptyTitle}
+        description={dictionary.messages.inbox.emptyDescription}
       />
     );
   }
@@ -61,12 +63,13 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
 }
 
 function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
+  const { dictionary } = useLocale();
   const { previews, error } = useLiveConversationPreviews(currentUserId);
 
   if (error) {
     return (
       <EmptyState
-        title="Unable to load messages"
+        title={dictionary.messages.inbox.loadErrorTitle}
         description={error}
       />
     );
@@ -75,8 +78,8 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   if (!previews.length) {
     return (
       <EmptyState
-        title="No conversations yet"
-        description="When you message a seller from a listing, the thread will appear here with the listing context attached."
+        title={dictionary.messages.inbox.emptyTitle}
+        description={dictionary.messages.inbox.emptyDescription}
       />
     );
   }

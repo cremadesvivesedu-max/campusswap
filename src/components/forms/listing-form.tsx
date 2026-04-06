@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "@/components/providers/locale-provider";
+import { getConditionLabel } from "@/lib/i18n-shared";
 import { createListingAction, updateListingAction } from "@/server/actions/forms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +13,17 @@ import type { Category, Listing } from "@/types/domain";
 interface ListingFormProps {
   categories: Category[];
   initialListing?: Listing;
+  featuredPrice?: number;
+  promotionState?: "none" | "pending" | "active";
 }
 
-export function ListingForm({ categories, initialListing }: ListingFormProps) {
+export function ListingForm({
+  categories,
+  initialListing,
+  featuredPrice = 2,
+  promotionState = "none"
+}: ListingFormProps) {
+  const { dictionary } = useLocale();
   const formActionHandler = initialListing ? updateListingAction : createListingAction;
   const [state, action] = useActionState(formActionHandler, {
     success: false,
@@ -29,24 +39,24 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
       {initialListing ? <input type="hidden" name="listingId" value={initialListing.id} /> : null}
       <Input
         name="title"
-        placeholder="Title"
+        placeholder={dictionary.listingForm.titlePlaceholder}
         defaultValue={initialListing?.title}
       />
       <Textarea
         name="description"
-        placeholder="Describe condition, pickup timing, and what is included"
+        placeholder={dictionary.listingForm.descriptionPlaceholder}
         defaultValue={initialListing?.description}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           name="price"
           type="number"
-          placeholder="Price"
+          placeholder={dictionary.listingForm.pricePlaceholder}
           defaultValue={initialListing?.price}
         />
         <Input
           name="pickupArea"
-          placeholder="Pickup area"
+          placeholder={dictionary.listingForm.pickupAreaPlaceholder}
           defaultValue={initialListing?.pickupArea}
         />
       </div>
@@ -64,19 +74,19 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
         </select>
         <select
           name="condition"
-          className="h-11 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
+        className="h-11 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
           defaultValue={initialListing?.condition ?? "good"}
         >
-          <option value="like-new">Like new</option>
-          <option value="good">Good</option>
-          <option value="fair">Fair</option>
-          <option value="needs-love">Needs love</option>
+          <option value="like-new">{getConditionLabel(dictionary, "like-new")}</option>
+          <option value="good">{getConditionLabel(dictionary, "good")}</option>
+          <option value="fair">{getConditionLabel(dictionary, "fair")}</option>
+          <option value="needs-love">{getConditionLabel(dictionary, "needs-love")}</option>
         </select>
       </div>
       {initialListing?.images.length ? (
         <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Current photos
+            {dictionary.listingForm.currentPhotos}
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
             {initialListing.images.map((image) => (
@@ -97,14 +107,16 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
       ) : null}
       <label className="block rounded-2xl border border-border bg-slate-50 p-4 text-sm">
         <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-          {isEditing ? "Add more photos" : "Listing photos"}
+          {isEditing
+            ? dictionary.listingForm.addMorePhotos
+            : dictionary.listingForm.listingPhotos}
         </span>
         <input name="images" type="file" accept="image/*" multiple />
       </label>
       {isEditing && initialListing?.images.length ? (
         <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm text-slate-700">
           <input className="mr-2" name="replaceImages" type="checkbox" />{" "}
-          Replace current gallery with these uploads
+          {dictionary.listingForm.replaceGallery}
         </label>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -115,7 +127,7 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
             type="checkbox"
             defaultChecked={initialListing?.negotiable ?? true}
           />{" "}
-          Negotiable
+          {dictionary.listingForm.negotiable}
         </label>
         <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
@@ -124,7 +136,7 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
             type="checkbox"
             defaultChecked={initialListing?.outlet ?? false}
           />{" "}
-          Outlet
+          {dictionary.listingForm.outlet}
         </label>
         <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
@@ -133,11 +145,38 @@ export function ListingForm({ categories, initialListing }: ListingFormProps) {
             type="checkbox"
             defaultChecked={initialListing?.urgent ?? false}
           />{" "}
-          Urgent
+          {dictionary.listingForm.urgent}
         </label>
       </div>
+      <div className="space-y-3 rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
+        <label className="block">
+          <input
+            className="mr-2"
+            name="requestFeatured"
+            type="checkbox"
+            defaultChecked={promotionState !== "none"}
+          />
+          {dictionary.listingForm.featuredRequestLabel.replace(
+            "EUR 2",
+            `EUR ${featuredPrice}`
+          )}
+        </label>
+        <p>{dictionary.listingForm.featuredRequestHelp}</p>
+        {promotionState === "pending" ? (
+          <p className="font-medium text-amber-900">
+            {dictionary.listingForm.featuredPendingNote}
+          </p>
+        ) : null}
+        {promotionState === "active" ? (
+          <p className="font-medium text-emerald-700">
+            {dictionary.listingForm.featuredActiveNote}
+          </p>
+        ) : null}
+      </div>
       <Button className="w-full" type="submit">
-        {isEditing ? "Save changes" : "Publish listing"}
+        {isEditing
+          ? dictionary.listingForm.saveChanges
+          : dictionary.listingForm.publishListing}
       </Button>
       {state.message ? (
         <p className={`text-sm ${state.success ? "text-slate-600" : "text-rose-700"}`}>

@@ -2,7 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getDictionaryForRequest } from "@/lib/i18n";
+import {
+  getConditionLabel,
+  getDictionaryForRequest,
+  getListingStatusLabel
+} from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
@@ -10,7 +14,7 @@ import {
   getListingTransactionContext,
   getUserById
 } from "@/server/queries/marketplace";
-import { ListingImage } from "@/components/marketplace/listing-image";
+import { ListingGallery } from "@/components/marketplace/listing-gallery";
 import { ListingTransactionPanel } from "@/components/marketplace/listing-transaction-panel";
 import { MessageSellerButton } from "@/components/marketplace/message-seller-button";
 import { PickupAreaMap } from "@/components/marketplace/pickup-area-map";
@@ -45,30 +49,29 @@ export default async function ListingDetailPage({
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_0.42fr]">
       <div className="space-y-6">
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-glow">
-          <ListingImage
-            src={listing.images[0]?.url}
-            alt={listing.images[0]?.alt ?? listing.title}
-            className="h-full w-full"
-            priority
-            sizes="(max-width: 1024px) 100vw, 66vw"
-          />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950/20 to-transparent" />
-        </div>
+        <ListingGallery images={listing.images} title={listing.title} />
         <Card className="bg-white">
           <CardContent className="space-y-4 p-8">
             <div className="flex flex-wrap gap-2">
               {listing.featured ? (
-                <Badge className="bg-amber-200 text-slate-900">Featured</Badge>
+                <Badge className="bg-amber-200 text-slate-900">
+                  {dictionary.listing.featured}
+                </Badge>
               ) : null}
               {listing.outlet ? (
-                <Badge className="bg-rose-100 text-rose-900">Outlet</Badge>
+                <Badge className="bg-rose-100 text-rose-900">
+                  {dictionary.listing.outlet}
+                </Badge>
               ) : null}
               {listing.urgent ? (
-                <Badge className="bg-orange-100 text-orange-900">Urgent</Badge>
+                <Badge className="bg-orange-100 text-orange-900">
+                  {dictionary.listing.urgent}
+                </Badge>
               ) : null}
-              <Badge>{listing.condition}</Badge>
-              {listing.status !== "active" ? <Badge>{listing.status}</Badge> : null}
+              <Badge>{getConditionLabel(dictionary, listing.condition)}</Badge>
+              {listing.status !== "active" ? (
+                <Badge>{getListingStatusLabel(dictionary, listing.status)}</Badge>
+              ) : null}
             </div>
             <h1 className="font-display text-4xl font-semibold text-slate-950">
               {listing.title}
@@ -97,12 +100,12 @@ export default async function ListingDetailPage({
             </div>
             {!isOwnListing && listing.status === "reserved" && transactionContext.reservedForOtherBuyer ? (
               <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                This item is currently reserved for another buyer. You can still follow the listing, but a new purchase request cannot start until the seller releases the reservation.
+                {dictionary.listing.reservedForOther}
               </p>
             ) : null}
             {isOwnListing && listing.status === "hidden" ? (
               <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                This listing is hidden from public browse pages. You can relist it from My listings or keep it removed while preserving past chat and review history.
+                {dictionary.listing.hiddenOwn}
               </p>
             ) : null}
           </CardContent>
@@ -111,6 +114,7 @@ export default async function ListingDetailPage({
           pickupArea={listing.pickupArea}
           location={listing.location}
           neighborhood={seller?.profile.neighborhood}
+          copy={dictionary.map}
         />
       </div>
       <div className="space-y-6">
@@ -147,8 +151,12 @@ export default async function ListingDetailPage({
               rating={listing.sellerRating}
               reviewCount={seller?.profile.reviewCount}
             />
-            <p>Response rate {Math.round(listing.sellerResponseRate * 100)}%</p>
-            <p>Pickup area: {listing.pickupArea}</p>
+            <p>
+              {dictionary.listing.responseRate} {Math.round(listing.sellerResponseRate * 100)}%
+            </p>
+            <p>
+              {dictionary.listing.pickupArea}: {listing.pickupArea}
+            </p>
             {isOwnListing ? (
               <>
                 <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -157,7 +165,7 @@ export default async function ListingDetailPage({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Button asChild variant="secondary">
                     <Link href={`/app/sell?listingId=${listing.id}`}>
-                      Edit listing
+                      {dictionary.listing.editListing}
                     </Link>
                   </Button>
                   <RemoveListingButton
@@ -190,9 +198,9 @@ export default async function ListingDetailPage({
             </h2>
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-7 text-slate-300">
-            <p>Prefer daylight and campus-adjacent pickup spots.</p>
-            <p>Keep listing-linked chat active until the meetup is confirmed.</p>
-            <p>Only mark the exchange complete after the handoff is done.</p>
+            {dictionary.listing.meetupTips.map((tip) => (
+              <p key={tip}>{tip}</p>
+            ))}
           </CardContent>
         </Card>
       </div>

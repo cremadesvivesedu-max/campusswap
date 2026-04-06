@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useLocale } from "@/components/providers/locale-provider";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
@@ -22,6 +23,10 @@ import {
   useLiveConversationThread
 } from "@/features/messaging/live-messaging";
 import { demoData } from "@/lib/demo-data";
+import {
+  getExchangeStatusLabel,
+  getLocalizedQuickAction
+} from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
 import {
@@ -64,33 +69,6 @@ interface ConversationShellProps {
   sidebar: ReactNode;
 }
 
-function formatTransactionState(state?: string) {
-  switch (state) {
-    case "hidden":
-      return "Removed";
-    case "sold":
-      return "Sold";
-    case "archived":
-      return "Archived";
-    case "pending-review":
-      return "Pending review";
-    case "inquiry":
-      return "Conversation started";
-    case "negotiating":
-      return "Purchase requested";
-    case "reserved":
-      return "Reserved";
-    case "completed":
-      return "Completed";
-    case "cancelled":
-      return "Cancelled";
-    case "reported":
-      return "Reported";
-    default:
-      return "Chat only";
-  }
-}
-
 function formatDateTime(value?: string) {
   if (!value) {
     return undefined;
@@ -119,6 +97,7 @@ function ExchangePanel({
   buyer: User;
   seller: User;
 }) {
+  const { dictionary } = useLocale();
   const router = useRouter();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -148,7 +127,9 @@ function ExchangePanel({
     });
   };
 
-  const stateLabel = formatTransactionState(transaction?.state);
+  const stateLabel = transaction?.state
+    ? getExchangeStatusLabel(dictionary, transaction.state)
+    : dictionary.messages.exchange.chatOnly;
   const canReserve = isSeller && (!transaction || ["inquiry", "negotiating"].includes(transaction.state));
   const canRelease = isSeller && transaction?.state === "reserved";
   const canComplete = isSeller && !!transaction && ["inquiry", "negotiating", "reserved"].includes(transaction.state);
@@ -162,8 +143,8 @@ function ExchangePanel({
             <p className="font-display text-xl font-semibold text-slate-950">Exchange status</p>
             <p className="text-sm text-slate-500">
               {isSeller
-                ? "Reserve this item for the buyer in this thread, then mark it sold after the meetup."
-                : "Use this thread to confirm the meetup. Online payment is not taken in this MVP."}
+                ? dictionary.messages.exchange.sellerBody
+                : dictionary.messages.exchange.buyerBody}
             </p>
           </div>
           <Badge className="bg-slate-950 text-white">{stateLabel}</Badge>
@@ -179,7 +160,9 @@ function ExchangePanel({
             />
             <div>
               <p className="font-medium text-slate-950">
-                {isSeller ? `Buyer: ${counterpart.profile.fullName}` : `Seller: ${counterpart.profile.fullName}`}
+                {isSeller
+                  ? `${dictionary.messages.exchange.buyerLabel}: ${counterpart.profile.fullName}`
+                  : `${dictionary.messages.exchange.sellerLabel}: ${counterpart.profile.fullName}`}
               </p>
               <StarRating
                 rating={counterpart.profile.ratingAverage}
@@ -189,13 +172,13 @@ function ExchangePanel({
             </div>
           </div>
           <div className="mt-4 grid gap-2 text-sm text-slate-600">
-            <p>Listing status: {listingStatus}</p>
-            <p>Price: {transaction ? formatCurrency(transaction.amount) : "Pending confirmation"}</p>
-            <p>Meetup area: {transaction?.meetupSpot ?? "To be agreed in chat"}</p>
-            <p>Meetup window: {transaction?.meetupWindow ?? "To be scheduled"}</p>
-            {transaction?.reservedAt ? <p>Reserved at: {formatDateTime(transaction.reservedAt)}</p> : null}
-            {transaction?.completedAt ? <p>Completed at: {formatDateTime(transaction.completedAt)}</p> : null}
-            {transaction?.cancelledAt ? <p>Cancelled at: {formatDateTime(transaction.cancelledAt)}</p> : null}
+            <p>{dictionary.messages.exchange.listingStatus}: {listingStatus}</p>
+            <p>{dictionary.messages.exchange.price}: {transaction ? formatCurrency(transaction.amount) : dictionary.messages.exchange.pricePending}</p>
+            <p>{dictionary.messages.exchange.meetupArea}: {transaction?.meetupSpot ?? dictionary.messages.exchange.meetupTbd}</p>
+            <p>{dictionary.messages.exchange.meetupWindow}: {transaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}</p>
+            {transaction?.reservedAt ? <p>{dictionary.messages.exchange.reservedAt}: {formatDateTime(transaction.reservedAt)}</p> : null}
+            {transaction?.completedAt ? <p>{dictionary.messages.exchange.completedAt}: {formatDateTime(transaction.completedAt)}</p> : null}
+            {transaction?.cancelledAt ? <p>{dictionary.messages.exchange.cancelledAt}: {formatDateTime(transaction.cancelledAt)}</p> : null}
           </div>
         </div>
 
@@ -206,7 +189,7 @@ function ExchangePanel({
               onClick={() => runAction(() => reserveConversationBuyerAction(conversationId))}
               disabled={isPending}
             >
-              {isPending ? "Updating..." : "Reserve for this buyer"}
+              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.reserveForBuyer}
             </Button>
           ) : null}
           {canRelease && transaction ? (
@@ -216,7 +199,7 @@ function ExchangePanel({
               onClick={() => runAction(() => releaseReservationAction(transaction.id))}
               disabled={isPending}
             >
-              {isPending ? "Updating..." : "Release reservation"}
+              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.releaseReservation}
             </Button>
           ) : null}
           {canComplete && transaction ? (
@@ -226,7 +209,7 @@ function ExchangePanel({
               onClick={() => runAction(() => completeTransactionAction(transaction.id))}
               disabled={isPending}
             >
-              {isPending ? "Updating..." : "Mark sold"}
+              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.markSold}
             </Button>
           ) : null}
           {canCancel && transaction ? (
@@ -234,7 +217,7 @@ function ExchangePanel({
               type="button"
               variant="outline"
               onClick={() => {
-                if (!window.confirm("Cancel this exchange and reopen the listing if needed?")) {
+                if (!window.confirm(dictionary.messages.exchange.confirmCancel)) {
                   return;
                 }
 
@@ -242,12 +225,19 @@ function ExchangePanel({
               }}
               disabled={isPending}
             >
-              {isPending ? "Updating..." : "Cancel exchange"}
+              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.cancelExchange}
             </Button>
           ) : null}
           {transaction?.conversationId ? (
             <Button asChild type="button" variant="ghost">
-              <Link href={`/app/listings/${transaction.listingId}`}>Open listing</Link>
+              <Link href={`/app/listings/${transaction.listingId}`}>
+                {dictionary.common.actions.openListing}
+              </Link>
+            </Button>
+          ) : null}
+          {transaction?.state === "completed" ? (
+            <Button asChild type="button" variant="outline">
+              <Link href="/app/my-purchases">{dictionary.messages.exchange.completedReviewCta}</Link>
             </Button>
           ) : null}
         </div>
@@ -278,6 +268,7 @@ function ConversationShell({
   supportsAttachments,
   sidebar
 }: ConversationShellProps) {
+  const { dictionary } = useLocale();
   const [composerValue, setComposerValue] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -348,9 +339,9 @@ function ConversationShell({
             <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Live thread
+                  {dictionary.messages.thread.liveThread}
                 </p>
-                <p className="text-xs text-slate-500">New messages appear here automatically.</p>
+                <p className="text-xs text-slate-500">{dictionary.messages.thread.autoUpdate}</p>
               </div>
             </div>
 
@@ -406,7 +397,7 @@ function ConversationShell({
               <div className="space-y-4">
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Quick replies
+                    {dictionary.messages.thread.quickReplies}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {quickActions.map((action) => (
@@ -417,7 +408,7 @@ function ConversationShell({
                         onClick={() => onSend(action)}
                         disabled={isPending}
                       >
-                        {action}
+                        {getLocalizedQuickAction(dictionary, action)}
                       </button>
                     ))}
                   </div>
@@ -425,7 +416,7 @@ function ConversationShell({
 
                 {supportsAttachments && pendingAttachment ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    Attachment ready: {pendingAttachment.name}
+                    {dictionary.messages.thread.attachmentReady}: {pendingAttachment.name}
                   </div>
                 ) : null}
 
@@ -433,7 +424,7 @@ function ConversationShell({
                   <Textarea
                     value={composerValue}
                     onChange={(event) => setComposerValue(event.target.value)}
-                    placeholder="Write a message about timing, price, or pickup details"
+                    placeholder={dictionary.messages.thread.messagePlaceholder}
                     className="min-h-[112px] resize-none"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -455,13 +446,13 @@ function ConversationShell({
                             onClick={() => fileInputRef.current?.click()}
                           >
                             <Paperclip className="mr-2 h-4 w-4" />
-                            Attach
+                            {dictionary.messages.thread.attach}
                           </Button>
                         </>
                       ) : (
                         <Button type="button" variant="outline" disabled>
                           <Paperclip className="mr-2 h-4 w-4" />
-                          Attach coming soon
+                          {dictionary.messages.thread.attachSoon}
                         </Button>
                       )}
                     </div>
@@ -477,9 +468,9 @@ function ConversationShell({
                         setPendingAttachment(null);
                       }}
                       disabled={isPending}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      {isPending ? "Sending..." : "Send"}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                      {isPending ? dictionary.messages.thread.sending : dictionary.messages.thread.send}
                     </Button>
                   </div>
                 </div>
@@ -495,22 +486,19 @@ function ConversationShell({
         <Card className="bg-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-600">
             <p className="font-display text-xl font-semibold text-slate-950">
-              Listing context
+              {dictionary.messages.thread.listingContext}
             </p>
             <p>{listingDescription}</p>
-            <p>Pickup area: {listingPickupArea}</p>
+            <p>{dictionary.messages.thread.pickupArea}: {listingPickupArea}</p>
           </CardContent>
         </Card>
         {sidebar}
         <Card className="bg-slate-950 text-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-300">
             <p className="font-display text-xl font-semibold text-white">
-              Meetup safely
+              {dictionary.messages.thread.meetupSafely}
             </p>
-            <p>
-              Prefer campus-adjacent or high-footfall pickup spots and keep
-              listing-linked chat active until the handoff is done.
-            </p>
+            <p>{dictionary.messages.thread.meetupSafelyBody}</p>
           </CardContent>
         </Card>
       </div>
@@ -543,6 +531,7 @@ function DemoConversationThread({
   conversationId,
   currentUserId
 }: ConversationThreadProps) {
+  const { dictionary } = useLocale();
   const conversation = useDemoConversation(conversationId);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -559,8 +548,8 @@ function DemoConversationThread({
   if (!conversation || !listing || !seller) {
     return (
       <EmptyState
-        title="Conversation unavailable"
-        description="The chat context could not be loaded. Try opening the listing again and starting a new message."
+        title={dictionary.messages.thread.conversationUnavailableTitle}
+        description={dictionary.messages.thread.conversationUnavailableDescription}
       />
     );
   }
@@ -596,7 +585,7 @@ function DemoConversationThread({
             setError(
               caughtError instanceof Error
                 ? caughtError.message
-                : "Unable to send the message right now."
+                : dictionary.messages.inbox.loadErrorTitle
             );
           }
         });
@@ -608,12 +597,9 @@ function DemoConversationThread({
         <Card className="bg-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-600">
             <p className="font-display text-xl font-semibold text-slate-950">
-              Demo exchange state
+              {dictionary.messages.thread.demoExchangeTitle}
             </p>
-            <p>
-              Switch to live mode to persist reservation, sold state, and mutual
-              review eligibility inside this conversation.
-            </p>
+            <p>{dictionary.messages.thread.demoExchangeDescription}</p>
           </CardContent>
         </Card>
       }
@@ -625,6 +611,7 @@ function LiveConversationThread({
   conversationId,
   currentUserId
 }: ConversationThreadProps) {
+  const { dictionary } = useLocale();
   const { thread, error: threadError } = useLiveConversationThread(
     conversationId,
     currentUserId
@@ -635,8 +622,10 @@ function LiveConversationThread({
   if (!thread) {
     return (
       <EmptyState
-        title="Conversation unavailable"
-        description={threadError ?? "The conversation is still loading or no longer exists."}
+        title={dictionary.messages.thread.conversationUnavailableTitle}
+        description={
+          threadError ?? dictionary.messages.thread.conversationUnavailableDescription
+        }
       />
     );
   }
@@ -669,7 +658,7 @@ function LiveConversationThread({
             setError(
               caughtError instanceof Error
                 ? caughtError.message
-                : "Unable to send the message right now."
+                : dictionary.messages.inbox.loadErrorTitle
             );
           }
         });

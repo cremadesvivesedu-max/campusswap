@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRatingInput } from "@/components/shared/star-rating-input";
@@ -18,6 +19,7 @@ export function TransactionReviewForm({
   transactionId: string;
   targetUserId: string;
 }) {
+  const { dictionary } = useLocale();
   const [state, formAction, pending] = useActionState(
     submitTransactionReviewAction,
     initialState
@@ -29,17 +31,27 @@ export function TransactionReviewForm({
       <input type="hidden" name="targetUserId" value={targetUserId} />
       <label className="block">
         <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-          Rating
+          {dictionary.reviews.ratingLabel}
         </span>
         <StarRatingInput name="rating" defaultValue={5} />
       </label>
-      <Textarea
-        name="text"
-        placeholder="Describe the handoff, communication, and whether the item matched the listing."
-        className="min-h-[110px] border-slate-200 bg-white"
-      />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            {dictionary.reviews.textLabel}
+          </span>
+          <span className="text-xs text-slate-400">
+            {dictionary.reviews.textOptionalHint}
+          </span>
+        </div>
+        <Textarea
+          name="text"
+          placeholder={dictionary.reviews.placeholder}
+          className="min-h-[110px] border-slate-200 bg-white"
+        />
+      </div>
       <Button type="submit" disabled={pending}>
-        {pending ? "Submitting..." : "Leave review"}
+        {pending ? dictionary.reviews.submitting : dictionary.reviews.leaveReview}
       </Button>
       {state.message ? (
         <p className={`text-xs ${state.success ? "text-emerald-700" : "text-rose-700"}`}>

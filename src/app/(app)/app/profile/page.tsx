@@ -67,10 +67,10 @@ export default async function ProfilePage({
               </p>
               <p className="text-sm leading-6 text-slate-600">
                 {profileUser.verificationStatus === "verified"
-                  ? "Student verification is visible across listings and messages."
+                  ? dictionary.profile.verificationDescriptions.verified
                   : profileUser.verificationStatus === "pending"
-                    ? "This account is active while student verification is still pending."
-                    : "This account can use CampusSwap normally, but student verification has not been added yet."}
+                    ? dictionary.profile.verificationDescriptions.pending
+                    : dictionary.profile.verificationDescriptions.unverified}
               </p>
               <StarRating
                 rating={profileUser.profile.ratingAverage}
@@ -83,7 +83,7 @@ export default async function ProfilePage({
           </div>
           {isOwnProfile ? (
             <Button asChild>
-              <Link href="/app/profile/edit">Edit profile</Link>
+              <Link href="/app/profile/edit">{dictionary.profile.editProfile}</Link>
             </Button>
           ) : null}
         </div>
@@ -142,8 +142,8 @@ export default async function ProfilePage({
           </div>
         ) : (
           <EmptyState
-            title="No active listings right now"
-            description="When this seller publishes new items, they will appear here."
+            title={dictionary.profile.emptyStates.activeTitle}
+            description={dictionary.profile.emptyStates.activeDescription}
           />
         )}
       </section>
@@ -166,8 +166,8 @@ export default async function ProfilePage({
           </div>
         ) : (
           <EmptyState
-            title="No reserved listings"
-            description="Nothing is currently marked as reserved for this seller."
+            title={dictionary.profile.emptyStates.reservedTitle}
+            description={dictionary.profile.emptyStates.reservedDescription}
           />
         )}
       </section>
@@ -186,8 +186,8 @@ export default async function ProfilePage({
           </div>
         ) : (
           <EmptyState
-            title="No sold items yet"
-            description="Completed exchanges will appear here once this seller marks listings as sold."
+            title={dictionary.profile.emptyStates.soldTitle}
+            description={dictionary.profile.emptyStates.soldDescription}
           />
         )}
       </section>
@@ -221,8 +221,8 @@ export default async function ProfilePage({
           </div>
         ) : (
           <EmptyState
-            title="No reviews yet"
-            description="Reviews will appear here after completed exchanges."
+            title={dictionary.profile.emptyStates.reviewsTitle}
+            description={dictionary.profile.emptyStates.reviewsDescription}
           />
         )}
       </section>
