@@ -473,7 +473,12 @@ async function fetchUserRowById(userId: string) {
   return (data as unknown as DbUserWithProfile | null) ?? null;
 }
 
-async function fetchListingRows(input: ListingSearchInput & { includeStatuses?: Listing["status"][] } = {}) {
+async function fetchListingRows(
+  input: ListingSearchInput & {
+    includeStatuses?: Listing["status"][];
+    includeRemoved?: boolean;
+  } = {}
+) {
   const supabase = await getSupabaseClient();
   if (!supabase) {
     return [];
@@ -484,6 +489,10 @@ async function fetchListingRows(input: ListingSearchInput & { includeStatuses?: 
     input.includeStatuses ?? ["active", "reserved"];
 
   query = query.in("status", visibleStatuses);
+
+  if (!input.includeRemoved) {
+    query = query.is("removed_at", null);
+  }
 
   if (input.categorySlug) {
     const { data: category } = await supabase
@@ -825,9 +834,16 @@ export async function getSavedListings(userId?: string) {
     .map((listing) => mapListing(listing, { savedListingIds: new Set([listing.id]) }));
 }
 
-export async function getListingById(id: string) {
+export async function getListingById(
+  id: string,
+  options?: {
+    includeRemoved?: boolean;
+  }
+) {
   if (!isLiveMode) {
-    return demoData.listings.find((listing) => listing.id === id);
+    return demoData.listings.find(
+      (listing) => listing.id === id && (options?.includeRemoved || !listing.removedAt)
+    );
   }
 
   const supabase = await getSupabaseClient();
@@ -844,6 +860,10 @@ export async function getListingById(id: string) {
   const row = (data as unknown as DbListingWithRelations | null) ?? null;
 
   if (!row) {
+    return undefined;
+  }
+
+  if (row.removed_at && !options?.includeRemoved) {
     return undefined;
   }
 
@@ -1314,11 +1334,14 @@ export async function getNotificationsForUser(userId?: string) {
 
 export async function getListingsForSeller(userId: string) {
   if (!isLiveMode) {
-    return demoData.listings.filter((listing) => listing.sellerId === userId);
+    return demoData.listings.filter(
+      (listing) => listing.sellerId === userId && !listing.removedAt
+    );
   }
 
   const rows = await fetchListingRows({
-    includeStatuses: ["active", "reserved", "sold", "archived", "pending-review", "hidden"]
+    includeStatuses: ["active", "reserved", "sold", "archived", "pending-review", "hidden"],
+    includeRemoved: false
   });
 
   return rows.filter((row) => row.seller_id === userId).map((row) => mapListing(row));

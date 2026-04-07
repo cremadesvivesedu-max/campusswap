@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  extractPublicStoragePath,
+  listingImagesBucket
+} from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type { ExchangeStatus, ListingStatus } from "@/types/domain";
@@ -14,6 +18,14 @@ interface ActionResult {
 
 interface ToggleFavoriteResult extends ActionResult {
   isSaved: boolean;
+}
+
+interface ListingDeletionHistoryFlags {
+  hasConversations: boolean;
+  hasTransactions: boolean;
+  hasPromotionRecords: boolean;
+  hasReports: boolean;
+  hasAuditLogs: boolean;
 }
 
 async function requireMarketplaceContext() {
@@ -62,6 +74,122 @@ async function notifyUser(userId: string, title: string, body: string) {
     title,
     body
   });
+}
+
+async function collectListingDeletionHistoryFlags(
+  listingId: string,
+  admin: NonNullable<ReturnType<typeof createAdminSupabaseClient>>
+): Promise<ListingDeletionHistoryFlags> {
+  const [
+    conversationResult,
+    transactionResult,
+    promotionResult,
+    reportResult,
+    auditLogResult
+  ] = await Promise.all([
+    admin
+      .from("conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listingId),
+    admin
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listingId),
+    admin
+      .from("promotion_purchases")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", listingId),
+    admin
+      .from("reports")
+      .select("id", { count: "exact", head: true })
+      .eq("target_type", "listing")
+      .eq("target_id", listingId),
+    admin
+      .from("audit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("entity", "listing")
+      .eq("entity_id", listingId)
+  ]);
+
+  return {
+    hasConversations: (conversationResult.count ?? 0) > 0,
+    hasTransactions: (transactionResult.count ?? 0) > 0,
+    hasPromotionRecords: (promotionResult.count ?? 0) > 0,
+    hasReports: (reportResult.count ?? 0) > 0,
+    hasAuditLogs: (auditLogResult.count ?? 0) > 0
+  };
+}
+
+async function hardDeleteListingIfSafe(listingId: string) {
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return {
+      hardDeleted: false,
+      historyFlags: {
+        hasConversations: true,
+        hasTransactions: true,
+        hasPromotionRecords: true,
+        hasReports: true,
+        hasAuditLogs: true
+      } satisfies ListingDeletionHistoryFlags
+    };
+  }
+
+  const historyFlags = await collectListingDeletionHistoryFlags(listingId, admin);
+
+  const requiresHiddenDelete =
+    historyFlags.hasConversations ||
+    historyFlags.hasTransactions ||
+    historyFlags.hasPromotionRecords ||
+    historyFlags.hasReports ||
+    historyFlags.hasAuditLogs;
+
+  if (requiresHiddenDelete) {
+    return {
+      hardDeleted: false,
+      historyFlags
+    };
+  }
+
+  const db = admin;
+
+  const { data: imageRows } = await db
+    .from("listing_images")
+    .select("url")
+    .eq("listing_id", listingId);
+
+  const imageUrls = (((imageRows as { url: string }[] | null) ?? []).map((row) => row.url));
+
+  await Promise.all([
+    db.from("favorites").delete().eq("listing_id", listingId),
+    db.from("view_events").delete().eq("listing_id", listingId),
+    db.from("recommendation_events").delete().eq("listing_id", listingId),
+    db.from("listing_tags").delete().eq("listing_id", listingId),
+    db.from("listing_images").delete().eq("listing_id", listingId)
+  ]);
+
+  const { error: listingDeleteError } = await db
+    .from("listings")
+    .delete()
+    .eq("id", listingId);
+
+  if (listingDeleteError) {
+    throw new Error(listingDeleteError.message);
+  }
+
+  const storagePaths = imageUrls
+    .map((url) => extractPublicStoragePath(listingImagesBucket, url))
+    .filter((path): path is string => Boolean(path));
+
+  if (storagePaths.length) {
+    await db.storage.from(listingImagesBucket).remove(storagePaths);
+  }
+
+  return {
+    hardDeleted: true,
+    historyFlags
+  };
 }
 
 async function ensureConversationRecord(
@@ -918,38 +1046,56 @@ export async function removeListingAction(listingId: string): Promise<ActionResu
     };
   }
 
-  await supabase
-    .from("listings")
-    .update({
-      status: "hidden",
-      removed_at: new Date().toISOString(),
-      removed_by: user.id,
-      updated_at: new Date().toISOString()
-    })
-    .eq("id", listingId);
+  const deletionResult = await hardDeleteListingIfSafe(listingId);
 
-  await cancelCompetingTransactions(
-    listingId,
-    undefined,
-    "The seller removed this listing before the exchange was completed."
-  );
+  if (!deletionResult.hardDeleted) {
+    await supabase
+      .from("listings")
+      .update({
+        status: "hidden",
+        removed_at: new Date().toISOString(),
+        removed_by: user.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", listingId);
 
-  await notifyUser(
-    listing.seller_id,
-    "Listing removed from public view",
-    `${listing.title} is now hidden from buyers while chats and completed history remain intact.`
-  );
+    await cancelCompetingTransactions(
+      listingId,
+      undefined,
+      "The seller removed this listing before the exchange was completed."
+    );
+
+    await notifyUser(
+      listing.seller_id,
+      "Listing removed from your marketplace surfaces",
+      `${listing.title} is hidden from your profile and all buyer feeds, while payment, chat, and transaction history stay intact.`
+    );
+  } else {
+    await notifyUser(
+      listing.seller_id,
+      "Listing deleted",
+      `${listing.title} was permanently deleted because it had no linked payment, chat, or transaction history to preserve.`
+    );
+  }
 
   revalidatePath("/app");
+  revalidatePath("/");
+  revalidatePath("/featured");
+  revalidatePath("/outlet");
   revalidatePath("/app/search");
   revalidatePath("/app/for-you");
   revalidatePath("/app/saved");
   revalidatePath("/app/my-listings");
+  revalidatePath("/app/profile");
+  revalidatePath("/app/messages");
+  revalidatePath("/app/my-purchases");
   revalidatePath(`/app/listings/${listingId}`);
 
   return {
     success: true,
-    message: "Listing removed from public browse surfaces."
+    message: deletionResult.hardDeleted
+      ? "Listing deleted and removed from your marketplace surfaces."
+      : "Listing removed from your marketplace surfaces while historical activity stays preserved."
   };
 }
 

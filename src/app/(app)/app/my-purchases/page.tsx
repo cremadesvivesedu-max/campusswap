@@ -37,7 +37,7 @@ export default async function MyPurchasesPage() {
       const counterpartId =
         transaction.buyerId === user.id ? transaction.sellerId : transaction.buyerId;
       const [listing, counterpart] = await Promise.all([
-        getListingById(transaction.listingId),
+        getListingById(transaction.listingId, { includeRemoved: true }),
         getUserById(counterpartId)
       ]);
 
