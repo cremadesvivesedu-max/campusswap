@@ -412,6 +412,22 @@ function mapConversation(row: DbConversationRow): Conversation {
   };
 }
 
+function sortFeaturedListingsFirst(listings: Listing[]) {
+  return [...listings].sort((left, right) => {
+    if (left.featured !== right.featured) {
+      return Number(right.featured) - Number(left.featured);
+    }
+
+    return Date.parse(right.createdAt) - Date.parse(left.createdAt);
+  });
+}
+
+function sortFeaturedOnlyByRecency(listings: Listing[]) {
+  return [...listings].sort(
+    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)
+  );
+}
+
 async function getSupabaseClient() {
   return createServerSupabaseClient();
 }
@@ -702,12 +718,15 @@ export async function getUserById(userId: string) {
 
 export async function getFeaturedListings() {
   if (!isLiveMode) {
-    return demoData.listings.filter(
-      (listing) => listing.featured && listing.status === "active"
+    return sortFeaturedOnlyByRecency(
+      demoData.listings.filter(
+        (listing) => listing.featured && listing.status === "active"
+      )
     );
   }
 
-  return fetchActiveListings({ featured: true, sort: "recommended" });
+  const listings = await fetchActiveListings({ featured: true, sort: "newest" });
+  return sortFeaturedOnlyByRecency(listings);
 }
 
 export async function getOutletListings() {
@@ -1306,7 +1325,8 @@ export async function getListingsForSeller(userId: string) {
 }
 
 export async function getHomeFeed() {
-  return fetchActiveListings({ sort: "recommended" });
+  const listings = await fetchActiveListings({ sort: "recommended" });
+  return sortFeaturedListingsFirst(listings);
 }
 
 export async function getForYouFeed(userId?: string) {

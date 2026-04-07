@@ -87,7 +87,14 @@ function scoreRelevance(listing: Listing, filters: DiscoveryFilters) {
         (Date.now() - Date.parse(listing.createdAt)) / (1000 * 60 * 60 * 24)
       )
   );
-  return tokenScore + listing.saveCount + listing.viewCount + freshnessBonus;
+  const featuredBoost = listing.featured ? 200 : 0;
+  return (
+    featuredBoost +
+    tokenScore +
+    listing.saveCount +
+    listing.viewCount +
+    freshnessBonus
+  );
 }
 
 export function getSubcategories(categorySlug?: string) {

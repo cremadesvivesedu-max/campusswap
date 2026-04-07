@@ -171,6 +171,7 @@ export default async function ListingDetailPage({
                   <RemoveListingButton
                     listingId={listing.id}
                     listingTitle={listing.title}
+                    redirectHref="/app/my-listings"
                   />
                 </div>
               </>

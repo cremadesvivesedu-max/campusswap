@@ -10,11 +10,13 @@ import { removeListingAction } from "@/server/actions/marketplace";
 export function RemoveListingButton({
   listingId,
   listingTitle,
-  className
+  className,
+  redirectHref
 }: {
   listingId: string;
   listingTitle: string;
   className?: string;
+  redirectHref?: string;
 }) {
   const { dictionary } = useLocale();
   const router = useRouter();
@@ -46,6 +48,12 @@ export function RemoveListingButton({
 
               if (!result.success) {
                 setError(result.message);
+                return;
+              }
+
+              if (redirectHref) {
+                router.push(redirectHref);
+                router.refresh();
                 return;
               }
 
