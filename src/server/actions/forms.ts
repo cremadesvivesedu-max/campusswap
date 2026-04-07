@@ -47,6 +47,22 @@ interface PromotionPurchaseRow {
   stripe_checkout_session_id?: string | null;
 }
 
+async function insertNotificationSafely(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  notification: {
+    user_id: string;
+    type: "promotion" | "listing";
+    title: string;
+    body: string;
+  }
+) {
+  const { error } = await supabase.from("notifications").insert(notification);
+
+  if (error) {
+    console.error("Notification insert failed:", error.message);
+  }
+}
+
 function readListingFormValues(formData: FormData): ListingFormValues {
   return {
     listingId: String(formData.get("listingId") ?? "").trim() || undefined,
@@ -78,24 +94,6 @@ function toNumber(value: number | string | null | undefined) {
   }
 
   return 0;
-}
-
-function toPromotionUiState(
-  purchase?: Pick<PromotionPurchaseRow, "active" | "status"> | null
-) {
-  if (!purchase) {
-    return "none" as const;
-  }
-
-  if (purchase.active || purchase.status === "paid") {
-    return "active" as const;
-  }
-
-  if (purchase.status === "cancelled") {
-    return "cancelled" as const;
-  }
-
-  return "pending" as const;
 }
 
 async function resolveCategoryId(
@@ -207,7 +205,7 @@ async function getLatestFeaturedPromotionPurchase({
     return null;
   }
 
-  const { data } = await admin
+  const { data, error } = await admin
     .from("promotion_purchases")
     .select("id, amount, active, status, stripe_checkout_session_id")
     .eq("listing_id", listingId)
@@ -216,6 +214,11 @@ async function getLatestFeaturedPromotionPurchase({
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load featured promotion purchase:", error.message);
+    return null;
+  }
 
   return (data as PromotionPurchaseRow | null) ?? null;
 }
@@ -698,41 +701,65 @@ export async function createListingAction(_: unknown, formData: FormData) {
     }
   }
 
-  const promotionResult = await syncFeaturedPromotionRequest({
-    listingId: listing.id,
-    listingTitle: title,
-    sellerId: user.id,
-    requestFeatured
-  });
-
+  let promotionState: ActionState["promotionStatus"] = "none";
   let checkoutUrl: string | null = null;
+  let promotionMessageSuffix = "";
+
+  try {
+    const promotionResult = await syncFeaturedPromotionRequest({
+      listingId: listing.id,
+      listingTitle: title,
+      sellerId: user.id,
+      requestFeatured
+    });
+
+    promotionState = promotionResult.state;
+
+    if (
+      requestFeatured &&
+      promotionResult.purchaseId &&
+      promotionResult.amount &&
+      promotionResult.shouldLaunchCheckout
+    ) {
+      try {
+        checkoutUrl = await createFeaturedCheckoutForPurchase({
+          listingId: listing.id,
+          listingTitle: title,
+          purchaseId: promotionResult.purchaseId,
+          sellerId: user.id,
+          amount: promotionResult.amount
+        });
+      } catch (error) {
+        console.error("Stripe checkout creation failed during listing create:", error);
+        promotionMessageSuffix =
+          " The listing was published, but featured checkout could not start. You can retry payment from Edit listing.";
+      }
+    } else if (promotionResult.state === "pending") {
+      promotionMessageSuffix =
+        " Promotion request recorded. The listing will only appear as featured after payment is completed.";
+    }
+  } catch (error) {
+    console.error("Promotion request sync failed during listing create:", error);
+    promotionMessageSuffix =
+      " The listing was published, but we could not save the featured request. You can retry from Edit listing.";
+    promotionState = "none";
+  }
+
+  if (checkoutUrl) {
+    promotionMessageSuffix =
+      " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment.";
+  }
 
   if (
     requestFeatured &&
-    promotionResult.purchaseId &&
-    promotionResult.amount &&
-    promotionResult.shouldLaunchCheckout
+    promotionState === "pending" &&
+    promotionMessageSuffix === ""
   ) {
-    try {
-      checkoutUrl = await createFeaturedCheckoutForPurchase({
-        listingId: listing.id,
-        listingTitle: title,
-        purchaseId: promotionResult.purchaseId,
-        sellerId: user.id,
-        amount: promotionResult.amount
-      });
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to start Stripe Checkout for this promotion."
-      } satisfies ActionState;
-    }
+    promotionMessageSuffix =
+      " Promotion request recorded. The listing will only appear as featured after payment is completed.";
   }
 
-  await supabase.from("notifications").insert({
+  await insertNotificationSafely(supabase, {
     user_id: user.id,
     type: "listing",
     title: needsReview ? "Listing submitted for review" : "Listing is live",
@@ -753,15 +780,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
       ? requiresTrustReview
         ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
         : "Listing submitted and queued for moderation review."
-        : "Listing published."}${
-      promotionResult.state === "pending"
-        ? checkoutUrl
-          ? " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment."
-          : " Promotion request recorded. The listing will only appear as featured after payment is completed."
-        : ""
-    }`,
+      : "Listing published."}${promotionMessageSuffix}`,
     redirectTo: checkoutUrl ?? undefined,
-    promotionStatus: promotionResult.state
+    promotionStatus: promotionState
   } satisfies ActionState;
 }
 
@@ -904,44 +925,69 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     }
   }
 
-  const promotionResult = await syncFeaturedPromotionRequest({
-    listingId,
-    listingTitle: title,
-    sellerId: listing.seller_id,
-    requestFeatured
-  });
-
+  let promotionState: ActionState["promotionStatus"] = "none";
   let checkoutUrl: string | null = null;
+  let promotionMessageSuffix = "";
+
+  try {
+    const promotionResult = await syncFeaturedPromotionRequest({
+      listingId,
+      listingTitle: title,
+      sellerId: listing.seller_id,
+      requestFeatured
+    });
+
+    promotionState = promotionResult.state;
+
+    if (
+      requestFeatured &&
+      promotionResult.purchaseId &&
+      promotionResult.amount &&
+      promotionResult.shouldLaunchCheckout
+    ) {
+      try {
+        checkoutUrl = await createFeaturedCheckoutForPurchase({
+          listingId,
+          listingTitle: title,
+          purchaseId: promotionResult.purchaseId,
+          sellerId: listing.seller_id,
+          amount: promotionResult.amount
+        });
+      } catch (error) {
+        console.error("Stripe checkout creation failed during listing update:", error);
+        promotionMessageSuffix =
+          " Listing updated, but featured checkout could not start. You can retry payment from this page.";
+      }
+    } else if (promotionResult.state === "pending") {
+      promotionMessageSuffix = " Promotion request is pending payment.";
+    }
+  } catch (error) {
+    console.error("Promotion request sync failed during listing update:", error);
+    promotionMessageSuffix =
+      " Listing updated, but the featured request could not be changed. You can retry from this page.";
+    promotionState = "none";
+  }
+
+  if (checkoutUrl) {
+    promotionMessageSuffix =
+      " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment.";
+  }
 
   if (
     requestFeatured &&
-    promotionResult.purchaseId &&
-    promotionResult.amount &&
-    promotionResult.shouldLaunchCheckout
+    promotionState === "pending" &&
+    promotionMessageSuffix === ""
   ) {
-    try {
-      checkoutUrl = await createFeaturedCheckoutForPurchase({
-        listingId,
-        listingTitle: title,
-        purchaseId: promotionResult.purchaseId,
-        sellerId: listing.seller_id,
-        amount: promotionResult.amount
-      });
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to start Stripe Checkout for this promotion."
-      } satisfies ActionState;
-    }
+    promotionMessageSuffix = " Promotion request is pending payment.";
   }
 
-  await supabase.from("notifications").insert({
+  await insertNotificationSafely(supabase, {
     user_id: listing.seller_id,
     type: "listing",
-    title: nextStatus === "pending-review" ? "Listing updated and queued for review" : "Listing updated",
+    title:
+      nextStatus === "pending-review"
+        ? "Listing updated and queued for review"
+        : "Listing updated",
     body:
       nextStatus === "pending-review"
         ? `${title} was updated and moved back into review before returning to public browse.`
@@ -963,15 +1009,9 @@ export async function updateListingAction(_: unknown, formData: FormData) {
       nextStatus === "pending-review"
         ? "Listing updated. It will return to browse after a quick trust or moderation review."
         : "Listing updated."
-    }${
-      promotionResult.state === "pending"
-        ? checkoutUrl
-          ? " Redirecting you to Stripe Checkout to complete the EUR 2 featured payment."
-          : " Promotion request is pending payment."
-        : ""
-    }`,
+    }${promotionMessageSuffix}`,
     redirectTo: checkoutUrl ?? undefined,
-    promotionStatus: promotionResult.state
+    promotionStatus: promotionState
   } satisfies ActionState;
 }
 
