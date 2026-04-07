@@ -21,6 +21,7 @@ interface ActionState {
   message: string;
   redirectTo?: string;
   promotionStatus?: "none" | "pending" | "active" | "cancelled";
+  listingId?: string;
 }
 
 interface ListingFormValues {
@@ -238,8 +239,12 @@ async function createFeaturedCheckoutForPurchase({
 }) {
   const admin = createAdminSupabaseClient();
 
-  if (!admin || !stripe) {
-    return null;
+  if (!admin) {
+    throw new Error("Promotion payments are unavailable right now.");
+  }
+
+  if (!stripe) {
+    throw new Error("Stripe Checkout is not configured right now.");
   }
 
   const session = await createFeaturedCheckoutSession({
@@ -263,6 +268,10 @@ async function createFeaturedCheckoutForPurchase({
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (!session.url) {
+    throw new Error("Stripe did not return a hosted Checkout URL.");
   }
 
   return session.url;
@@ -774,6 +783,10 @@ export async function createListingAction(_: unknown, formData: FormData) {
   revalidatePath("/app/my-listings");
   revalidatePath("/app/profile");
 
+  if (checkoutUrl) {
+    redirect(checkoutUrl);
+  }
+
   return {
     success: true,
     message: `${needsReview
@@ -781,8 +794,8 @@ export async function createListingAction(_: unknown, formData: FormData) {
         ? "Listing submitted. It will go live after a quick trust review because your account is not student-verified yet."
         : "Listing submitted and queued for moderation review."
       : "Listing published."}${promotionMessageSuffix}`,
-    redirectTo: checkoutUrl ?? undefined,
-    promotionStatus: promotionState
+    promotionStatus: promotionState,
+    listingId: listing.id
   } satisfies ActionState;
 }
 
@@ -1003,6 +1016,10 @@ export async function updateListingAction(_: unknown, formData: FormData) {
   revalidatePath("/app/sell");
   revalidatePath(`/app/listings/${listingId}`);
 
+  if (checkoutUrl) {
+    redirect(checkoutUrl);
+  }
+
   return {
     success: true,
     message: `${
@@ -1010,8 +1027,8 @@ export async function updateListingAction(_: unknown, formData: FormData) {
         ? "Listing updated. It will return to browse after a quick trust or moderation review."
         : "Listing updated."
     }${promotionMessageSuffix}`,
-    redirectTo: checkoutUrl ?? undefined,
-    promotionStatus: promotionState
+    promotionStatus: promotionState,
+    listingId
   } satisfies ActionState;
 }
 

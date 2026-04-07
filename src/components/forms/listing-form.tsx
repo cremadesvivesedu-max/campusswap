@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState } from "react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getConditionLabel } from "@/lib/i18n-shared";
 import {
@@ -34,22 +34,12 @@ export function ListingForm({
   const [state, action] = useActionState(formActionHandler, {
     success: false,
     message: "",
-    redirectTo: undefined,
-    promotionStatus: undefined
+    promotionStatus: undefined,
+    listingId: undefined
   });
   const isEditing = Boolean(initialListing);
-  const redirectedTo = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (
-      state.redirectTo &&
-      redirectedTo.current !== state.redirectTo &&
-      typeof window !== "undefined"
-    ) {
-      redirectedTo.current = state.redirectTo;
-      window.location.assign(state.redirectTo);
-    }
-  }, [state.redirectTo]);
+  const paymentTargetListingId = initialListing?.id ?? state.listingId;
+  const effectivePromotionState = state.promotionStatus ?? promotionState;
 
   return (
     <form
@@ -57,6 +47,9 @@ export function ListingForm({
       className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
     >
       {initialListing ? <input type="hidden" name="listingId" value={initialListing.id} /> : null}
+      {!initialListing && state.listingId ? (
+        <input type="hidden" name="listingId" value={state.listingId} />
+      ) : null}
       <Input
         name="title"
         placeholder={dictionary.listingForm.titlePlaceholder}
@@ -174,8 +167,8 @@ export function ListingForm({
             className="mr-2"
             name="requestFeatured"
             type="checkbox"
-            defaultChecked={promotionState !== "none"}
-            disabled={promotionState === "active"}
+            defaultChecked={effectivePromotionState !== "none"}
+            disabled={effectivePromotionState === "active"}
           />
           {dictionary.listingForm.featuredRequestLabel.replace(
             "EUR 2",
@@ -183,24 +176,24 @@ export function ListingForm({
           )}
         </label>
         <p>{dictionary.listingForm.featuredRequestHelp}</p>
-        {promotionState === "pending" ? (
+        {effectivePromotionState === "pending" ? (
           <p className="font-medium text-amber-900">
             {dictionary.listingForm.featuredPendingNote}
           </p>
         ) : null}
-        {promotionState === "cancelled" ? (
+        {effectivePromotionState === "cancelled" ? (
           <p className="font-medium text-rose-700">
             {dictionary.listingForm.featuredCancelledNote}
           </p>
         ) : null}
-        {promotionState === "active" ? (
+        {effectivePromotionState === "active" ? (
           <p className="font-medium text-emerald-700">
             {dictionary.listingForm.featuredActiveNote}
           </p>
         ) : null}
-        {(promotionState === "pending" || promotionState === "cancelled") &&
-        isEditing &&
-        initialListing ? (
+        {(effectivePromotionState === "pending" ||
+          effectivePromotionState === "cancelled") &&
+        paymentTargetListingId ? (
           paymentConfigured ? (
             <Button
               type="submit"
