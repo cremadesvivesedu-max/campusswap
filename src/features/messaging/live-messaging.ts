@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  messageAttachmentsBucket,
+  uploadPublicFile
+} from "@/lib/supabase/storage";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Conversation,
@@ -88,6 +92,9 @@ interface DbMessageRow {
   text: string;
   sent_at: string;
   read: boolean;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_mime_type: string | null;
 }
 
 interface DbTransactionRow {
@@ -241,7 +248,16 @@ function mapMessage(row: DbMessageRow): Message {
     senderId: row.sender_id,
     text: row.text,
     sentAt: row.sent_at,
-    read: row.read
+    read: row.read,
+    attachment:
+      row.attachment_url && row.attachment_name && row.attachment_mime_type
+        ? {
+            id: `attachment-${row.id}`,
+            url: row.attachment_url,
+            name: row.attachment_name,
+            mimeType: row.attachment_mime_type
+          }
+        : undefined
   };
 }
 
@@ -438,7 +454,10 @@ const conversationSelect = `
     sender_id,
     text,
     sent_at,
-    read
+    read,
+    attachment_url,
+    attachment_name,
+    attachment_mime_type
   )
 `;
 
@@ -577,7 +596,8 @@ export async function ensureLiveConversationForListing(
 export async function sendLiveConversationMessage(
   conversationId: string,
   senderId: string,
-  text: string
+  text: string,
+  files: File[] = []
 ) {
   const supabase = createClient();
 
@@ -586,20 +606,56 @@ export async function sendLiveConversationMessage(
   }
 
   const cleanText = text.trim();
+  const imageFiles = files.filter((file) => file.size > 0);
 
-  if (!cleanText) {
+  if (!cleanText && !imageFiles.length) {
     throw new Error("Write a message before sending.");
   }
 
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    sender_id: senderId,
-    text: cleanText,
-    read: false
-  });
+  for (const file of imageFiles) {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Only image attachments are supported.");
+    }
 
-  if (error) {
-    throw new Error(error.message);
+    if (file.size > 8 * 1024 * 1024) {
+      throw new Error("Each image must be 8 MB or smaller.");
+    }
+  }
+
+  if (cleanText) {
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      text: cleanText,
+      read: false
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  for (const file of imageFiles) {
+    const upload = await uploadPublicFile(
+      supabase,
+      messageAttachmentsBucket,
+      [senderId, conversationId],
+      file
+    );
+
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      text: "",
+      read: false,
+      attachment_url: upload.publicUrl,
+      attachment_name: file.name,
+      attachment_mime_type: file.type || "image/jpeg"
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 }
 

@@ -513,6 +513,61 @@ export async function saveOnboardingAction(_: unknown, formData: FormData) {
   } satisfies ActionState;
 }
 
+export async function updateNotificationPreferencesAction(_: unknown, formData: FormData) {
+  const user = await getCurrentUser();
+  const notificationPreferences = formData
+    .getAll("notificationPreferences")
+    .map((value) => String(value))
+    .filter((value) =>
+      [
+        "messages",
+        "listing_updates",
+        "saved_searches",
+        "featured_digest",
+        "promotions"
+      ].includes(value)
+    );
+
+  if (!isLiveMode) {
+    return {
+      success: true,
+      message: "Notification preferences updated in demo mode."
+    } satisfies ActionState;
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return {
+      success: false,
+      message: "Supabase is not configured for settings updates."
+    } satisfies ActionState;
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      notification_preferences: notificationPreferences
+    })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      message: error.message
+    } satisfies ActionState;
+  }
+
+  revalidatePath("/app");
+  revalidatePath("/app/settings");
+  revalidatePath("/app/profile");
+
+  return {
+    success: true,
+    message: "Notification preferences saved."
+  } satisfies ActionState;
+}
+
 export async function updateProfileAvatarAction(_: unknown, formData: FormData) {
   const user = await getCurrentUser();
   const file = formData.get("avatar");

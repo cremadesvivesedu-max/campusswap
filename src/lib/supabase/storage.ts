@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const avatarsBucket = "avatars";
 export const listingImagesBucket = "listing-images";
+export const messageAttachmentsBucket = "message-attachments";
 
 function sanitizeFileName(fileName: string) {
   return fileName.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-");
@@ -13,9 +14,10 @@ export async function uploadPublicFile(
   pathSegments: string[],
   file: File
 ) {
-  const buffer = Buffer.from(await file.arrayBuffer());
   const filePath = `${pathSegments.join("/")}/${Date.now()}-${sanitizeFileName(file.name)}`;
-  const { error } = await supabase.storage.from(bucket).upload(filePath, buffer, {
+  const uploadPayload =
+    typeof window === "undefined" ? Buffer.from(await file.arrayBuffer()) : file;
+  const { error } = await supabase.storage.from(bucket).upload(filePath, uploadPayload, {
     contentType: file.type || undefined,
     upsert: true
   });

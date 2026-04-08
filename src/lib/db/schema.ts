@@ -177,6 +177,9 @@ export const messages = pgTable("messages", {
   conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
   senderId: uuid("sender_id").references(() => users.id).notNull(),
   text: text("text").notNull(),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: text("attachment_name"),
+  attachmentMimeType: text("attachment_mime_type"),
   read: boolean("read").default(false).notNull(),
   sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull()
 });

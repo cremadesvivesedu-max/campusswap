@@ -164,6 +164,7 @@ export const dictionaries = {
         yourListing: "Your listing",
         itemSold: "Item sold",
         listingUnavailable: "Listing unavailable",
+        photoAttachment: "Photo attachment",
         signUpToMessage: "Sign up to message",
         messageSeller: "Message seller",
         verificationNoticePrefix: "You are messaging as",
@@ -337,11 +338,22 @@ export const dictionaries = {
       title: "Control notifications, visibility, and account support paths.",
       description: "Settings includes the product hooks needed for GDPR requests, account deletion, and verification-aware feature gating.",
       notificationsTitle: "Notifications",
+      notificationsDescription: "Choose which updates should reach you first so CampusSwap stays helpful without becoming noisy.",
+      notificationsSaved: "Notification preferences saved.",
+      savePreferences: "Save notification preferences",
+      savingPreferences: "Saving preferences...",
       accountTitle: "Account",
       noPreferences: "No notification preferences selected yet.",
       requestDataExport: "Request data export",
       requestAccountDeletion: "Request account deletion",
-      reviewVerification: "Review verification status and student-trust settings"
+      reviewVerification: "Review verification status and student-trust settings",
+      notificationDescriptions: {
+        messages: "Instant updates when buyers or sellers reply in listing-linked chat.",
+        listingUpdates: "Status changes for your listings, reservations, and moderation review.",
+        savedSearches: "Alerts when new inventory matches what you have been watching.",
+        featuredDigest: "A digest of promoted and fast-moving listings across Maastricht.",
+        promotions: "Payment, approval, and expiry updates for featured listing requests."
+      }
     },
     notifications: {
       eyebrow: "Notifications",
@@ -515,6 +527,7 @@ export const dictionaries = {
       approximateZone: "Approximate zone only",
       cityLabel: "Maastricht",
       meetupArea: "Meetup area",
+      publicPointTitle: "Suggested public meetup point",
       listingContext: "Listing context",
       guidanceTitle: "Suggested meetup guidance",
       privacyTitle: "Privacy protected",
@@ -572,7 +585,29 @@ mutableDictionaries.es = {
     resetPassword: { ...mutableDictionaries.en.auth.resetPassword, eyebrow: "Nueva contrasena", title: "Elige una nueva contrasena para tu cuenta de CampusSwap.", description: "Cuando el enlace de recuperacion sea valido, podras guardar una nueva contrasena y seguir a la app.", passwordPlaceholder: "Nueva contrasena", confirmPasswordPlaceholder: "Confirma la nueva contrasena", submit: "Actualizar contrasena", submitting: "Actualizando contrasena...", invalidLink: "Este enlace es invalido o ha caducado. Solicita uno nuevo desde acceso.", success: "Contrasena actualizada. Ya puedes iniciar sesion con la nueva.", backToLogin: "Volver al acceso", mismatch: "Las contrasenas no coinciden." }
   },
   search: { ...mutableDictionaries.en.search, eyebrow: "Busqueda y descubrimiento", title: "Explora rapido cuando necesitas decidir enseguida.", description: "La busqueda, los filtros, las subcategorias y el orden actualizan los resultados en tiempo real.", controls: "Controles de descubrimiento", query: "Buscar", queryPlaceholder: "Busca bicis, escritorios, ropa de cama o monitores", categories: "Categorias", subcategories: "Subcategorias", minPrice: "Precio minimo", maxPrice: "Precio maximo", condition: "Estado", outletOnly: "Solo outlet", featuredOnly: "Solo destacados", minimumSellerRating: "Valoracion minima del vendedor", sort: "Ordenar", sortOptions: { recommended: "Recomendado", relevance: "Relevancia", newest: "Mas reciente", priceLowHigh: "Precio ascendente", priceHighLow: "Precio descendente" }, trending: "Tendencias", recent: "Recientes", results: "resultados", resultsDescription: "El descubrimiento se actualiza al instante cuando cambian los filtros.", recommendationPrefix: "Por que ves esto", clearAll: "Limpiar filtros", emptyTitle: "Ningun anuncio coincide con estos filtros", emptyDescription: "Prueba un rango de precio mas amplio o desactiva filtros para ver mas inventario.", filterLabels: { search: "Busqueda", category: "Categoria", subcategory: "Subcategoria", min: "Min EUR", max: "Max EUR", condition: "Estado", sellerRating: "Valoracion", sort: "Orden" } },
-  settings: { ...mutableDictionaries.en.settings, eyebrow: "Ajustes", title: "Controla notificaciones, visibilidad y soporte de cuenta.", description: "Ajustes reune los puntos del producto para solicitudes GDPR, eliminacion de cuenta y confianza estudiantil.", notificationsTitle: "Notificaciones", accountTitle: "Cuenta", noPreferences: "Aun no has seleccionado preferencias de notificacion.", requestDataExport: "Solicitar exportacion de datos", requestAccountDeletion: "Solicitar eliminacion de cuenta", reviewVerification: "Revisar verificacion y opciones de confianza estudiantil" },
+  settings: {
+    ...mutableDictionaries.en.settings,
+    eyebrow: "Ajustes",
+    title: "Controla notificaciones, visibilidad y soporte de cuenta.",
+    description: "Ajustes reúne los puntos del producto para solicitudes GDPR, eliminación de cuenta y confianza estudiantil.",
+    notificationsTitle: "Notificaciones",
+    notificationsDescription: "Elige qué avisos quieres priorizar para que CampusSwap te resulte útil sin volverse ruidoso.",
+    notificationsSaved: "Preferencias de notificación guardadas.",
+    savePreferences: "Guardar preferencias de notificación",
+    savingPreferences: "Guardando preferencias...",
+    accountTitle: "Cuenta",
+    noPreferences: "Aún no has seleccionado preferencias de notificación.",
+    requestDataExport: "Solicitar exportación de datos",
+    requestAccountDeletion: "Solicitar eliminación de cuenta",
+    reviewVerification: "Revisar verificación y opciones de confianza estudiantil",
+    notificationDescriptions: {
+      messages: "Actualizaciones inmediatas cuando compradores o vendedores responden en el chat del anuncio.",
+      listingUpdates: "Cambios de estado en tus anuncios, reservas y revisiones de moderación.",
+      savedSearches: "Avisos cuando aparece inventario nuevo que coincide con lo que sigues.",
+      featuredDigest: "Un resumen de anuncios destacados y movimientos rápidos en Maastricht.",
+      promotions: "Actualizaciones de pago, aprobación y vencimiento para solicitudes de promoción."
+    }
+  },
   reviews: { ...mutableDictionaries.en.reviews, eyebrow: "Resenas", title: "Las valoraciones solo aparecen tras intercambios completados.", description: "El sistema de resenas recompensa entregas fiables y solo se activa tras una transaccion real completada.", leaveReview: "Dejar resena", submitting: "Enviando...", ratingLabel: "Valoracion", textLabel: "Resena", textOptionalHint: "Opcional", placeholder: "Describe la entrega, la comunicacion y si el articulo coincidia con el anuncio.", submitted: "Resena enviada.", noReviewsTitle: "Aun no hay resenas", noReviewsDescription: "Las resenas apareceran aqui tras intercambios completados.", yourReview: "Tu resena", receivedReview: "Resena recibida", createdOn: "Creada el" },
   messages: {
     ...mutableDictionaries.en.messages,
@@ -584,6 +619,7 @@ mutableDictionaries.es = {
       yourListing: "Tu anuncio",
       itemSold: "Articulo vendido",
       listingUnavailable: "Anuncio no disponible",
+      photoAttachment: "Foto adjunta",
       signUpToMessage: "Registrate para escribir",
       messageSeller: "Escribir al vendedor",
       verificationNoticePrefix: "Estas escribiendo como",
@@ -921,6 +957,7 @@ mutableDictionaries.es = {
     description: "CampusSwap muestra una zona aproximada por barrio en vez de una direccion privada.",
     approximateZone: "Solo zona aproximada",
     meetupArea: "Zona de encuentro",
+    publicPointTitle: "Punto publico sugerido",
     listingContext: "Contexto del anuncio",
     guidanceTitle: "Sugerencia para el encuentro",
     privacyTitle: "Privacidad protegida",
@@ -957,7 +994,29 @@ mutableDictionaries.nl = {
     resetPassword: { ...mutableDictionaries.en.auth.resetPassword, eyebrow: "Nieuw wachtwoord", title: "Kies een nieuw wachtwoord voor je CampusSwap-account.", description: "Zodra de resetlink geldig is, kun je een nieuw wachtwoord instellen en verdergaan naar de app.", passwordPlaceholder: "Nieuw wachtwoord", confirmPasswordPlaceholder: "Bevestig nieuw wachtwoord", submit: "Wachtwoord bijwerken", submitting: "Wachtwoord wordt bijgewerkt...", invalidLink: "Deze resetlink is ongeldig of verlopen. Vraag een nieuwe aan vanuit inloggen.", success: "Wachtwoord bijgewerkt. Je kunt nu inloggen met je nieuwe wachtwoord.", backToLogin: "Terug naar inloggen", mismatch: "Wachtwoorden komen niet overeen." }
   },
   search: { ...mutableDictionaries.en.search, eyebrow: "Zoeken en ontdekken", title: "Snel browsen wanneer je snel moet beslissen.", description: "Zoeken, filters, subcategorieen en sorteren werken de resultaten direct bij.", controls: "Ontdekkingsfilters", query: "Zoeken", queryPlaceholder: "Zoek fietsen, bureaus, beddengoed of monitoren", categories: "Categorieen", subcategories: "Subcategorieen", minPrice: "Min prijs", maxPrice: "Max prijs", condition: "Conditie", outletOnly: "Alleen outlet", featuredOnly: "Alleen uitgelicht", minimumSellerRating: "Minimale verkopersscore", sort: "Sorteren", sortOptions: { recommended: "Aanbevolen", relevance: "Relevantie", newest: "Nieuwste", priceLowHigh: "Prijs laag-hoog", priceHighLow: "Prijs hoog-laag" }, trending: "Trending", recent: "Recent", results: "resultaten", resultsDescription: "Ontdekking werkt direct bij wanneer filters veranderen.", recommendationPrefix: "Waarom je dit ziet", clearAll: "Alle filters wissen", emptyTitle: "Geen advertenties die bij deze filters passen", emptyDescription: "Probeer een ruimer prijsbereik of schakel filters uit om meer aanbod te zien.", filterLabels: { search: "Zoekterm", category: "Categorie", subcategory: "Subcategorie", min: "Min EUR", max: "Max EUR", condition: "Conditie", sellerRating: "Verkopersscore", sort: "Sortering" } },
-  settings: { ...mutableDictionaries.en.settings, eyebrow: "Instellingen", title: "Beheer meldingen, zichtbaarheid en accountondersteuning.", description: "Instellingen bevat de productpaden voor GDPR-verzoeken, accountverwijdering en vertrouwensinstellingen.", notificationsTitle: "Meldingen", accountTitle: "Account", noPreferences: "Nog geen meldingsvoorkeuren gekozen.", requestDataExport: "Gegevens export aanvragen", requestAccountDeletion: "Accountverwijdering aanvragen", reviewVerification: "Verificatie en studentvertrouwensinstellingen bekijken" },
+  settings: {
+    ...mutableDictionaries.en.settings,
+    eyebrow: "Instellingen",
+    title: "Beheer meldingen, zichtbaarheid en accountondersteuning.",
+    description: "Instellingen bevat de productpaden voor GDPR-verzoeken, accountverwijdering en vertrouwensinstellingen.",
+    notificationsTitle: "Meldingen",
+    notificationsDescription: "Kies welke updates voorrang krijgen zodat CampusSwap nuttig blijft zonder te veel ruis.",
+    notificationsSaved: "Meldingsvoorkeuren opgeslagen.",
+    savePreferences: "Meldingsvoorkeuren opslaan",
+    savingPreferences: "Voorkeuren worden opgeslagen...",
+    accountTitle: "Account",
+    noPreferences: "Nog geen meldingsvoorkeuren gekozen.",
+    requestDataExport: "Gegevens export aanvragen",
+    requestAccountDeletion: "Accountverwijdering aanvragen",
+    reviewVerification: "Verificatie en studentvertrouwensinstellingen bekijken",
+    notificationDescriptions: {
+      messages: "Directe updates wanneer kopers of verkopers reageren in advertentiegekoppelde chat.",
+      listingUpdates: "Statuswijzigingen voor je advertenties, reserveringen en moderatiereviews.",
+      savedSearches: "Meldingen wanneer nieuw aanbod overeenkomt met wat je volgt.",
+      featuredDigest: "Een overzicht van uitgelichte en snel bewegende advertenties in Maastricht.",
+      promotions: "Betalings-, goedkeurings- en afloopupdates voor promotieverzoeken."
+    }
+  },
   reviews: { ...mutableDictionaries.en.reviews, title: "Beoordelingen verschijnen alleen na afgeronde uitwisselingen.", description: "Het reviewsysteem beloont betrouwbare overdrachten en wordt pas geactiveerd na een echte afgeronde transactie.", leaveReview: "Review achterlaten", submitting: "Verzenden...", ratingLabel: "Beoordeling", textLabel: "Review", textOptionalHint: "Optioneel", placeholder: "Beschrijf de overdracht, communicatie en of het item overeenkwam met de advertentie.", submitted: "Review verzonden.", noReviewsTitle: "Nog geen reviews", noReviewsDescription: "Reviews verschijnen hier na afgeronde uitwisselingen.", yourReview: "Jouw review", receivedReview: "Ontvangen review", createdOn: "Gemaakt op" },
   messages: {
     ...mutableDictionaries.en.messages,
@@ -969,6 +1028,7 @@ mutableDictionaries.nl = {
       yourListing: "Jouw advertentie",
       itemSold: "Item verkocht",
       listingUnavailable: "Advertentie niet beschikbaar",
+      photoAttachment: "Foto bijgevoegd",
       signUpToMessage: "Meld je aan om te berichten",
       messageSeller: "Bericht verkoper",
       verificationNoticePrefix: "Je bericht als",
@@ -1306,10 +1366,205 @@ mutableDictionaries.nl = {
     description: "CampusSwap toont een benaderde buurtzone in plaats van een privéadres.",
     approximateZone: "Alleen benaderde zone",
     meetupArea: "Ontmoetingsgebied",
+    publicPointTitle: "Voorgesteld openbaar afspreekpunt",
     listingContext: "Advertentiecontext",
     guidanceTitle: "Voorgestelde afspraaktip",
     privacyTitle: "Privacy beschermd",
-    privacyBody: "Exacte adressen deel je pas privé in de chat wanneer beide kanten akkoord zijn met tijd en openbare overdrachtplek."
+    privacyBody: "Exacte adressen deel je pas privé in de chat wanneer beide kanten akkoord zijn met tijd en openbare overdrachtplek.",
+  }
+};
+
+function normalizeLocaleDictionary<T>(
+  value: T,
+  normalizeText: (input: string) => string
+): T {
+  if (typeof value === "string") {
+    return normalizeText(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeLocaleDictionary(entry, normalizeText)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        normalizeLocaleDictionary(entry, normalizeText)
+      ])
+    ) as T;
+  }
+
+  return value;
+}
+
+function normalizeSpanishTypography(input: string) {
+  const replacements: [RegExp, string][] = [
+    [/Ã¡/g, "á"],
+    [/Ã©/g, "é"],
+    [/Ã­/g, "í"],
+    [/Ã³/g, "ó"],
+    [/Ãº/g, "ú"],
+    [/Ã±/g, "ñ"],
+    [/\bEspanol\b/g, "Español"],
+    [/\bCategorias\b/g, "Categorías"],
+    [/\bcategorias\b/g, "categorías"],
+    [/\bAnalitica\b/g, "Analítica"],
+    [/\bcontrasena\b/g, "contraseña"],
+    [/\bContrasena\b/g, "Contraseña"],
+    [/\bresena\b/g, "reseña"],
+    [/\bResena\b/g, "Reseña"],
+    [/\bresenas\b/g, "reseñas"],
+    [/\bResenas\b/g, "Reseñas"],
+    [/\bsenal\b/g, "señal"],
+    [/\bSenal\b/g, "Señal"],
+    [/\bsenales\b/g, "señales"],
+    [/\bSenales\b/g, "Señales"],
+    [/\banade\b/g, "añade"],
+    [/\bAnade\b/g, "Añade"],
+    [/\bAun\b/g, "Aún"],
+    [/\baun\b/g, "aún"],
+    [/\bTodavia\b/g, "Todavía"],
+    [/\btodavia\b/g, "todavía"],
+    [/\bPor que\b/g, "Por qué"],
+    [/\bpor que\b/g, "por qué"],
+    [/\bQuien\b/g, "Quién"],
+    [/\bquien\b/g, "quién"],
+    [/\bdireccion\b/g, "dirección"],
+    [/\bDireccion\b/g, "Dirección"],
+    [/\bpublico\b/g, "público"],
+    [/\bPublico\b/g, "Público"],
+    [/\bbusqueda\b/g, "búsqueda"],
+    [/\bBusqueda\b/g, "Búsqueda"],
+    [/\bbusquedas\b/g, "búsquedas"],
+    [/\bBusquedas\b/g, "Búsquedas"],
+    [/\bsesion\b/g, "sesión"],
+    [/\bSesion\b/g, "Sesión"],
+    [/\bverificacion\b/g, "verificación"],
+    [/\bVerificacion\b/g, "Verificación"],
+    [/\btransaccion\b/g, "transacción"],
+    [/\bTransaccion\b/g, "Transacción"],
+    [/\bcomunicacion\b/g, "comunicación"],
+    [/\bComunicacion\b/g, "Comunicación"],
+    [/\boperacion\b/g, "operación"],
+    [/\bOperacion\b/g, "Operación"],
+    [/\barticulo\b/g, "artículo"],
+    [/\bArticulo\b/g, "Artículo"],
+    [/\barticulos\b/g, "artículos"],
+    [/\bArticulos\b/g, "Artículos"],
+    [/\bmaximo\b/g, "máximo"],
+    [/\bMaximo\b/g, "Máximo"],
+    [/\bminimo\b/g, "mínimo"],
+    [/\bMinimo\b/g, "Mínimo"],
+    [/\brevision\b/g, "revisión"],
+    [/\bRevision\b/g, "Revisión"],
+    [/\bpromocion\b/g, "promoción"],
+    [/\bPromocion\b/g, "Promoción"],
+    [/\bgaleria\b/g, "galería"],
+    [/\bGaleria\b/g, "Galería"],
+    [/\binvalido\b/g, "inválido"],
+    [/\bInvalido\b/g, "Inválido"],
+    [/\brapida\b/g, "rápida"],
+    [/\bRapida\b/g, "Rápida"],
+    [/\bmas\b/g, "más"],
+    [/\bMas\b/g, "Más"]
+  ];
+
+  return replacements.reduce(
+    (output, [pattern, replacement]) => output.replace(pattern, replacement),
+    input
+  );
+}
+
+function normalizeSpanishTypographySafe(input: string) {
+  const replacements: [RegExp, string][] = [
+    [/\bEspanol\b/g, "Espa\u00f1ol"],
+    [/\bCategorias\b/g, "Categor\u00edas"],
+    [/\bcategorias\b/g, "categor\u00edas"],
+    [/\bAnalitica\b/g, "Anal\u00edtica"],
+    [/\bcontrasena\b/g, "contrase\u00f1a"],
+    [/\bContrasena\b/g, "Contrase\u00f1a"],
+    [/\bresena\b/g, "rese\u00f1a"],
+    [/\bResena\b/g, "Rese\u00f1a"],
+    [/\bresenas\b/g, "rese\u00f1as"],
+    [/\bResenas\b/g, "Rese\u00f1as"],
+    [/\bsenal\b/g, "se\u00f1al"],
+    [/\bSenal\b/g, "Se\u00f1al"],
+    [/\bsenales\b/g, "se\u00f1ales"],
+    [/\bSenales\b/g, "Se\u00f1ales"],
+    [/\banade\b/g, "a\u00f1ade"],
+    [/\bAnade\b/g, "A\u00f1ade"],
+    [/\bAun\b/g, "A\u00fan"],
+    [/\baun\b/g, "a\u00fan"],
+    [/\bTodavia\b/g, "Todav\u00eda"],
+    [/\btodavia\b/g, "todav\u00eda"],
+    [/\bPor que\b/g, "Por qu\u00e9"],
+    [/\bpor que\b/g, "por qu\u00e9"],
+    [/\bQuien\b/g, "Qui\u00e9n"],
+    [/\bquien\b/g, "qui\u00e9n"],
+    [/\bdireccion\b/g, "direcci\u00f3n"],
+    [/\bDireccion\b/g, "Direcci\u00f3n"],
+    [/\bpublico\b/g, "p\u00fablico"],
+    [/\bPublico\b/g, "P\u00fablico"],
+    [/\bbusqueda\b/g, "b\u00fasqueda"],
+    [/\bBusqueda\b/g, "B\u00fasqueda"],
+    [/\bbusquedas\b/g, "b\u00fasquedas"],
+    [/\bBusquedas\b/g, "B\u00fasquedas"],
+    [/\bsesion\b/g, "sesi\u00f3n"],
+    [/\bSesion\b/g, "Sesi\u00f3n"],
+    [/\bverificacion\b/g, "verificaci\u00f3n"],
+    [/\bVerificacion\b/g, "Verificaci\u00f3n"],
+    [/\btransaccion\b/g, "transacci\u00f3n"],
+    [/\bTransaccion\b/g, "Transacci\u00f3n"],
+    [/\bcomunicacion\b/g, "comunicaci\u00f3n"],
+    [/\bComunicacion\b/g, "Comunicaci\u00f3n"],
+    [/\boperacion\b/g, "operaci\u00f3n"],
+    [/\bOperacion\b/g, "Operaci\u00f3n"],
+    [/\barticulo\b/g, "art\u00edculo"],
+    [/\bArticulo\b/g, "Art\u00edculo"],
+    [/\barticulos\b/g, "art\u00edculos"],
+    [/\bArticulos\b/g, "Art\u00edculos"],
+    [/\bmaximo\b/g, "m\u00e1ximo"],
+    [/\bMaximo\b/g, "M\u00e1ximo"],
+    [/\bminimo\b/g, "m\u00ednimo"],
+    [/\bMinimo\b/g, "M\u00ednimo"],
+    [/\brevision\b/g, "revisi\u00f3n"],
+    [/\bRevision\b/g, "Revisi\u00f3n"],
+    [/\bpromocion\b/g, "promoci\u00f3n"],
+    [/\bPromocion\b/g, "Promoci\u00f3n"],
+    [/\bgaleria\b/g, "galer\u00eda"],
+    [/\bGaleria\b/g, "Galer\u00eda"],
+    [/\binvalido\b/g, "inv\u00e1lido"],
+    [/\bInvalido\b/g, "Inv\u00e1lido"],
+    [/\brapida\b/g, "r\u00e1pida"],
+    [/\bRapida\b/g, "R\u00e1pida"],
+    [/\bmas\b/g, "m\u00e1s"],
+    [/\bMas\b/g, "M\u00e1s"]
+  ];
+
+  return replacements.reduce(
+    (output, [pattern, replacement]) => output.replace(pattern, replacement),
+    input
+  );
+}
+
+mutableDictionaries.es = normalizeLocaleDictionary(
+  mutableDictionaries.es,
+  (value) => normalizeSpanishTypographySafe(normalizeSpanishTypography(value))
+);
+(mutableDictionaries.nl.map as any).description =
+  "CampusSwap toont een benaderde buurtzone in plaats van een privéadres.";
+(mutableDictionaries.nl.map as any).privacyBody =
+  "Exacte adressen deel je pas privé in de chat wanneer beide kanten akkoord zijn met tijd en openbare overdrachtplek.";
+
+mutableDictionaries.nl = {
+  ...mutableDictionaries.nl,
+  map: {
+    ...mutableDictionaries.nl.map,
+    description:
+      "CampusSwap toont een benaderde buurtzone in plaats van een priv\u00e9adres.",
+    privacyBody:
+      "Exacte adressen deel je pas priv\u00e9 in de chat wanneer beide kanten akkoord zijn met tijd en openbare overdrachtplek."
   }
 };
 
@@ -1343,6 +1598,26 @@ export function getNotificationPreferenceLabel(dictionary: Dictionary, value: st
       return dictionary.common.notificationPreferenceLabels.promotions;
     default:
       return value;
+  }
+}
+
+export function getNotificationPreferenceDescription(
+  dictionary: Dictionary,
+  value: string
+) {
+  switch (normalizePreferenceKey(value)) {
+    case "messages":
+      return dictionary.settings.notificationDescriptions.messages;
+    case "listingupdates":
+      return dictionary.settings.notificationDescriptions.listingUpdates;
+    case "savedsearches":
+      return dictionary.settings.notificationDescriptions.savedSearches;
+    case "featureddigest":
+      return dictionary.settings.notificationDescriptions.featuredDigest;
+    case "promotions":
+      return dictionary.settings.notificationDescriptions.promotions;
+    default:
+      return "";
   }
 }
 

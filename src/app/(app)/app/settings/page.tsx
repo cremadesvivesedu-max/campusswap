@@ -1,10 +1,8 @@
+import { SettingsNotificationPreferencesForm } from "@/components/forms/settings-notification-preferences-form";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  getDictionaryForRequest,
-  getNotificationPreferenceLabel
-} from "@/lib/i18n";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getCurrentUser } from "@/server/queries/marketplace";
 
 export default async function SettingsPage() {
@@ -27,16 +25,10 @@ export default async function SettingsPage() {
               {dictionary.settings.notificationsTitle}
             </h2>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm leading-7 text-slate-600">
-            {user.profile.notificationPreferences.length ? (
-              user.profile.notificationPreferences.map((preference) => (
-                <p key={preference}>
-                  {getNotificationPreferenceLabel(dictionary, preference)}
-                </p>
-              ))
-            ) : (
-              <p>{dictionary.settings.noPreferences}</p>
-            )}
+          <CardContent className="text-sm leading-7 text-slate-600">
+            <SettingsNotificationPreferencesForm
+              initialPreferences={user.profile.notificationPreferences}
+            />
           </CardContent>
         </Card>
         <Card className="bg-white">

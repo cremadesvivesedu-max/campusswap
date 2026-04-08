@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import { Paperclip, Send } from "lucide-react";
+import { Paperclip, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,7 @@ interface ConversationShellProps {
   }[];
   quickActions: string[];
   currentUserId: string;
-  onSend: (text: string, file?: File) => void;
+  onSend: (text: string, files: File[]) => void;
   error: string | null;
   isPending: boolean;
   supportsAttachments: boolean;
@@ -270,7 +270,7 @@ function ConversationShell({
 }: ConversationShellProps) {
   const { dictionary } = useLocale();
   const [composerValue, setComposerValue] = useState("");
-  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
@@ -405,7 +405,7 @@ function ConversationShell({
                         key={action}
                         type="button"
                         className="rounded-full bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-                        onClick={() => onSend(action)}
+                        onClick={() => onSend(action, [])}
                         disabled={isPending}
                       >
                         {getLocalizedQuickAction(dictionary, action)}
@@ -414,9 +414,39 @@ function ConversationShell({
                   </div>
                 </div>
 
-                {supportsAttachments && pendingAttachment ? (
+                {supportsAttachments && pendingAttachments.length ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    {dictionary.messages.thread.attachmentReady}: {pendingAttachment.name}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <p className="font-medium text-slate-900">
+                          {dictionary.messages.thread.attachmentReady}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {pendingAttachments.map((file) => (
+                            <span
+                              key={`${file.name}-${file.size}`}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                            >
+                              {file.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-white hover:text-slate-900"
+                        onClick={() => {
+                          setPendingAttachments([]);
+
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                        aria-label="Clear attachments"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ) : null}
 
@@ -435,9 +465,14 @@ function ConversationShell({
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
+                            multiple
                             className="hidden"
                             onChange={(event) =>
-                              setPendingAttachment(event.target.files?.[0] ?? null)
+                              setPendingAttachments(
+                                Array.from(event.target.files ?? []).filter((file) =>
+                                  file.type.startsWith("image/")
+                                )
+                              )
                             }
                           />
                           <Button
@@ -459,17 +494,20 @@ function ConversationShell({
                     <Button
                       type="button"
                       onClick={() => {
-                        if (!composerValue.trim() && !pendingAttachment) {
+                        if (!composerValue.trim() && !pendingAttachments.length) {
                           return;
                         }
 
-                        onSend(composerValue, pendingAttachment ?? undefined);
+                        onSend(composerValue, pendingAttachments);
                         setComposerValue("");
-                        setPendingAttachment(null);
+                        setPendingAttachments([]);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
                       }}
                       disabled={isPending}
-                      >
-                        <Send className="mr-2 h-4 w-4" />
+                    >
+                      <Send className="mr-2 h-4 w-4" />
                       {isPending ? dictionary.messages.thread.sending : dictionary.messages.thread.send}
                     </Button>
                   </div>
@@ -575,12 +613,20 @@ function DemoConversationThread({
       }))}
       quickActions={conversation.quickActions}
       currentUserId={currentUserId}
-      onSend={(text, file) => {
+      onSend={(text, files) => {
         startTransition(async () => {
           try {
             setError(null);
-            const attachment = file ? await createAttachmentFromFile(file) : undefined;
-            await sendConversationMessage(conversation.id, currentUserId, text, attachment);
+            const cleanText = text.trim();
+
+            if (cleanText) {
+              await sendConversationMessage(conversation.id, currentUserId, cleanText);
+            }
+
+            for (const file of files) {
+              const attachment = await createAttachmentFromFile(file);
+              await sendConversationMessage(conversation.id, currentUserId, "", attachment);
+            }
           } catch (caughtError) {
             setError(
               caughtError instanceof Error
@@ -645,15 +691,17 @@ function LiveConversationThread({
         id: message.id,
         senderId: message.senderId,
         text: message.text,
-        sentAt: message.sentAt
+        sentAt: message.sentAt,
+        attachmentName: message.attachment?.name,
+        attachmentUrl: message.attachment?.url
       }))}
       quickActions={thread.conversation.quickActions}
       currentUserId={currentUserId}
-      onSend={(text) => {
+      onSend={(text, files) => {
         startTransition(async () => {
           try {
             setError(null);
-            await sendLiveConversationMessage(conversationId, currentUserId, text);
+            await sendLiveConversationMessage(conversationId, currentUserId, text, files);
           } catch (caughtError) {
             setError(
               caughtError instanceof Error
@@ -665,7 +713,7 @@ function LiveConversationThread({
       }}
       error={error ?? threadError}
       isPending={isPending}
-      supportsAttachments={false}
+      supportsAttachments
       sidebar={
         <ExchangePanel
           conversationId={conversationId}

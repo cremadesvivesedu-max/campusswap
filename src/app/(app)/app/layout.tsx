@@ -7,6 +7,7 @@ import { UserIdentityButton } from "@/components/shared/user-identity-button";
 import { CurrentUserProvider } from "@/components/providers/current-user-provider";
 import { VerificationPromptCard } from "@/components/shared/verification-prompt-card";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { FloatingSellButton } from "@/components/shared/floating-sell-button";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,7 @@ export default async function AppLayout({
           <VerificationPromptCard user={user} />
           {children}
         </main>
+        <FloatingSellButton />
       </div>
     </CurrentUserProvider>
   );

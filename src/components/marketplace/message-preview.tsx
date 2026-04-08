@@ -11,6 +11,11 @@ import type { ConversationPreview } from "@/types/domain";
 export function MessagePreview({ preview }: { preview: ConversationPreview }) {
   const { dictionary } = useLocale();
   const latest = preview.latestMessage;
+  const latestSummary = latest?.text
+    ? latest.text
+    : latest?.attachment
+      ? dictionary.messages.actions.photoAttachment
+      : dictionary.messages.actions.noMessagesYet;
   const latestLabel = latest?.sentAt
     ? new Date(latest.sentAt).toLocaleString("en-GB", {
         month: "short",
@@ -63,9 +68,19 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
               <Badge className="bg-amber-200 text-slate-900">{dictionary.listing.featured}</Badge>
             ) : null}
           </div>
-          <p className="line-clamp-2 text-sm leading-6 text-slate-600">
-            {latest?.text || dictionary.messages.actions.noMessagesYet}
-          </p>
+          <div className="flex items-start gap-3">
+            {latest?.attachment?.url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={latest.attachment.url}
+                alt={latest.attachment.name}
+                className="h-14 w-14 shrink-0 rounded-2xl object-cover"
+              />
+            ) : null}
+            <p className="line-clamp-2 text-sm leading-6 text-slate-600">
+              {latestSummary}
+            </p>
+          </div>
           <p className="text-sm font-semibold text-slate-950">
             {dictionary.messages.actions.openConversation}
           </p>
