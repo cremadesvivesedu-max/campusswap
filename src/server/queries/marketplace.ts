@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireAuthUser } from "@/lib/auth/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
+import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
 import { getEmailDomain, resolveVerificationStatus } from "@/lib/verification";
 import { filterListings, type DiscoveryFilters } from "@/features/search/discovery";
 import { recommendListingsForUser as recommendDemoListings } from "@/server/services/recommendations";
@@ -19,7 +20,9 @@ import type {
   Profile,
   RecommendationBreakdown,
   Review,
+  SavedSearch,
   SellerListingTransaction,
+  SellerTrustMetrics,
   SponsoredPlacement,
   Transaction,
   User,
@@ -148,6 +151,25 @@ interface DbNotificationRow {
   body: string;
   read: boolean;
   created_at: string;
+}
+
+interface DbSavedSearchRow {
+  id: string;
+  user_id: string;
+  name: string;
+  query: string | null;
+  category_slug: string | null;
+  subcategory_slug: string | null;
+  price_min: number | string | null;
+  price_max: number | string | null;
+  conditions: ListingCondition[] | null;
+  outlet_only: boolean;
+  featured_only: boolean;
+  minimum_seller_rating: number | string | null;
+  pickup_area: string | null;
+  distance_bucket: ListingSearchInput["distance"] | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DbConversationRow {
@@ -282,8 +304,20 @@ function mapCategory(row: DbCategoryRow): Category {
   };
 }
 
-function mapUser(row: DbUserWithProfile): User {
+function mapUser(
+  row: DbUserWithProfile,
+  options?: {
+    sellerMetrics?: SellerTrustMetrics;
+  }
+): User {
   const profile = row.profile;
+  const fallbackSellerMetrics: SellerTrustMetrics = {
+    salesCount: 0,
+    averageRating: numberValue(profile?.rating_average),
+    reviewCount: profile?.review_count ?? 0,
+    responseRate: numberValue(profile?.response_rate),
+    responseRateMethod: "profile-estimate"
+  };
 
   return {
     id: row.id,
@@ -308,20 +342,199 @@ function mapUser(row: DbUserWithProfile): User {
       reviewCount: profile?.review_count ?? 0,
       responseRate: numberValue(profile?.response_rate),
       verifiedBadge: profile?.verified_badge ?? false
-    }
+    },
+    sellerMetrics: options?.sellerMetrics ?? fallbackSellerMetrics
   };
+}
+
+function mapSavedSearch(row: DbSavedSearchRow): SavedSearch {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    query: row.query ?? undefined,
+    categorySlug: row.category_slug ?? undefined,
+    subcategorySlug: row.subcategory_slug ?? undefined,
+    priceMin: row.price_min === null ? undefined : numberValue(row.price_min),
+    priceMax: row.price_max === null ? undefined : numberValue(row.price_max),
+    conditions: row.conditions ?? [],
+    outletOnly: row.outlet_only,
+    featuredOnly: row.featured_only,
+    minimumSellerRating:
+      row.minimum_seller_rating === null
+        ? undefined
+        : numberValue(row.minimum_seller_rating),
+    pickupArea: row.pickup_area ?? undefined,
+    distance: row.distance_bucket ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+async function fetchSellerMetricsMap(userIds: string[]) {
+  const resolvedIds = [...new Set(userIds.filter(Boolean))];
+
+  if (!resolvedIds.length || !isLiveMode) {
+    return new Map<string, SellerTrustMetrics>();
+  }
+
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return new Map<string, SellerTrustMetrics>();
+  }
+
+  const [{ data: profileRows }, { data: completedTransactions }, { data: conversationRows }] =
+    await Promise.all([
+      admin
+        .from("profiles")
+        .select("user_id, rating_average, review_count, response_rate")
+        .in("user_id", resolvedIds),
+      admin
+        .from("transactions")
+        .select("seller_id")
+        .in("seller_id", resolvedIds)
+        .eq("state", "completed"),
+      admin
+        .from("conversations")
+        .select("id, buyer_id, seller_id")
+        .in("seller_id", resolvedIds)
+    ]);
+
+  const profileMap = new Map<
+    string,
+    {
+      ratingAverage: number;
+      reviewCount: number;
+      responseRate: number;
+    }
+  >(
+    (((profileRows as
+      | {
+          user_id: string;
+          rating_average: number | string;
+          review_count: number;
+          response_rate: number | string;
+        }[]
+      | null) ?? []).map((row) => [
+      row.user_id,
+      {
+        ratingAverage: numberValue(row.rating_average),
+        reviewCount: row.review_count ?? 0,
+        responseRate: numberValue(row.response_rate)
+      }
+    ]))
+  );
+
+  const salesCounts = new Map<string, number>();
+
+  for (const row of
+    ((completedTransactions as { seller_id: string }[] | null) ?? [])) {
+    salesCounts.set(row.seller_id, (salesCounts.get(row.seller_id) ?? 0) + 1);
+  }
+
+  const conversations =
+    ((conversationRows as { id: string; buyer_id: string; seller_id: string }[] | null) ??
+      []);
+  const conversationIds = conversations.map((row) => row.id);
+  const messagesByConversation = new Map<
+    string,
+    { sender_id: string; sent_at: string }[]
+  >();
+
+  if (conversationIds.length) {
+    const { data: messageRows } = await admin
+      .from("messages")
+      .select("conversation_id, sender_id, sent_at")
+      .in("conversation_id", conversationIds)
+      .order("sent_at", { ascending: true });
+
+    for (const row of
+      ((messageRows as
+        | {
+            conversation_id: string;
+            sender_id: string;
+            sent_at: string;
+          }[]
+        | null) ?? [])) {
+      const bucket = messagesByConversation.get(row.conversation_id) ?? [];
+      bucket.push({
+        sender_id: row.sender_id,
+        sent_at: row.sent_at
+      });
+      messagesByConversation.set(row.conversation_id, bucket);
+    }
+  }
+
+  const buyerConversationCounts = new Map<string, number>();
+  const sellerReplyCounts = new Map<string, number>();
+
+  for (const conversation of conversations) {
+    const messages = messagesByConversation.get(conversation.id) ?? [];
+    const firstBuyerMessage = messages.find(
+      (message) => message.sender_id === conversation.buyer_id
+    );
+
+    if (!firstBuyerMessage) {
+      continue;
+    }
+
+    buyerConversationCounts.set(
+      conversation.seller_id,
+      (buyerConversationCounts.get(conversation.seller_id) ?? 0) + 1
+    );
+
+    const replied = messages.some(
+      (message) =>
+        message.sender_id === conversation.seller_id &&
+        Date.parse(message.sent_at) >= Date.parse(firstBuyerMessage.sent_at)
+    );
+
+    if (replied) {
+      sellerReplyCounts.set(
+        conversation.seller_id,
+        (sellerReplyCounts.get(conversation.seller_id) ?? 0) + 1
+      );
+    }
+  }
+
+  return new Map<string, SellerTrustMetrics>(
+    resolvedIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      const responseConversationCount = buyerConversationCounts.get(userId) ?? 0;
+      const repliedConversationCount = sellerReplyCounts.get(userId) ?? 0;
+      const hasConversationRate = responseConversationCount > 0;
+
+      return [
+        userId,
+        {
+          salesCount: salesCounts.get(userId) ?? 0,
+          averageRating: profile?.ratingAverage ?? 0,
+          reviewCount: profile?.reviewCount ?? 0,
+          responseRate: hasConversationRate
+            ? repliedConversationCount / responseConversationCount
+            : profile?.responseRate ?? 0,
+          responseRateMethod: hasConversationRate
+            ? "conversation-reply-rate"
+            : "profile-estimate"
+        } satisfies SellerTrustMetrics
+      ];
+    })
+  );
 }
 
 function mapListing(
   row: DbListingWithRelations,
   options?: {
     savedListingIds?: Set<string>;
+    sellerMetricsByUserId?: Map<string, SellerTrustMetrics>;
   }
 ): Listing {
   const images = [...(row.listing_images ?? [])].sort((left, right) =>
     Number(right.is_primary) - Number(left.is_primary) ||
     Date.parse(left.created_at ?? "") - Date.parse(right.created_at ?? "")
   );
+  const sellerMetrics = options?.sellerMetricsByUserId?.get(row.seller_id);
 
   return {
     id: row.id,
@@ -340,8 +553,14 @@ function mapListing(
     createdAt: row.created_at,
     freshnessLabel: getFreshnessLabel(row.created_at, row.status, row.outlet),
     sellerId: row.seller_id,
-    sellerRating: numberValue(row.seller?.profile?.rating_average),
-    sellerResponseRate: numberValue(row.seller?.profile?.response_rate),
+    sellerName: row.seller?.profile?.full_name ?? "CampusSwap seller",
+    sellerVerificationStatus: row.seller?.verification_status ?? "unverified",
+    sellerRating: sellerMetrics?.averageRating ?? numberValue(row.seller?.profile?.rating_average),
+    sellerReviewCount: sellerMetrics?.reviewCount ?? row.seller?.profile?.review_count ?? 0,
+    sellerResponseRate:
+      sellerMetrics?.responseRate ?? numberValue(row.seller?.profile?.response_rate),
+    sellerSalesCount: sellerMetrics?.salesCount ?? 0,
+    sellerJoinedAt: row.seller?.joined_at ?? undefined,
     viewCount: row.view_count,
     saveCount: row.save_count,
     isSaved: options?.savedListingIds?.has(row.id) ?? false,
@@ -546,7 +765,7 @@ async function fetchListingRows(
     query = query.order("created_at", { ascending: false });
   }
 
-  const { data } = await query.limit(60);
+  const { data } = await query.limit(input.pickupArea ? 120 : 60);
   return (data as unknown as DbListingWithRelations[] | null) ?? [];
 }
 
@@ -579,7 +798,12 @@ async function fetchActiveListings(input: ListingSearchInput = {}) {
     );
   }
 
-  const listings = rows.map((row) => mapListing(row, { savedListingIds }));
+  const sellerMetricsByUserId = await fetchSellerMetricsMap(
+    rows.map((row) => row.seller_id)
+  );
+  const listings = rows.map((row) =>
+    mapListing(row, { savedListingIds, sellerMetricsByUserId })
+  );
   const discoveryFilters: DiscoveryFilters = {
     query: input.query ?? "",
     categorySlug: input.categorySlug,
@@ -590,6 +814,8 @@ async function fetchActiveListings(input: ListingSearchInput = {}) {
     outletOnly: input.outlet ?? false,
     featuredOnly: input.featured ?? false,
     minimumSellerRating: input.minimumSellerRating,
+    pickupArea: input.pickupArea,
+    distance: input.distance,
     sort: input.sort ?? "recommended"
   };
 
@@ -713,7 +939,10 @@ export async function getCurrentUser() {
     throw new Error("Unable to load the current CampusSwap user.");
   }
 
-  return mapUser(row);
+  const sellerMetricsByUserId = await fetchSellerMetricsMap([row.id]);
+  return mapUser(row, {
+    sellerMetrics: sellerMetricsByUserId.get(row.id)
+  });
 }
 
 export async function getUserById(userId: string) {
@@ -722,7 +951,14 @@ export async function getUserById(userId: string) {
   }
 
   const row = await fetchUserRowById(userId);
-  return row ? mapUser(row) : undefined;
+  if (!row) {
+    return undefined;
+  }
+
+  const sellerMetricsByUserId = await fetchSellerMetricsMap([row.id]);
+  return mapUser(row, {
+    sellerMetrics: sellerMetricsByUserId.get(row.id)
+  });
 }
 
 export async function getFeaturedListings() {
@@ -806,6 +1042,29 @@ export async function getRecentSearches(userId?: string) {
   return [...new Set(((data as { query: string }[] | null) ?? []).map((row) => row.query))];
 }
 
+export async function getSavedSearches(userId?: string) {
+  if (!isLiveMode) {
+    return [] as SavedSearch[];
+  }
+
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const supabase = await getSupabaseClient();
+
+  if (!supabase || !currentUser) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("saved_searches")
+    .select(
+      "id, user_id, name, query, category_slug, subcategory_slug, price_min, price_max, conditions, outlet_only, featured_only, minimum_seller_rating, pickup_area, distance_bucket, created_at, updated_at"
+    )
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  return ((data as unknown as DbSavedSearchRow[] | null) ?? []).map(mapSavedSearch);
+}
+
 export async function getSavedListings(userId?: string) {
   if (!isLiveMode) {
     const resolvedUserId = userId ?? demoCurrentUserId;
@@ -828,10 +1087,19 @@ export async function getSavedListings(userId?: string) {
     .eq("user_id", currentUser.id);
 
   const rows = (data as unknown as DbFavoriteRow[] | null) ?? [];
-  return rows
+  const listingRows = rows
     .map((row) => row.listing)
-    .filter((listing): listing is DbListingWithRelations => Boolean(listing))
-    .map((listing) => mapListing(listing, { savedListingIds: new Set([listing.id]) }));
+    .filter((listing): listing is DbListingWithRelations => Boolean(listing));
+  const sellerMetricsByUserId = await fetchSellerMetricsMap(
+    listingRows.map((listing) => listing.seller_id)
+  );
+
+  return listingRows.map((listing) =>
+    mapListing(listing, {
+      savedListingIds: new Set([listing.id]),
+      sellerMetricsByUserId
+    })
+  );
 }
 
 export async function getListingById(
@@ -886,7 +1154,8 @@ export async function getListingById(
     }
   }
 
-  return mapListing(row, { savedListingIds });
+  const sellerMetricsByUserId = await fetchSellerMetricsMap([row.seller_id]);
+  return mapListing(row, { savedListingIds, sellerMetricsByUserId });
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -1344,7 +1613,9 @@ export async function getListingsForSeller(userId: string) {
     includeRemoved: false
   });
 
-  return rows.filter((row) => row.seller_id === userId).map((row) => mapListing(row));
+  const sellerRows = rows.filter((row) => row.seller_id === userId);
+  const sellerMetricsByUserId = await fetchSellerMetricsMap([userId]);
+  return sellerRows.map((row) => mapListing(row, { sellerMetricsByUserId }));
 }
 
 export async function getHomeFeed() {

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { getDictionaryForRequest } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n";
 import {
   getCurrentUser,
   getListingsForSeller,
@@ -31,10 +32,11 @@ export default async function ProfilePage({
   }
 
   const isOwnProfile = profileUser.id === currentUser.id;
-  const [receivedReviews, sellerListings, dictionary] = await Promise.all([
+  const [receivedReviews, sellerListings, dictionary, locale] = await Promise.all([
     getReviewsForUser(profileUser.id),
     getListingsForSeller(profileUser.id),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getRequestLocale()
   ]);
   const filteredReviews = receivedReviews.filter(
     (review) => review.targetUserId === profileUser.id
@@ -43,6 +45,10 @@ export default async function ProfilePage({
   const reservedListings = sellerListings.filter((listing) => listing.status === "reserved");
   const soldListings = sellerListings.filter((listing) => listing.status === "sold");
   const archivedListings = sellerListings.filter((listing) => listing.status === "archived");
+  const memberSince = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    year: "numeric"
+  }).format(new Date(profileUser.joinedAt));
 
   return (
     <div className="space-y-10">
@@ -92,6 +98,43 @@ export default async function ProfilePage({
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-white">
           <CardContent className="space-y-2 p-6">
+            <p className="text-sm text-slate-500">{dictionary.profile.memberSince}</p>
+            <p className="font-display text-2xl font-semibold text-slate-950">
+              {memberSince}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white">
+          <CardContent className="space-y-2 p-6">
+            <p className="text-sm text-slate-500">{dictionary.profile.salesCount}</p>
+            <p className="font-display text-2xl font-semibold text-slate-950">
+              {profileUser.sellerMetrics?.salesCount ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white">
+          <CardContent className="space-y-2 p-6">
+            <p className="text-sm text-slate-500">{dictionary.profile.responseRate}</p>
+            <p className="font-display text-2xl font-semibold text-slate-950">
+              {Math.round(
+                (profileUser.sellerMetrics?.responseRate ?? profileUser.profile.responseRate) * 100
+              )}%
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white">
+          <CardContent className="space-y-2 p-6">
+            <p className="text-sm text-slate-500">{dictionary.profile.averageRating}</p>
+            <p className="font-display text-2xl font-semibold text-slate-950">
+              {profileUser.profile.ratingAverage.toFixed(1)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="bg-white">
+          <CardContent className="space-y-2 p-6">
             <p className="text-sm text-slate-500">{dictionary.profile.activeListings}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {activeListings.length}
@@ -111,14 +154,6 @@ export default async function ProfilePage({
             <p className="text-sm text-slate-500">{dictionary.profile.soldItems}</p>
             <p className="font-display text-2xl font-semibold text-slate-950">
               {soldListings.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.responseRate}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {Math.round(profileUser.profile.responseRate * 100)}%
             </p>
           </CardContent>
         </Card>

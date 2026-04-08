@@ -1,28 +1,28 @@
 import { EmptyState } from "@/components/shared/empty-state";
-import { ListingCard } from "@/components/marketplace/listing-card";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { SavedListingsWorkspace } from "@/components/marketplace/saved-listings-workspace";
+import { getDictionaryForRequest } from "@/lib/i18n";
 import { getSavedListings } from "@/server/queries/marketplace";
 
 export default async function SavedPage() {
-  const listings = await getSavedListings();
+  const [listings, dictionary] = await Promise.all([
+    getSavedListings(),
+    getDictionaryForRequest()
+  ]);
 
   return (
     <div className="space-y-8">
       <SectionHeading
-        eyebrow="Saved"
-        title="Keep high-intent listings close while you compare options."
-        description="Saved listings feed recommendations, future alerts, and quick access during move-in planning."
+        eyebrow={dictionary.saved.eyebrow}
+        title={dictionary.saved.title}
+        description={dictionary.saved.description}
       />
       {listings.length ? (
-        <div className="grid gap-6 lg:grid-cols-3">
-          {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} showMessageAction />
-          ))}
-        </div>
+        <SavedListingsWorkspace listings={listings} />
       ) : (
         <EmptyState
-          title="No saved listings yet"
-          description="Once you save a listing, it will appear here and help shape your For You feed."
+          title={dictionary.saved.emptyTitle}
+          description={dictionary.saved.emptyDescription}
         />
       )}
     </div>

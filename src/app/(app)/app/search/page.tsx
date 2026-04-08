@@ -4,6 +4,7 @@ import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getAllCategories,
   getRecentSearches,
+  getSavedSearches,
   getTrendingSearches,
   searchMarketplaceListings
 } from "@/server/queries/marketplace";
@@ -33,7 +34,7 @@ export default async function SearchPage({
       ? (params.conditions.split(",").filter(Boolean) as ListingCondition[])
       : undefined;
 
-  const [categories, listings, recentSearches, trendingSearches, dictionary] = await Promise.all([
+  const [categories, listings, recentSearches, trendingSearches, savedSearches, dictionary] = await Promise.all([
     getAllCategories(),
     searchMarketplaceListings({
       query,
@@ -48,10 +49,13 @@ export default async function SearchPage({
       minimumSellerRating: parseNumber(
         typeof params.rating === "string" ? params.rating : undefined
       ),
+      pickupArea: typeof params.area === "string" ? params.area : undefined,
+      distance: typeof params.distance === "string" ? params.distance as never : undefined,
       sort: typeof params.sort === "string" ? params.sort as never : undefined
     }),
     getRecentSearches(),
     getTrendingSearches(),
+    getSavedSearches(),
     getDictionaryForRequest()
   ]);
 
@@ -66,6 +70,7 @@ export default async function SearchPage({
         listings={listings}
         categories={categories}
         recentSearches={recentSearches}
+        savedSearches={savedSearches}
         trendingSearches={trendingSearches}
       />
     </div>

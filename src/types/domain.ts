@@ -3,6 +3,7 @@ export type VerificationStatus = "unverified" | "pending" | "verified";
 export type ListingCondition = "new" | "like-new" | "good" | "fair" | "needs-love";
 export type ListingStatus = "active" | "reserved" | "sold" | "archived" | "pending-review" | "hidden";
 export type ExchangeStatus = "inquiry" | "negotiating" | "reserved" | "completed" | "cancelled" | "reported";
+export type ListingDistanceFilter = "same-area" | "nearby" | "citywide";
 export type ReportTargetType = "listing" | "user" | "conversation";
 export type ReportStatus = "open" | "in-review" | "actioned" | "dismissed";
 export type PromotionType = "featured" | "seller-boost";
@@ -56,6 +57,14 @@ export interface Profile {
   verifiedBadge: boolean;
 }
 
+export interface SellerTrustMetrics {
+  salesCount: number;
+  averageRating: number;
+  reviewCount: number;
+  responseRate: number;
+  responseRateMethod: "conversation-reply-rate" | "profile-estimate";
+}
+
 export interface User {
   id: string;
   email: string;
@@ -65,6 +74,7 @@ export interface User {
   joinedAt: string;
   lastSeenAt: string;
   profile: Profile;
+  sellerMetrics?: SellerTrustMetrics;
 }
 
 export interface Category {
@@ -101,8 +111,13 @@ export interface Listing {
   createdAt: string;
   freshnessLabel: string;
   sellerId: string;
+  sellerName?: string;
+  sellerVerificationStatus?: VerificationStatus;
   sellerRating: number;
+  sellerReviewCount?: number;
   sellerResponseRate: number;
+  sellerSalesCount?: number;
+  sellerJoinedAt?: string;
   viewCount: number;
   saveCount: number;
   isSaved?: boolean;
@@ -127,6 +142,25 @@ export interface SearchEvent {
   query: string;
   categorySlug?: string;
   createdAt: string;
+}
+
+export interface SavedSearch {
+  id: string;
+  userId: string;
+  name: string;
+  query?: string;
+  categorySlug?: string;
+  subcategorySlug?: string;
+  priceMin?: number;
+  priceMax?: number;
+  conditions: ListingCondition[];
+  outletOnly: boolean;
+  featuredOnly: boolean;
+  minimumSellerRating?: number;
+  pickupArea?: string;
+  distance?: ListingDistanceFilter;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RecommendationEvent {
@@ -347,6 +381,8 @@ export interface ListingSearchInput {
   outlet?: boolean;
   featured?: boolean;
   minimumSellerRating?: number;
+  pickupArea?: string;
+  distance?: ListingDistanceFilter;
   sort?: "newest" | "price-low-high" | "price-high-low" | "recommended" | "relevance";
 }
 

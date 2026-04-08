@@ -150,6 +150,41 @@ export const searchEvents = pgTable("search_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+export const savedSearches = pgTable("saved_searches", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  query: text("query"),
+  categorySlug: varchar("category_slug", { length: 120 }),
+  subcategorySlug: varchar("subcategory_slug", { length: 120 }),
+  priceMin: numeric("price_min", { precision: 10, scale: 2 }),
+  priceMax: numeric("price_max", { precision: 10, scale: 2 }),
+  conditions: jsonb("conditions").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  outletOnly: boolean("outlet_only").default(false).notNull(),
+  featuredOnly: boolean("featured_only").default(false).notNull(),
+  minimumSellerRating: numeric("minimum_seller_rating", { precision: 3, scale: 2 }),
+  pickupArea: varchar("pickup_area", { length: 160 }),
+  distanceBucket: varchar("distance_bucket", { length: 30 }),
+  ...timestamps
+}, (table) => ({
+  userIdx: index("saved_searches_user_idx").on(table.userId, table.createdAt)
+}));
+
+export const listingAlertEvents = pgTable("listing_alert_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  savedSearchId: uuid("saved_search_id").references(() => savedSearches.id),
+  listingId: uuid("listing_id").references(() => listings.id).notNull(),
+  eventType: varchar("event_type", { length: 40 }).notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  priceFrom: numeric("price_from", { precision: 10, scale: 2 }),
+  priceTo: numeric("price_to", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  dedupeIdx: index("listing_alert_events_dedupe_idx").on(table.dedupeKey),
+  userIdx: index("listing_alert_events_user_idx").on(table.userId, table.createdAt)
+}));
+
 export const recommendationEvents = pgTable("recommendation_events", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id").references(() => users.id).notNull(),

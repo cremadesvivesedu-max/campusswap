@@ -552,7 +552,71 @@ type DeepWiden<T> = T extends readonly (infer U)[]
     ? { [K in keyof T]: DeepWiden<T[K]> }
     : WidenPrimitive<T>;
 
-export type Dictionary = DeepWiden<typeof dictionaries.en>;
+type DictionaryExtensions = {
+  search: {
+    pickupArea: string;
+    anyArea: string;
+    distance: string;
+    distanceOptions: {
+      sameArea: string;
+      nearby: string;
+      citywide: string;
+    };
+    saveCurrentSearch: string;
+    savingSearch: string;
+    savedSearchesTitle: string;
+    savedSearchesDescription: string;
+    savedSearchRun: string;
+    savedSearchDelete: string;
+    filterLabels: DeepWiden<typeof dictionaries.en.search.filterLabels> & {
+      area: string;
+      distance: string;
+    };
+  };
+  saved: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    compareLabel: string;
+    compareLimit: string;
+    addToCompare: string;
+    removeFromCompare: string;
+    compareTitle: string;
+    compareDescription: string;
+    compareFields: {
+      price: string;
+      condition: string;
+      pickupArea: string;
+      sellerRating: string;
+      salesCount: string;
+      featured: string;
+      negotiable: string;
+      status: string;
+    };
+    compareValues: {
+      yes: string;
+      no: string;
+    };
+  };
+  profile: DeepWiden<typeof dictionaries.en.profile> & {
+    memberSince: string;
+    salesCount: string;
+    averageRating: string;
+  };
+  listing: DeepWiden<typeof dictionaries.en.listing> & {
+    quickView: string;
+    quickViewEyebrow: string;
+    closeQuickView: string;
+    campusSwapSeller: string;
+    memberSince: string;
+    salesCount: string;
+    averageRating: string;
+  };
+};
+
+export type Dictionary = DeepWiden<typeof dictionaries.en> & DictionaryExtensions;
 
 const mutableDictionaries = dictionaries as unknown as Record<AppLocale, Dictionary>;
 
@@ -584,7 +648,7 @@ mutableDictionaries.es = {
     forgotPassword: { ...mutableDictionaries.en.auth.forgotPassword, eyebrow: "Restablecer contrasena", title: "Enviate un enlace de restablecimiento.", description: "Introduce el email que usas en CampusSwap y te enviaremos un enlace seguro para cambiar tu contrasena.", emailPlaceholder: "tu@email.com", submit: "Enviar email de restablecimiento", submitting: "Enviando...", success: "Email enviado. Revisa tu bandeja de entrada y spam.", backToLogin: "Volver al acceso" },
     resetPassword: { ...mutableDictionaries.en.auth.resetPassword, eyebrow: "Nueva contrasena", title: "Elige una nueva contrasena para tu cuenta de CampusSwap.", description: "Cuando el enlace de recuperacion sea valido, podras guardar una nueva contrasena y seguir a la app.", passwordPlaceholder: "Nueva contrasena", confirmPasswordPlaceholder: "Confirma la nueva contrasena", submit: "Actualizar contrasena", submitting: "Actualizando contrasena...", invalidLink: "Este enlace es invalido o ha caducado. Solicita uno nuevo desde acceso.", success: "Contrasena actualizada. Ya puedes iniciar sesion con la nueva.", backToLogin: "Volver al acceso", mismatch: "Las contrasenas no coinciden." }
   },
-  search: { ...mutableDictionaries.en.search, eyebrow: "Busqueda y descubrimiento", title: "Explora rapido cuando necesitas decidir enseguida.", description: "La busqueda, los filtros, las subcategorias y el orden actualizan los resultados en tiempo real.", controls: "Controles de descubrimiento", query: "Buscar", queryPlaceholder: "Busca bicis, escritorios, ropa de cama o monitores", categories: "Categorias", subcategories: "Subcategorias", minPrice: "Precio minimo", maxPrice: "Precio maximo", condition: "Estado", outletOnly: "Solo outlet", featuredOnly: "Solo destacados", minimumSellerRating: "Valoracion minima del vendedor", sort: "Ordenar", sortOptions: { recommended: "Recomendado", relevance: "Relevancia", newest: "Mas reciente", priceLowHigh: "Precio ascendente", priceHighLow: "Precio descendente" }, trending: "Tendencias", recent: "Recientes", results: "resultados", resultsDescription: "El descubrimiento se actualiza al instante cuando cambian los filtros.", recommendationPrefix: "Por que ves esto", clearAll: "Limpiar filtros", emptyTitle: "Ningun anuncio coincide con estos filtros", emptyDescription: "Prueba un rango de precio mas amplio o desactiva filtros para ver mas inventario.", filterLabels: { search: "Busqueda", category: "Categoria", subcategory: "Subcategoria", min: "Min EUR", max: "Max EUR", condition: "Estado", sellerRating: "Valoracion", sort: "Orden" } },
+  search: { ...mutableDictionaries.en.search, eyebrow: "Busqueda y descubrimiento", title: "Explora rapido cuando necesitas decidir enseguida.", description: "La busqueda, los filtros, las subcategorias y el orden actualizan los resultados en tiempo real.", controls: "Controles de descubrimiento", query: "Buscar", queryPlaceholder: "Busca bicis, escritorios, ropa de cama o monitores", categories: "Categorias", subcategories: "Subcategorias", minPrice: "Precio minimo", maxPrice: "Precio maximo", condition: "Estado", outletOnly: "Solo outlet", featuredOnly: "Solo destacados", minimumSellerRating: "Valoracion minima del vendedor", sort: "Ordenar", sortOptions: { recommended: "Recomendado", relevance: "Relevancia", newest: "Mas reciente", priceLowHigh: "Precio ascendente", priceHighLow: "Precio descendente" }, trending: "Tendencias", recent: "Recientes", results: "resultados", resultsDescription: "El descubrimiento se actualiza al instante cuando cambian los filtros.", recommendationPrefix: "Por que ves esto", clearAll: "Limpiar filtros", emptyTitle: "Ningun anuncio coincide con estos filtros", emptyDescription: "Prueba un rango de precio mas amplio o desactiva filtros para ver mas inventario.", filterLabels: { search: "Busqueda", category: "Categoria", subcategory: "Subcategoria", min: "Min EUR", max: "Max EUR", condition: "Estado", sellerRating: "Valoracion", sort: "Orden", area: "Zona", distance: "Distancia" } },
   settings: {
     ...mutableDictionaries.en.settings,
     eyebrow: "Ajustes",
@@ -993,7 +1057,7 @@ mutableDictionaries.nl = {
     forgotPassword: { ...mutableDictionaries.en.auth.forgotPassword, eyebrow: "Wachtwoord resetten", title: "Stuur jezelf een resetlink.", description: "Voer het e-mailadres van je CampusSwap-account in en we sturen een veilige resetlink.", emailPlaceholder: "jij@voorbeeld.com", submit: "Resetmail versturen", submitting: "Bezig met verzenden...", success: "Resetmail verzonden. Controleer je inbox en spammap.", backToLogin: "Terug naar inloggen" },
     resetPassword: { ...mutableDictionaries.en.auth.resetPassword, eyebrow: "Nieuw wachtwoord", title: "Kies een nieuw wachtwoord voor je CampusSwap-account.", description: "Zodra de resetlink geldig is, kun je een nieuw wachtwoord instellen en verdergaan naar de app.", passwordPlaceholder: "Nieuw wachtwoord", confirmPasswordPlaceholder: "Bevestig nieuw wachtwoord", submit: "Wachtwoord bijwerken", submitting: "Wachtwoord wordt bijgewerkt...", invalidLink: "Deze resetlink is ongeldig of verlopen. Vraag een nieuwe aan vanuit inloggen.", success: "Wachtwoord bijgewerkt. Je kunt nu inloggen met je nieuwe wachtwoord.", backToLogin: "Terug naar inloggen", mismatch: "Wachtwoorden komen niet overeen." }
   },
-  search: { ...mutableDictionaries.en.search, eyebrow: "Zoeken en ontdekken", title: "Snel browsen wanneer je snel moet beslissen.", description: "Zoeken, filters, subcategorieen en sorteren werken de resultaten direct bij.", controls: "Ontdekkingsfilters", query: "Zoeken", queryPlaceholder: "Zoek fietsen, bureaus, beddengoed of monitoren", categories: "Categorieen", subcategories: "Subcategorieen", minPrice: "Min prijs", maxPrice: "Max prijs", condition: "Conditie", outletOnly: "Alleen outlet", featuredOnly: "Alleen uitgelicht", minimumSellerRating: "Minimale verkopersscore", sort: "Sorteren", sortOptions: { recommended: "Aanbevolen", relevance: "Relevantie", newest: "Nieuwste", priceLowHigh: "Prijs laag-hoog", priceHighLow: "Prijs hoog-laag" }, trending: "Trending", recent: "Recent", results: "resultaten", resultsDescription: "Ontdekking werkt direct bij wanneer filters veranderen.", recommendationPrefix: "Waarom je dit ziet", clearAll: "Alle filters wissen", emptyTitle: "Geen advertenties die bij deze filters passen", emptyDescription: "Probeer een ruimer prijsbereik of schakel filters uit om meer aanbod te zien.", filterLabels: { search: "Zoekterm", category: "Categorie", subcategory: "Subcategorie", min: "Min EUR", max: "Max EUR", condition: "Conditie", sellerRating: "Verkopersscore", sort: "Sortering" } },
+  search: { ...mutableDictionaries.en.search, eyebrow: "Zoeken en ontdekken", title: "Snel browsen wanneer je snel moet beslissen.", description: "Zoeken, filters, subcategorieen en sorteren werken de resultaten direct bij.", controls: "Ontdekkingsfilters", query: "Zoeken", queryPlaceholder: "Zoek fietsen, bureaus, beddengoed of monitoren", categories: "Categorieen", subcategories: "Subcategorieen", minPrice: "Min prijs", maxPrice: "Max prijs", condition: "Conditie", outletOnly: "Alleen outlet", featuredOnly: "Alleen uitgelicht", minimumSellerRating: "Minimale verkopersscore", sort: "Sorteren", sortOptions: { recommended: "Aanbevolen", relevance: "Relevantie", newest: "Nieuwste", priceLowHigh: "Prijs laag-hoog", priceHighLow: "Prijs hoog-laag" }, trending: "Trending", recent: "Recent", results: "resultaten", resultsDescription: "Ontdekking werkt direct bij wanneer filters veranderen.", recommendationPrefix: "Waarom je dit ziet", clearAll: "Alle filters wissen", emptyTitle: "Geen advertenties die bij deze filters passen", emptyDescription: "Probeer een ruimer prijsbereik of schakel filters uit om meer aanbod te zien.", filterLabels: { search: "Zoekterm", category: "Categorie", subcategory: "Subcategorie", min: "Min EUR", max: "Max EUR", condition: "Conditie", sellerRating: "Verkopersscore", sort: "Sortering", area: "Gebied", distance: "Afstand" } },
   settings: {
     ...mutableDictionaries.en.settings,
     eyebrow: "Instellingen",
@@ -1565,6 +1629,225 @@ mutableDictionaries.nl = {
       "CampusSwap toont een benaderde buurtzone in plaats van een priv\u00e9adres.",
     privacyBody:
       "Exacte adressen deel je pas priv\u00e9 in de chat wanneer beide kanten akkoord zijn met tijd en openbare overdrachtplek."
+  }
+};
+
+mutableDictionaries.en = {
+  ...mutableDictionaries.en,
+  search: {
+    ...mutableDictionaries.en.search,
+    pickupArea: "Pickup area",
+    anyArea: "Any area",
+    distance: "Distance",
+    distanceOptions: {
+      sameArea: "Same area only",
+      nearby: "Nearby areas",
+      citywide: "Anywhere in Maastricht"
+    },
+    saveCurrentSearch: "Save current search",
+    savingSearch: "Saving search...",
+    savedSearchesTitle: "Saved searches",
+    savedSearchesDescription:
+      "Re-open the exact filters you care about and let CampusSwap watch for new matching stock.",
+    savedSearchRun: "Run search",
+    savedSearchDelete: "Delete",
+    filterLabels: {
+      ...mutableDictionaries.en.search.filterLabels,
+      area: "Area",
+      distance: "Distance"
+    }
+  },
+  saved: {
+    eyebrow: "Saved",
+    title: "Keep high-intent listings close while you compare options.",
+    description:
+      "Saved listings stay ready for side-by-side comparison, fast re-checks, and quicker move-in decisions.",
+    emptyTitle: "No saved listings yet",
+    emptyDescription:
+      "Once you save a listing, it will appear here so you can compare prices, pickup zones, and seller trust signals.",
+    compareLabel: "Compare",
+    compareLimit: "Select up to {count} listings",
+    addToCompare: "Add",
+    removeFromCompare: "Remove",
+    compareTitle: "Compare saved listings",
+    compareDescription:
+      "Use this side-by-side view to narrow down which saved option deserves the next message.",
+    compareFields: {
+      price: "Price",
+      condition: "Condition",
+      pickupArea: "Pickup area",
+      sellerRating: "Seller rating",
+      salesCount: "Sales count",
+      featured: "Featured",
+      negotiable: "Negotiable",
+      status: "Status"
+    },
+    compareValues: {
+      yes: "Yes",
+      no: "No"
+    }
+  },
+  profile: {
+    ...mutableDictionaries.en.profile,
+    memberSince: "Member since",
+    salesCount: "Sales count",
+    averageRating: "Average rating"
+  },
+  listing: {
+    ...mutableDictionaries.en.listing,
+    quickView: "Quick view",
+    quickViewEyebrow: "Quick view",
+    closeQuickView: "Close preview",
+    campusSwapSeller: "CampusSwap seller",
+    memberSince: "Member since",
+    salesCount: "Sales count",
+    averageRating: "Average rating"
+  }
+};
+
+mutableDictionaries.es = {
+  ...mutableDictionaries.es,
+  search: {
+    ...mutableDictionaries.es.search,
+    pickupArea: "Zona de recogida",
+    anyArea: "Cualquier zona",
+    distance: "Distancia",
+    distanceOptions: {
+      sameArea: "Solo la misma zona",
+      nearby: "Zonas cercanas",
+      citywide: "Cualquier zona de Maastricht"
+    },
+    saveCurrentSearch: "Guardar búsqueda actual",
+    savingSearch: "Guardando búsqueda...",
+    savedSearchesTitle: "Búsquedas guardadas",
+    savedSearchesDescription:
+      "Vuelve a abrir los filtros que te importan y deja que CampusSwap vigile nuevos anuncios compatibles.",
+    savedSearchRun: "Abrir búsqueda",
+    savedSearchDelete: "Eliminar",
+    filterLabels: {
+      ...mutableDictionaries.es.search.filterLabels,
+      area: "Zona",
+      distance: "Distancia"
+    }
+  },
+  saved: {
+    eyebrow: "Guardados",
+    title: "Mantén cerca los anuncios con más intención mientras comparas opciones.",
+    description:
+      "Tus guardados sirven para comparar lado a lado, revisar rápido y decidir mejor antes de escribir.",
+    emptyTitle: "Aún no tienes anuncios guardados",
+    emptyDescription:
+      "Cuando guardes un anuncio, aparecerá aquí para comparar precio, zona de recogida y señales de confianza del vendedor.",
+    compareLabel: "Comparar",
+    compareLimit: "Selecciona hasta {count} anuncios",
+    addToCompare: "Añadir",
+    removeFromCompare: "Quitar",
+    compareTitle: "Comparar anuncios guardados",
+    compareDescription:
+      "Usa esta vista para decidir qué anuncio merece tu siguiente mensaje.",
+    compareFields: {
+      price: "Precio",
+      condition: "Estado",
+      pickupArea: "Zona de recogida",
+      sellerRating: "Valoración del vendedor",
+      salesCount: "Ventas",
+      featured: "Destacado",
+      negotiable: "Negociable",
+      status: "Estado"
+    },
+    compareValues: {
+      yes: "Sí",
+      no: "No"
+    }
+  },
+  profile: {
+    ...mutableDictionaries.es.profile,
+    memberSince: "En CampusSwap desde",
+    salesCount: "Ventas",
+    averageRating: "Valoración media"
+  },
+  listing: {
+    ...mutableDictionaries.es.listing,
+    quickView: "Vista rápida",
+    quickViewEyebrow: "Vista rápida",
+    closeQuickView: "Cerrar vista",
+    campusSwapSeller: "Vendedor de CampusSwap",
+    memberSince: "En CampusSwap desde",
+    salesCount: "Ventas",
+    averageRating: "Valoración media"
+  }
+};
+
+mutableDictionaries.nl = {
+  ...mutableDictionaries.nl,
+  search: {
+    ...mutableDictionaries.nl.search,
+    pickupArea: "Afhaalgebied",
+    anyArea: "Elk gebied",
+    distance: "Afstand",
+    distanceOptions: {
+      sameArea: "Alleen hetzelfde gebied",
+      nearby: "Nabije zones",
+      citywide: "Overal in Maastricht"
+    },
+    saveCurrentSearch: "Huidige zoekopdracht opslaan",
+    savingSearch: "Zoekopdracht opslaan...",
+    savedSearchesTitle: "Opgeslagen zoekopdrachten",
+    savedSearchesDescription:
+      "Open je belangrijkste filters opnieuw en laat CampusSwap nieuwe passende advertenties signaleren.",
+    savedSearchRun: "Zoekopdracht openen",
+    savedSearchDelete: "Verwijderen",
+    filterLabels: {
+      ...mutableDictionaries.nl.search.filterLabels,
+      area: "Gebied",
+      distance: "Afstand"
+    }
+  },
+  saved: {
+    eyebrow: "Opgeslagen",
+    title: "Houd interessante advertenties dichtbij terwijl je opties vergelijkt.",
+    description:
+      "Opgeslagen advertenties blijven klaar voor vergelijking, snelle checks en snellere beslissingen.",
+    emptyTitle: "Nog geen opgeslagen advertenties",
+    emptyDescription:
+      "Zodra je een advertentie opslaat, verschijnt die hier zodat je prijs, afhaalgebied en verkopersvertrouwen kunt vergelijken.",
+    compareLabel: "Vergelijken",
+    compareLimit: "Selecteer maximaal {count} advertenties",
+    addToCompare: "Toevoegen",
+    removeFromCompare: "Verwijderen",
+    compareTitle: "Opgeslagen advertenties vergelijken",
+    compareDescription:
+      "Gebruik dit overzicht om te bepalen welke advertentie jouw volgende bericht waard is.",
+    compareFields: {
+      price: "Prijs",
+      condition: "Conditie",
+      pickupArea: "Afhaalgebied",
+      sellerRating: "Verkopersscore",
+      salesCount: "Aantal verkopen",
+      featured: "Uitgelicht",
+      negotiable: "Onderhandelbaar",
+      status: "Status"
+    },
+    compareValues: {
+      yes: "Ja",
+      no: "Nee"
+    }
+  },
+  profile: {
+    ...mutableDictionaries.nl.profile,
+    memberSince: "Lid sinds",
+    salesCount: "Aantal verkopen",
+    averageRating: "Gemiddelde beoordeling"
+  },
+  listing: {
+    ...mutableDictionaries.nl.listing,
+    quickView: "Snelle preview",
+    quickViewEyebrow: "Snelle preview",
+    closeQuickView: "Preview sluiten",
+    campusSwapSeller: "CampusSwap-verkoper",
+    memberSince: "Lid sinds",
+    salesCount: "Aantal verkopen",
+    averageRating: "Gemiddelde beoordeling"
   }
 };
 

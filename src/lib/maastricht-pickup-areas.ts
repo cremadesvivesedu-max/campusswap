@@ -2,6 +2,7 @@ interface MaastrichtPickupArea {
   id: string;
   label: string;
   keywords: string[];
+  nearbyAreaIds: string[];
   markerX: number;
   markerY: number;
   meetupNote: string;
@@ -21,11 +22,17 @@ export interface PickupAreaResolution {
   publicMeetupPointDescription: string;
 }
 
+export interface PickupAreaOption {
+  id: string;
+  label: string;
+}
+
 export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
   {
     id: "binnenstad",
     label: "Binnenstad",
     keywords: ["binnenstad", "university library", "law faculty", "library"],
+    nearbyAreaIds: ["jekerkwartier", "wyck"],
     markerX: 47,
     markerY: 31,
     meetupNote: "Best for central faculty or library-adjacent handoffs.",
@@ -37,6 +44,7 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
     id: "jekerkwartier",
     label: "Jekerkwartier",
     keywords: ["jekerkwartier", "helpoort", "tongersestraat"],
+    nearbyAreaIds: ["binnenstad", "sint-pieter"],
     markerX: 36,
     markerY: 45,
     meetupNote: "Suitable for calm public pickup near Helpoort or Tongersestraat.",
@@ -48,6 +56,7 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
     id: "wyck",
     label: "Wyck",
     keywords: ["wyck", "station side", "station", "coffeelovers"],
+    nearbyAreaIds: ["binnenstad", "randwyck"],
     markerX: 69,
     markerY: 42,
     meetupNote: "Best for station-side or bridge-adjacent public meetups.",
@@ -59,6 +68,7 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
     id: "randwyck",
     label: "Randwyck",
     keywords: ["randwyck", "um sports", "student residence"],
+    nearbyAreaIds: ["wyck"],
     markerX: 73,
     markerY: 74,
     meetupNote: "Works well for residence, campus-edge, or sports-area pickup.",
@@ -70,6 +80,7 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
     id: "sint-pieter",
     label: "Sint Pieter",
     keywords: ["sint pieter", "sint-pieter", "near bus stop"],
+    nearbyAreaIds: ["jekerkwartier", "maastricht"],
     markerX: 26,
     markerY: 72,
     meetupNote: "Keep the meetup close to the bus stop or another visible public point.",
@@ -81,6 +92,7 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
     id: "maastricht",
     label: "Central Maastricht",
     keywords: ["maastricht"],
+    nearbyAreaIds: ["binnenstad", "jekerkwartier", "wyck", "randwyck", "sint-pieter"],
     markerX: 53,
     markerY: 50,
     meetupNote: "Share the exact public handoff point in chat after both sides agree.",
@@ -92,6 +104,10 @@ export const maastrichtPickupAreas: MaastrichtPickupArea[] = [
 
 function normalize(value?: string) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function getAreaById(areaId?: string) {
+  return maastrichtPickupAreas.find((candidate) => candidate.id === areaId);
 }
 
 export function resolvePickupArea(input: {
@@ -126,4 +142,50 @@ export function resolvePickupArea(input: {
     publicMeetupPointLabel: area.publicMeetupPointLabel,
     publicMeetupPointDescription: area.publicMeetupPointDescription
   };
+}
+
+export function getPickupAreaOptions(): PickupAreaOption[] {
+  return maastrichtPickupAreas
+    .filter((area) => area.id !== "maastricht")
+    .map((area) => ({
+      id: area.id,
+      label: area.label
+    }));
+}
+
+export function matchesPickupAreaFilter(input: {
+  listingPickupArea?: string;
+  listingLocation?: string;
+  listingNeighborhood?: string;
+  selectedArea?: string;
+  distance?: "same-area" | "nearby" | "citywide";
+}) {
+  if (!input.selectedArea) {
+    return true;
+  }
+
+  const listingArea = resolvePickupArea({
+    pickupArea: input.listingPickupArea,
+    location: input.listingLocation,
+    neighborhood: input.listingNeighborhood
+  });
+  const selectedArea = getAreaById(input.selectedArea);
+
+  if (!selectedArea) {
+    return true;
+  }
+
+  if ((input.distance ?? "same-area") === "citywide") {
+    return true;
+  }
+
+  if (listingArea.areaId === selectedArea.id) {
+    return true;
+  }
+
+  if ((input.distance ?? "same-area") === "nearby") {
+    return selectedArea.nearbyAreaIds.includes(listingArea.areaId);
+  }
+
+  return false;
 }

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   getConditionLabel,
   getDictionaryForRequest,
-  getListingStatusLabel
+  getListingStatusLabel,
+  getRequestLocale
 } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -38,13 +39,20 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  const [seller, currentUser, dictionary] = await Promise.all([
+  const [seller, currentUser, dictionary, locale] = await Promise.all([
     getUserById(listing.sellerId),
     getCurrentUser(),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getRequestLocale()
   ]);
   const isOwnListing = currentUser.id === listing.sellerId;
   const transactionContext = await getListingTransactionContext(listing.id, currentUser.id);
+  const memberSince = seller
+    ? new Intl.DateTimeFormat(locale, {
+        month: "short",
+        year: "numeric"
+      }).format(new Date(seller.joinedAt))
+    : null;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_0.42fr]">
@@ -151,9 +159,40 @@ export default async function ListingDetailPage({
               rating={listing.sellerRating}
               reviewCount={seller?.profile.reviewCount}
             />
-            <p>
-              {dictionary.listing.responseRate} {Math.round(listing.sellerResponseRate * 100)}%
-            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.responseRate}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-950">
+                  {Math.round(listing.sellerResponseRate * 100)}%
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.salesCount}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-950">
+                  {listing.sellerSalesCount ?? seller?.sellerMetrics?.salesCount ?? 0}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.averageRating}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-950">
+                  {listing.sellerRating.toFixed(1)}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.memberSince}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-950">
+                  {memberSince ?? "-"}
+                </p>
+              </div>
+            </div>
             <p>
               {dictionary.listing.pickupArea}: {listing.pickupArea}
             </p>

@@ -1,4 +1,5 @@
-import type { Listing, ListingCondition } from "@/types/domain";
+import { matchesPickupAreaFilter } from "@/lib/maastricht-pickup-areas";
+import type { Listing, ListingCondition, ListingDistanceFilter } from "@/types/domain";
 
 export type ListingSortOption =
   | "recommended"
@@ -17,6 +18,8 @@ export interface DiscoveryFilters {
   outletOnly: boolean;
   featuredOnly: boolean;
   minimumSellerRating?: number;
+  pickupArea?: string;
+  distance?: ListingDistanceFilter;
   sort: ListingSortOption;
 }
 
@@ -160,6 +163,17 @@ export function filterListings(listings: Listing[], filters: DiscoveryFilters) {
     const minimumSellerRating = filters.minimumSellerRating;
     results = results.filter(
       (listing) => listing.sellerRating >= minimumSellerRating
+    );
+  }
+
+  if (filters.pickupArea) {
+    results = results.filter((listing) =>
+      matchesPickupAreaFilter({
+        listingPickupArea: listing.pickupArea,
+        listingLocation: listing.location,
+        selectedArea: filters.pickupArea,
+        distance: filters.distance
+      })
     );
   }
 

@@ -37,5 +37,5 @@ export async function getRequestLocale(): Promise<AppLocale> {
 
 export async function getDictionaryForRequest(): Promise<Dictionary> {
   const locale = await getRequestLocale();
-  return dictionaries[locale];
+  return dictionaries[locale] as unknown as Dictionary;
 }

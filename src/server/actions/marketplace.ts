@@ -9,7 +9,12 @@ import {
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
-import type { ExchangeStatus, ListingStatus } from "@/types/domain";
+import type {
+  ExchangeStatus,
+  ListingCondition,
+  ListingDistanceFilter,
+  ListingStatus
+} from "@/types/domain";
 
 interface ActionResult {
   success: boolean;
@@ -26,6 +31,86 @@ interface ListingDeletionHistoryFlags {
   hasPromotionRecords: boolean;
   hasReports: boolean;
   hasAuditLogs: boolean;
+}
+
+function parseOptionalNumber(value: FormDataEntryValue | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(String(value).trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseConditions(value: FormDataEntryValue | null) {
+  if (!value) {
+    return [] as ListingCondition[];
+  }
+
+  return String(value)
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean) as ListingCondition[];
+}
+
+function buildSavedSearchName(input: {
+  query?: string;
+  categorySlug?: string;
+  pickupArea?: string;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+}) {
+  const titleCase = (value: string) =>
+    value
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
+  if (input.query?.trim()) {
+    return input.query.trim();
+  }
+
+  if (input.categorySlug) {
+    return titleCase(input.categorySlug);
+  }
+
+  if (input.pickupArea) {
+    return `${titleCase(input.pickupArea)} meetup zone`;
+  }
+
+  if (input.minPrice !== null || input.maxPrice !== null) {
+    return `EUR ${input.minPrice ?? 0}-${input.maxPrice ?? "Any"}`;
+  }
+
+  return "CampusSwap saved search";
+}
+
+function createSavedSearchSignature(input: {
+  query?: string | null;
+  categorySlug?: string | null;
+  subcategorySlug?: string | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  conditions?: string[];
+  outletOnly?: boolean;
+  featuredOnly?: boolean;
+  minimumSellerRating?: number | null;
+  pickupArea?: string | null;
+  distance?: string | null;
+}) {
+  return JSON.stringify({
+    query: input.query?.trim() || null,
+    categorySlug: input.categorySlug || null,
+    subcategorySlug: input.subcategorySlug || null,
+    priceMin: input.priceMin ?? null,
+    priceMax: input.priceMax ?? null,
+    conditions: [...(input.conditions ?? [])].sort(),
+    outletOnly: Boolean(input.outletOnly),
+    featuredOnly: Boolean(input.featuredOnly),
+    minimumSellerRating: input.minimumSellerRating ?? null,
+    pickupArea: input.pickupArea || null,
+    distance: input.distance || null
+  });
 }
 
 async function requireMarketplaceContext() {
@@ -1113,6 +1198,194 @@ export async function recordSearchEventAction(query: string, categorySlug?: stri
     query: cleanQuery,
     category_slug: categorySlug ?? null
   });
+}
+
+export async function saveSearchAction(
+  _: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to save searches."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const query = String(formData.get("query") ?? "").trim() || null;
+  const categorySlug = String(formData.get("categorySlug") ?? "").trim() || null;
+  const subcategorySlug = String(formData.get("subcategorySlug") ?? "").trim() || null;
+  const priceMin = parseOptionalNumber(formData.get("priceMin"));
+  const priceMax = parseOptionalNumber(formData.get("priceMax"));
+  const conditions = parseConditions(formData.get("conditions"));
+  const outletOnly = formData.get("outletOnly") === "1";
+  const featuredOnly = formData.get("featuredOnly") === "1";
+  const minimumSellerRating = parseOptionalNumber(formData.get("minimumSellerRating"));
+  const pickupArea = String(formData.get("pickupArea") ?? "").trim() || null;
+  const distance =
+    (String(formData.get("distance") ?? "").trim() as ListingDistanceFilter | "") || null;
+
+  const hasMeaningfulFilter =
+    Boolean(query) ||
+    Boolean(categorySlug) ||
+    Boolean(subcategorySlug) ||
+    priceMin !== null ||
+    priceMax !== null ||
+    conditions.length > 0 ||
+    outletOnly ||
+    featuredOnly ||
+    minimumSellerRating !== null ||
+    Boolean(pickupArea);
+
+  if (!hasMeaningfulFilter) {
+    return {
+      success: false,
+      message: "Add at least one search term or filter before saving this search."
+    };
+  }
+
+  const signature = createSavedSearchSignature({
+    query,
+    categorySlug,
+    subcategorySlug,
+    priceMin,
+    priceMax,
+    conditions,
+    outletOnly,
+    featuredOnly,
+    minimumSellerRating,
+    pickupArea,
+    distance
+  });
+
+  const { data: existingRows } = await supabase
+    .from("saved_searches")
+    .select(
+      "id, query, category_slug, subcategory_slug, price_min, price_max, conditions, outlet_only, featured_only, minimum_seller_rating, pickup_area, distance_bucket"
+    )
+    .eq("user_id", user.id);
+
+  const existing = (((existingRows as
+    | {
+        id: string;
+        query: string | null;
+        category_slug: string | null;
+        subcategory_slug: string | null;
+        price_min: number | string | null;
+        price_max: number | string | null;
+        conditions: string[] | null;
+        outlet_only: boolean;
+        featured_only: boolean;
+        minimum_seller_rating: number | string | null;
+        pickup_area: string | null;
+        distance_bucket: string | null;
+      }[]
+    | null) ?? []).find(
+    (row) =>
+      createSavedSearchSignature({
+        query: row.query,
+        categorySlug: row.category_slug,
+        subcategorySlug: row.subcategory_slug,
+        priceMin: row.price_min === null ? null : Number(row.price_min),
+        priceMax: row.price_max === null ? null : Number(row.price_max),
+        conditions: row.conditions ?? [],
+        outletOnly: row.outlet_only,
+        featuredOnly: row.featured_only,
+        minimumSellerRating:
+          row.minimum_seller_rating === null ? null : Number(row.minimum_seller_rating),
+        pickupArea: row.pickup_area,
+        distance: row.distance_bucket
+      }) === signature
+  ));
+
+  if (existing?.id) {
+    return {
+      success: true,
+      message: "This search is already saved."
+    };
+  }
+
+  const name = buildSavedSearchName({
+    query: query ?? undefined,
+    categorySlug: categorySlug ?? undefined,
+    pickupArea: pickupArea ?? undefined,
+    minPrice: priceMin,
+    maxPrice: priceMax
+  });
+
+  const { error } = await supabase.from("saved_searches").insert({
+    user_id: user.id,
+    name,
+    query,
+    category_slug: categorySlug,
+    subcategory_slug: subcategorySlug,
+    price_min: priceMin,
+    price_max: priceMax,
+    conditions,
+    outlet_only: outletOnly,
+    featured_only: featuredOnly,
+    minimum_seller_rating: minimumSellerRating,
+    pickup_area: pickupArea,
+    distance_bucket: distance
+  });
+
+  if (error) {
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+
+  revalidatePath("/app/search");
+  revalidatePath("/app/saved");
+
+  return {
+    success: true,
+    message: "Search saved. CampusSwap will watch for matching listings."
+  };
+}
+
+export async function deleteSavedSearchAction(
+  _: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to manage saved searches."
+    };
+  }
+
+  const savedSearchId = String(formData.get("savedSearchId") ?? "").trim();
+
+  if (!savedSearchId) {
+    return {
+      success: false,
+      message: "That saved search could not be found."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { error } = await supabase
+    .from("saved_searches")
+    .delete()
+    .eq("id", savedSearchId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+
+  revalidatePath("/app/search");
+  revalidatePath("/app/saved");
+
+  return {
+    success: true,
+    message: "Saved search deleted."
+  };
 }
 
 export async function submitListingReportAction(

@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
+import { useFormStatus } from "react-dom";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useLocale } from "@/components/providers/locale-provider";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isLiveClientMode } from "@/lib/public-env";
 import {
@@ -15,13 +18,24 @@ import {
   type DiscoveryFilters
 } from "@/features/search/discovery";
 import { getConditionLabel } from "@/lib/i18n-shared";
-import { recordSearchEventAction } from "@/server/actions/marketplace";
-import type { Category, Listing, ListingCondition } from "@/types/domain";
+import { getPickupAreaOptions } from "@/lib/maastricht-pickup-areas";
+import {
+  deleteSavedSearchAction,
+  recordSearchEventAction,
+  saveSearchAction
+} from "@/server/actions/marketplace";
+import type {
+  Category,
+  Listing,
+  ListingCondition,
+  SavedSearch
+} from "@/types/domain";
 
 interface SearchExperienceProps {
   listings: Listing[];
   categories: Category[];
   recentSearches?: string[];
+  savedSearches?: SavedSearch[];
   trendingSearches?: string[];
   lockedCategorySlug?: string;
   messageActionMode?: "chat" | "signup";
@@ -43,10 +57,78 @@ function parseNumber(value: string | null) {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function buildSavedSearchHref(savedSearch: SavedSearch) {
+  const params = new URLSearchParams();
+
+  if (savedSearch.query) {
+    params.set("q", savedSearch.query);
+  }
+  if (savedSearch.categorySlug) {
+    params.set("category", savedSearch.categorySlug);
+  }
+  if (savedSearch.subcategorySlug) {
+    params.set("subcategory", savedSearch.subcategorySlug);
+  }
+  if (typeof savedSearch.priceMin === "number") {
+    params.set("min", String(savedSearch.priceMin));
+  }
+  if (typeof savedSearch.priceMax === "number") {
+    params.set("max", String(savedSearch.priceMax));
+  }
+  if (savedSearch.conditions.length) {
+    params.set("conditions", savedSearch.conditions.join(","));
+  }
+  if (savedSearch.outletOnly) {
+    params.set("outlet", "1");
+  }
+  if (savedSearch.featuredOnly) {
+    params.set("featured", "1");
+  }
+  if (typeof savedSearch.minimumSellerRating === "number") {
+    params.set("rating", String(savedSearch.minimumSellerRating));
+  }
+  if (savedSearch.pickupArea) {
+    params.set("area", savedSearch.pickupArea);
+  }
+  if (savedSearch.distance) {
+    params.set("distance", savedSearch.distance);
+  }
+
+  const queryString = params.toString();
+  return queryString ? `/app/search?${queryString}` : "/app/search";
+}
+
+function SaveSearchButton() {
+  const { pending } = useFormStatus();
+  const { dictionary } = useLocale();
+
+  return (
+    <Button type="submit" variant="outline" disabled={pending}>
+      {pending
+        ? dictionary.search.savingSearch
+        : dictionary.search.saveCurrentSearch}
+    </Button>
+  );
+}
+
+function DeleteSavedSearchButton() {
+  const { pending } = useFormStatus();
+  const { dictionary } = useLocale();
+
+  return (
+    <Button type="submit" size="sm" variant="outline" disabled={pending}>
+      {pending
+        ? dictionary.common.actions.updating
+        : dictionary.search.savedSearchDelete}
+    </Button>
+  );
+}
+
 export function SearchExperience({
   listings,
   categories,
   recentSearches = [],
+  savedSearches = [],
   trendingSearches = [],
   lockedCategorySlug,
   messageActionMode = "chat"
@@ -55,6 +137,15 @@ export function SearchExperience({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { dictionary } = useLocale();
+  const pickupAreaOptions = useMemo(() => getPickupAreaOptions(), []);
+  const [saveState, saveAction] = useActionState(saveSearchAction, {
+    success: false,
+    message: ""
+  });
+  const [deleteState, deleteAction] = useActionState(deleteSavedSearchAction, {
+    success: false,
+    message: ""
+  });
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [categorySlug, setCategorySlug] = useState(
     lockedCategorySlug ?? searchParams.get("category") ?? ""
@@ -72,6 +163,10 @@ export function SearchExperience({
   const [minimumSellerRating, setMinimumSellerRating] = useState<string>(
     searchParams.get("rating") ?? ""
   );
+  const [pickupArea, setPickupArea] = useState(searchParams.get("area") ?? "");
+  const [distance, setDistance] = useState<NonNullable<DiscoveryFilters["distance"]>>(
+    (searchParams.get("distance") as DiscoveryFilters["distance"]) ?? "same-area"
+  );
   const [sort, setSort] = useState<DiscoveryFilters["sort"]>(
     (searchParams.get("sort") as DiscoveryFilters["sort"]) ?? "recommended"
   );
@@ -81,6 +176,12 @@ export function SearchExperience({
       setCategorySlug(lockedCategorySlug);
     }
   }, [lockedCategorySlug]);
+
+  useEffect(() => {
+    if (saveState.success || deleteState.success) {
+      router.refresh();
+    }
+  }, [deleteState.success, router, saveState.success]);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -93,6 +194,10 @@ export function SearchExperience({
     setOutletOnly(searchParams.get("outlet") === "1");
     setFeaturedOnly(searchParams.get("featured") === "1");
     setMinimumSellerRating(searchParams.get("rating") ?? "");
+    setPickupArea(searchParams.get("area") ?? "");
+    setDistance(
+      (searchParams.get("distance") as DiscoveryFilters["distance"]) ?? "same-area"
+    );
     setSort((searchParams.get("sort") as DiscoveryFilters["sort"]) ?? "recommended");
 
     if (!lockedCategorySlug) {
@@ -112,6 +217,8 @@ export function SearchExperience({
       outlet: outletOnly ? "1" : undefined,
       featured: featuredOnly ? "1" : undefined,
       rating: minimumSellerRating || undefined,
+      area: pickupArea || undefined,
+      distance: pickupArea ? distance : undefined,
       sort: sort !== "recommended" ? sort : undefined
     };
 
@@ -132,11 +239,13 @@ export function SearchExperience({
   }, [
     categorySlug,
     conditions,
+    distance,
     featuredOnly,
     lockedCategorySlug,
     minimumSellerRating,
     outletOnly,
     pathname,
+    pickupArea,
     priceMax,
     priceMin,
     query,
@@ -171,14 +280,18 @@ export function SearchExperience({
       outletOnly,
       featuredOnly,
       minimumSellerRating: parseNumber(minimumSellerRating),
+      pickupArea: pickupArea || undefined,
+      distance: pickupArea ? distance : undefined,
       sort
     }),
     [
       categorySlug,
       conditions,
+      distance,
       featuredOnly,
       minimumSellerRating,
       outletOnly,
+      pickupArea,
       priceMax,
       priceMin,
       query,
@@ -187,13 +300,7 @@ export function SearchExperience({
     ]
   );
 
-  const results = useMemo(() => {
-    if (isLiveClientMode) {
-      return listings;
-    }
-
-    return filterListings(listings, filters);
-  }, [filters, listings]);
+  const results = useMemo(() => filterListings(listings, filters), [filters, listings]);
   const subcategories = useMemo(
     () => getSubcategories(categorySlug || lockedCategorySlug),
     [categorySlug, lockedCategorySlug]
@@ -271,6 +378,29 @@ export function SearchExperience({
         clear: () => setMinimumSellerRating("")
       });
     }
+    if (pickupArea) {
+      chips.push({
+        key: "area",
+        label: `${dictionary.search.filterLabels.area}: ${
+          pickupAreaOptions.find((option) => option.id === pickupArea)?.label ?? pickupArea
+        }`,
+        clear: () => {
+          setPickupArea("");
+          setDistance("same-area");
+        }
+      });
+    }
+    if (pickupArea && distance !== "same-area") {
+      chips.push({
+        key: "distance",
+        label: `${dictionary.search.filterLabels.distance}: ${
+          distance === "nearby"
+            ? dictionary.search.distanceOptions.nearby
+            : dictionary.search.distanceOptions.citywide
+        }`,
+        clear: () => setDistance("same-area")
+      });
+    }
     if (sort !== "recommended") {
       chips.push({
         key: "sort",
@@ -293,10 +423,13 @@ export function SearchExperience({
     categorySlug,
     conditions,
     dictionary,
+    distance,
     featuredOnly,
     lockedCategorySlug,
     minimumSellerRating,
     outletOnly,
+    pickupArea,
+    pickupAreaOptions,
     priceMax,
     priceMin,
     query,
@@ -304,6 +437,8 @@ export function SearchExperience({
     subcategories,
     subcategorySlug
   ]);
+
+  const saveFeedback = saveState.message || deleteState.message;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.34fr_0.66fr]">
@@ -437,6 +572,47 @@ export function SearchExperience({
               </div>
             </div>
 
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {dictionary.search.pickupArea}
+              </span>
+              <select
+                className="h-11 w-full rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
+                value={pickupArea}
+                onChange={(event) => {
+                  setPickupArea(event.target.value);
+                  if (!event.target.value) {
+                    setDistance("same-area");
+                  }
+                }}
+              >
+                <option value="">{dictionary.search.anyArea}</option>
+                {pickupAreaOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {dictionary.search.distance}
+              </span>
+              <select
+                className="h-11 w-full rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
+                value={distance}
+                onChange={(event) =>
+                  setDistance(event.target.value as NonNullable<DiscoveryFilters["distance"]>)
+                }
+                disabled={!pickupArea}
+              >
+                <option value="same-area">{dictionary.search.distanceOptions.sameArea}</option>
+                <option value="nearby">{dictionary.search.distanceOptions.nearby}</option>
+                <option value="citywide">{dictionary.search.distanceOptions.citywide}</option>
+              </select>
+            </label>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
                 <input
@@ -494,6 +670,59 @@ export function SearchExperience({
           </div>
         </div>
 
+        {savedSearches.length ? (
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
+            <div className="space-y-1">
+              <p className="font-display text-xl font-semibold text-slate-950">
+                {dictionary.search.savedSearchesTitle}
+              </p>
+              <p className="text-sm leading-6 text-slate-600">
+                {dictionary.search.savedSearchesDescription}
+              </p>
+            </div>
+            <div className="mt-4 space-y-3">
+              {savedSearches.map((savedSearch) => (
+                <div
+                  key={savedSearch.id}
+                  className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <p className="font-semibold text-slate-950">{savedSearch.name}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {savedSearch.query ? <Badge>{savedSearch.query}</Badge> : null}
+                        {savedSearch.pickupArea ? (
+                          <Badge>
+                            {
+                              pickupAreaOptions.find(
+                                (option) => option.id === savedSearch.pickupArea
+                              )?.label
+                            }
+                          </Badge>
+                        ) : null}
+                        {savedSearch.featuredOnly ? (
+                          <Badge>{dictionary.search.featuredOnly}</Badge>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <Link href={buildSavedSearchHref(savedSearch)}>
+                          {dictionary.search.savedSearchRun}
+                        </Link>
+                      </Button>
+                      <form action={deleteAction}>
+                        <input type="hidden" name="savedSearchId" value={savedSearch.id} />
+                        <DeleteSavedSearchButton />
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {trendingSearches.length ? (
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
             <p className="font-display text-xl font-semibold text-slate-950">
@@ -536,27 +765,59 @@ export function SearchExperience({
                 {dictionary.search.resultsDescription}
               </p>
             </div>
-            <button
-              type="button"
-              className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
-              onClick={() => {
-                setQuery("");
-                if (!lockedCategorySlug) {
-                  setCategorySlug("");
-                }
-                setSubcategorySlug("");
-                setPriceMin("");
-                setPriceMax("");
-                setConditions([]);
-                setOutletOnly(false);
-                setFeaturedOnly(false);
-                setMinimumSellerRating("");
-                setSort("recommended");
-              }}
-            >
-              {dictionary.search.clearAll}
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <form action={saveAction}>
+                <input type="hidden" name="query" value={query} />
+                <input type="hidden" name="categorySlug" value={categorySlug} />
+                <input type="hidden" name="subcategorySlug" value={subcategorySlug} />
+                <input type="hidden" name="priceMin" value={priceMin} />
+                <input type="hidden" name="priceMax" value={priceMax} />
+                <input type="hidden" name="conditions" value={conditions.join(",")} />
+                <input type="hidden" name="outletOnly" value={outletOnly ? "1" : "0"} />
+                <input type="hidden" name="featuredOnly" value={featuredOnly ? "1" : "0"} />
+                <input
+                  type="hidden"
+                  name="minimumSellerRating"
+                  value={minimumSellerRating}
+                />
+                <input type="hidden" name="pickupArea" value={pickupArea} />
+                <input type="hidden" name="distance" value={pickupArea ? distance : ""} />
+                <SaveSearchButton />
+              </form>
+              <button
+                type="button"
+                className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                onClick={() => {
+                  setQuery("");
+                  if (!lockedCategorySlug) {
+                    setCategorySlug("");
+                  }
+                  setSubcategorySlug("");
+                  setPriceMin("");
+                  setPriceMax("");
+                  setConditions([]);
+                  setOutletOnly(false);
+                  setFeaturedOnly(false);
+                  setMinimumSellerRating("");
+                  setPickupArea("");
+                  setDistance("same-area");
+                  setSort("recommended");
+                }}
+              >
+                {dictionary.search.clearAll}
+              </button>
+            </div>
           </div>
+
+          {saveFeedback ? (
+            <p
+              className={`mt-4 text-sm font-medium ${
+                saveState.success || deleteState.success ? "text-emerald-700" : "text-rose-700"
+              }`}
+            >
+              {saveFeedback}
+            </p>
+          ) : null}
 
           {activeFilterChips.length ? (
             <div className="mt-4 flex flex-wrap gap-2">
