@@ -2331,3 +2331,77 @@ export async function submitTransactionReviewAction(
     message: "Review submitted."
   };
 }
+
+export async function markNotificationReadAction(
+  notificationId: string
+): Promise<ActionResult> {
+  try {
+    const { user, supabase } = await requireMarketplaceContext();
+    const client = createAdminSupabaseClient() ?? supabase;
+
+    const { error } = await client
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", notificationId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
+    revalidatePath("/app");
+    revalidatePath("/app/notifications");
+
+    return {
+      success: true,
+      message: "Notification marked as read."
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update this notification right now."
+    };
+  }
+}
+
+export async function markAllNotificationsReadAction(): Promise<ActionResult> {
+  try {
+    const { user, supabase } = await requireMarketplaceContext();
+    const client = createAdminSupabaseClient() ?? supabase;
+
+    const { error } = await client
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", user.id)
+      .eq("read", false);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
+    revalidatePath("/app");
+    revalidatePath("/app/notifications");
+
+    return {
+      success: true,
+      message: "All notifications marked as read."
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update notifications right now."
+    };
+  }
+}

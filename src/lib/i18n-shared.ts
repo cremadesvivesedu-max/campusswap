@@ -1,4 +1,10 @@
-import type { ExchangeStatus, ListingCondition, ListingStatus, OfferStatus } from "@/types/domain";
+import type {
+  ExchangeStatus,
+  ListingCondition,
+  ListingStatus,
+  NotificationType,
+  OfferStatus
+} from "@/types/domain";
 
 export const localeCookieName = "campusswap-locale";
 export const supportedLocales = ["en", "es", "nl"] as const;
@@ -227,6 +233,8 @@ export const dictionaries = {
       },
       quickActions: { available: "Is this available?", reserve: "Can you reserve it?", campusMeet: "Can we meet on campus?", negotiable: "Is the price negotiable?" },
       inbox: {
+        recentTitle: "Recent messages",
+        openAll: "Open messages",
         emptyTitle: "No conversations yet",
         emptyDescription: "When you message a seller from a listing, the thread will appear here with the listing context attached.",
         loadErrorTitle: "Unable to load messages"
@@ -359,6 +367,20 @@ export const dictionaries = {
       eyebrow: "Notifications",
       title: "Messages, promotions, and trust updates in one place.",
       description: "Notification preferences set the foundation for future saved-search alerts, featured digests, and referral-ready growth loops.",
+      recentTitle: "Recent notifications",
+      openAll: "Open notifications",
+      markRead: "Mark as read",
+      markAllRead: "Mark all as read",
+      unreadLabel: "Unread",
+      readLabel: "Read",
+      typeLabels: {
+        message: "Message",
+        promotion: "Promotion",
+        review: "Review",
+        listing: "Listing",
+        safety: "Safety",
+        system: "System"
+      },
       emptyTitle: "No notifications yet",
       emptyDescription: "Messages, promotion updates, and trust notifications will appear here as you use CampusSwap."
     },
@@ -785,6 +807,8 @@ mutableDictionaries.es = {
     },
     inbox: {
       ...mutableDictionaries.en.messages.inbox,
+      recentTitle: "Mensajes recientes",
+      openAll: "Abrir mensajes",
       emptyTitle: "Aun no hay conversaciones",
       emptyDescription: "Cuando escribas a un vendedor desde un anuncio, el hilo aparecera aqui con todo el contexto.",
       loadErrorTitle: "No se pudieron cargar los mensajes"
@@ -882,6 +906,20 @@ mutableDictionaries.es = {
     eyebrow: "Notificaciones",
     title: "Mensajes, promociones y confianza en un solo lugar.",
     description: "Tus preferencias de notificacion preparan la base para alertas guardadas, destacados y futuras palancas de crecimiento.",
+    recentTitle: "Notificaciones recientes",
+    openAll: "Abrir notificaciones",
+    markRead: "Marcar como leida",
+    markAllRead: "Marcar todas como leidas",
+    unreadLabel: "Sin leer",
+    readLabel: "Leida",
+    typeLabels: {
+      message: "Mensaje",
+      promotion: "Promocion",
+      review: "Resena",
+      listing: "Anuncio",
+      safety: "Seguridad",
+      system: "Sistema"
+    },
     emptyTitle: "Todavia no hay notificaciones",
     emptyDescription: "Los mensajes, promociones y avisos de confianza apareceran aqui segun uses CampusSwap."
   },
@@ -1194,6 +1232,8 @@ mutableDictionaries.nl = {
     },
     inbox: {
       ...mutableDictionaries.en.messages.inbox,
+      recentTitle: "Recente berichten",
+      openAll: "Berichten openen",
       emptyTitle: "Nog geen conversaties",
       emptyDescription: "Wanneer je vanuit een advertentie een verkoper bericht, verschijnt de thread hier met de advertentiecontext.",
       loadErrorTitle: "Berichten konden niet worden geladen"
@@ -1291,6 +1331,20 @@ mutableDictionaries.nl = {
     eyebrow: "Meldingen",
     title: "Berichten, promoties en vertrouwensupdates op een plek.",
     description: "Meldingsvoorkeuren leggen de basis voor opgeslagen zoekalerts, featured digests en toekomstige groeiloops.",
+    recentTitle: "Recente meldingen",
+    openAll: "Meldingen openen",
+    markRead: "Markeer als gelezen",
+    markAllRead: "Markeer alles als gelezen",
+    unreadLabel: "Ongelezen",
+    readLabel: "Gelezen",
+    typeLabels: {
+      message: "Bericht",
+      promotion: "Promotie",
+      review: "Review",
+      listing: "Advertentie",
+      safety: "Veiligheid",
+      system: "Systeem"
+    },
     emptyTitle: "Nog geen meldingen",
     emptyDescription: "Berichten, promotie-updates en vertrouwensmeldingen verschijnen hier terwijl je CampusSwap gebruikt."
   },
@@ -2103,6 +2157,13 @@ export function getNotificationPreferenceDescription(
     default:
       return "";
   }
+}
+
+export function getNotificationTypeLabel(
+  dictionary: Dictionary,
+  type: NotificationType
+) {
+  return dictionary.notifications.typeLabels[type] ?? type;
 }
 
 export function getLocalizedQuickAction(dictionary: Dictionary, value: string) {

@@ -67,7 +67,8 @@ interface ConversationShellProps {
   error: string | null;
   isPending: boolean;
   supportsAttachments: boolean;
-  sidebar: ReactNode;
+  threadPanel?: ReactNode;
+  sidebar?: ReactNode;
 }
 
 function formatDateTime(value?: string) {
@@ -282,6 +283,7 @@ function ConversationShell({
   error,
   isPending,
   supportsAttachments,
+  threadPanel,
   sidebar
 }: ConversationShellProps) {
   const { dictionary } = useLocale();
@@ -407,6 +409,11 @@ function ConversationShell({
                   </div>
                 );
               })}
+              {threadPanel ? (
+                <div className="pt-2">
+                  <div className="mx-auto max-w-3xl">{threadPanel}</div>
+                </div>
+              ) : null}
             </div>
 
             <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
@@ -655,6 +662,7 @@ function DemoConversationThread({
       error={error}
       isPending={isPending}
       supportsAttachments
+      threadPanel={undefined}
       sidebar={
         <Card className="bg-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-600">
@@ -730,7 +738,7 @@ function LiveConversationThread({
       error={error ?? threadError}
       isPending={isPending}
       supportsAttachments
-      sidebar={
+      threadPanel={
         <ExchangePanel
           conversationId={conversationId}
           currentUserId={currentUserId}
@@ -742,6 +750,9 @@ function LiveConversationThread({
           buyer={thread.buyer}
           seller={thread.seller}
         />
+      }
+      sidebar={
+        null
       }
     />
   );
