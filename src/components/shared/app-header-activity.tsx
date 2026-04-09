@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -56,6 +55,7 @@ export function AppHeaderActivity() {
   const user = useCurrentUser();
   const { dictionary } = useLocale();
   const router = useRouter();
+  const pathname = usePathname();
   const {
     notifications,
     unreadCount,
@@ -86,28 +86,96 @@ export function AppHeaderActivity() {
     };
   }, []);
 
-  const openNotificationsPage = (notificationId?: string) => {
+  useEffect(() => {
     setOpenPanel(null);
     setActionError(null);
+  }, [pathname]);
 
-    if (notificationId) {
-      const notification = notifications.find((entry) => entry.id === notificationId);
+  const navigateFromPanel = (href: string) => {
+    setOpenPanel(null);
+    setActionError(null);
+    router.push(href);
+  };
 
-      if (notification && !notification.read) {
-        markNotificationReadLocally(notificationId);
+  const resolveNotificationHref = (notification: Notification) => {
+    const searchableText = `${notification.title} ${notification.body}`.toLowerCase();
+
+    if (notification.type === "message") {
+      return "/app/messages";
+    }
+
+    if (notification.type === "review") {
+      return "/app/my-purchases";
+    }
+
+    if (notification.type === "promotion") {
+      return "/app/my-listings";
+    }
+
+    if (notification.type === "listing") {
+      if (searchableText.includes("shortlist")) {
+        return "/app/saved";
+      }
+
+      if (
+        searchableText.includes("saved search") ||
+        searchableText.includes("price drop")
+      ) {
+        return "/app/search";
+      }
+
+      if (
+        searchableText.includes("reserved") ||
+        searchableText.includes("order") ||
+        searchableText.includes("exchange") ||
+        searchableText.includes("purchase")
+      ) {
+        return "/app/my-purchases";
+      }
+
+      if (
+        searchableText.includes("saved your listing") ||
+        searchableText.includes("featured") ||
+        searchableText.includes("promotion") ||
+        searchableText.includes("listing removed") ||
+        searchableText.includes("listing deleted")
+      ) {
+        return "/app/my-listings";
+      }
+    }
+
+    return "/app/notifications";
+  };
+
+  const openNotificationDestination = (notification?: Notification) => {
+    const href = notification ? resolveNotificationHref(notification) : "/app/notifications";
+
+    if (notification) {
+      setOpenPanel(null);
+      setActionError(null);
+
+      if (!notification.read) {
+        markNotificationReadLocally(notification.id);
 
         startTransition(async () => {
-          const result = await markNotificationReadAction(notificationId);
+          const result = await markNotificationReadAction(notification.id);
 
           if (!result.success) {
             setActionError(result.message);
           }
         });
       }
+
+      router.push(href);
+      return;
     }
 
-    router.push("/app/notifications");
+    navigateFromPanel(href);
   };
+
+  const openMessagesPage = () => navigateFromPanel("/app/messages");
+  const openConversation = (conversationId: string) =>
+    navigateFromPanel(`/app/messages/${conversationId}`);
 
   const markNotificationAsRead = (notificationId: string) => {
     setActionError(null);
@@ -158,8 +226,13 @@ export function AppHeaderActivity() {
                   : dictionary.messages.actions.noMessagesYet}
               </p>
             </div>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/app/messages">{dictionary.messages.inbox.openAll}</Link>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={openMessagesPage}
+            >
+              {dictionary.messages.inbox.openAll}
             </Button>
           </div>
 
@@ -177,10 +250,11 @@ export function AppHeaderActivity() {
                     : dictionary.messages.actions.noMessagesYet;
 
                 return (
-                  <Link
+                  <button
+                    type="button"
                     key={preview.conversation.id}
-                    href={`/app/messages/${preview.conversation.id}`}
-                    className="block rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+                    onClick={() => openConversation(preview.conversation.id)}
+                    className="block w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
@@ -208,7 +282,7 @@ export function AppHeaderActivity() {
                     <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
                       {latestSummary}
                     </p>
-                  </Link>
+                  </button>
                 );
               })}
             </div>
@@ -260,7 +334,7 @@ export function AppHeaderActivity() {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => openNotificationsPage()}
+                onClick={() => openNotificationDestination()}
               >
                 {dictionary.notifications.openAll}
               </Button>
@@ -285,7 +359,7 @@ export function AppHeaderActivity() {
                 >
                   <button
                     type="button"
-                    onClick={() => openNotificationsPage(notification.id)}
+                    onClick={() => openNotificationDestination(notification)}
                     className="w-full text-left"
                   >
                     <div className="flex items-center justify-between gap-3">
