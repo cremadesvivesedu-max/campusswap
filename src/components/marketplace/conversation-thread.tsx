@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useLocale } from "@/components/providers/locale-provider";
 import { ListingImage } from "@/components/marketplace/listing-image";
+import { OfferNegotiationPanel } from "@/components/marketplace/offer-negotiation-panel";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import {
@@ -35,7 +36,7 @@ import {
   releaseReservationAction,
   reserveConversationBuyerAction
 } from "@/server/actions/marketplace";
-import type { Transaction, User } from "@/types/domain";
+import type { ListingOffer, Transaction, User } from "@/types/domain";
 
 interface ConversationThreadProps {
   conversationId: string;
@@ -85,15 +86,21 @@ function formatDateTime(value?: string) {
 function ExchangePanel({
   conversationId,
   currentUserId,
+  listingId,
+  listingPrice,
   listingStatus,
   transaction,
+  latestOffer,
   buyer,
   seller
 }: {
   conversationId: string;
   currentUserId: string;
+  listingId: string;
+  listingPrice: number;
   listingStatus: string;
   transaction?: Transaction;
+  latestOffer?: ListingOffer;
   buyer: User;
   seller: User;
 }) {
@@ -242,6 +249,15 @@ function ExchangePanel({
           ) : null}
         </div>
 
+        <OfferNegotiationPanel
+          listingId={listingId}
+          listingPrice={listingPrice}
+          sellerId={seller.id}
+          currentUserId={currentUserId}
+          latestOffer={latestOffer}
+          transaction={transaction}
+          conversationId={conversationId}
+        />
         {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
         {actionError ? <p className="text-sm font-medium text-rose-700">{actionError}</p> : null}
       </CardContent>
@@ -718,8 +734,11 @@ function LiveConversationThread({
         <ExchangePanel
           conversationId={conversationId}
           currentUserId={currentUserId}
+          listingId={thread.listing.id}
+          listingPrice={thread.listing.price}
           listingStatus={thread.listing.status}
           transaction={thread.transaction}
+          latestOffer={thread.latestOffer}
           buyer={thread.buyer}
           seller={thread.seller}
         />

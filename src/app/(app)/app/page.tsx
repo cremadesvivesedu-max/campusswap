@@ -7,17 +7,35 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import {
   getActiveSponsoredPlacements,
+  getBecauseYouViewedFeed,
   getCurrentUser,
   getFeaturedListings,
-  getHomeFeed
+  getForYouFeed,
+  getHomeFeed,
+  getMostPopularInAreaFeed,
+  getNewTodayFeed
 } from "@/server/queries/marketplace";
 
 export default async function AppHomePage() {
-  const [user, feed, featuredListings, sponsors, dictionary] = await Promise.all([
+  const [
+    user,
+    feed,
+    featuredListings,
+    sponsors,
+    forYouFeed,
+    becauseYouViewed,
+    popularInArea,
+    newToday,
+    dictionary
+  ] = await Promise.all([
     getCurrentUser(),
     getHomeFeed(),
     getFeaturedListings(),
     getActiveSponsoredPlacements("Home feed"),
+    getForYouFeed(),
+    getBecauseYouViewedFeed(),
+    getMostPopularInAreaFeed(),
+    getNewTodayFeed(),
     getDictionaryForRequest()
   ]);
   const sponsor = sponsors[0];
@@ -100,6 +118,77 @@ export default async function AppHomePage() {
           ))}
         </div>
       </section>
+
+      {forYouFeed.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.forYouEyebrow}
+            title={dictionary.appHome.forYouTitle}
+            description={dictionary.appHome.forYouDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {forYouFeed.slice(0, 3).map((entry) => (
+              <ListingCard
+                key={entry.listing.id}
+                listing={entry.listing}
+                showMessageAction
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {becauseYouViewed.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.becauseViewedEyebrow}
+            title={dictionary.appHome.becauseViewedTitle}
+            description={dictionary.appHome.becauseViewedDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {becauseYouViewed.slice(0, 3).map((entry) => (
+              <ListingCard
+                key={entry.listing.id}
+                listing={entry.listing}
+                showMessageAction
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {popularInArea.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.popularAreaEyebrow}
+            title={dictionary.appHome.popularAreaTitle.replace(
+              "{area}",
+              user.profile.neighborhood
+            )}
+            description={dictionary.appHome.popularAreaDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {popularInArea.slice(0, 3).map((listing) => (
+              <ListingCard key={listing.id} listing={listing} showMessageAction />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {newToday.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.newTodayEyebrow}
+            title={dictionary.appHome.newTodayTitle}
+            description={dictionary.appHome.newTodayDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {newToday.slice(0, 3).map((listing) => (
+              <ListingCard key={listing.id} listing={listing} showMessageAction />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

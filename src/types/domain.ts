@@ -3,6 +3,7 @@ export type VerificationStatus = "unverified" | "pending" | "verified";
 export type ListingCondition = "new" | "like-new" | "good" | "fair" | "needs-love";
 export type ListingStatus = "active" | "reserved" | "sold" | "archived" | "pending-review" | "hidden";
 export type ExchangeStatus = "inquiry" | "negotiating" | "reserved" | "completed" | "cancelled" | "reported";
+export type OfferStatus = "open" | "countered" | "accepted" | "rejected" | "expired" | "withdrawn";
 export type ListingDistanceFilter = "same-area" | "nearby" | "citywide";
 export type ReportTargetType = "listing" | "user" | "conversation";
 export type ReportStatus = "open" | "in-review" | "actioned" | "dismissed";
@@ -214,6 +215,7 @@ export interface ConversationThreadData {
   messages: Message[];
   unreadCount: number;
   transaction?: Transaction;
+  latestOffer?: ListingOffer;
 }
 
 export interface Transaction {
@@ -233,9 +235,27 @@ export interface Transaction {
   completedAt?: string;
 }
 
+export interface ListingOffer {
+  id: string;
+  listingId: string;
+  transactionId: string;
+  conversationId: string;
+  buyerId: string;
+  sellerId: string;
+  createdByUserId: string;
+  parentOfferId?: string;
+  amount: number;
+  state: OfferStatus;
+  expiresAt?: string;
+  respondedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ListingTransactionContext {
   activeTransaction?: Transaction;
   viewerTransaction?: Transaction;
+  latestOffer?: ListingOffer;
   reservedForCurrentUser: boolean;
   reservedForOtherBuyer: boolean;
   buyer?: User;

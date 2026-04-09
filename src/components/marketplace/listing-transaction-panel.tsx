@@ -10,6 +10,7 @@ import { useLocale } from "@/components/providers/locale-provider";
 import { getExchangeStatusLabel, getListingStatusLabel } from "@/lib/i18n-shared";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
+import { OfferNegotiationPanel } from "@/components/marketplace/offer-negotiation-panel";
 import {
   cancelTransactionAction,
   completeTransactionAction,
@@ -210,6 +211,15 @@ export function ListingTransactionPanel({
           <p className="text-xs text-slate-500">
             {dictionary.messages.thread.meetupSafelyBody}
           </p>
+          <OfferNegotiationPanel
+            listingId={listingId}
+            listingPrice={listingPrice}
+            sellerId={seller.id}
+            currentUserId={currentUserId}
+            latestOffer={context.latestOffer}
+            transaction={transaction}
+            conversationId={transaction?.conversationId}
+          />
           {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
           {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
         </CardContent>
@@ -322,6 +332,15 @@ export function ListingTransactionPanel({
         <p className="text-xs text-slate-500">
           {dictionary.messages.exchange.noOnlinePayment}
         </p>
+        <OfferNegotiationPanel
+          listingId={listingId}
+          listingPrice={listingPrice}
+          sellerId={seller.id}
+          currentUserId={currentUserId}
+          latestOffer={context.latestOffer}
+          transaction={context.viewerTransaction ?? context.activeTransaction}
+          conversationId={context.viewerTransaction?.conversationId}
+        />
         {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
         {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
       </CardContent>

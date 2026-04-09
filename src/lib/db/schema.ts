@@ -6,6 +6,7 @@ export const verificationStatusEnum = pgEnum("verification_status", ["unverified
 export const listingConditionEnum = pgEnum("listing_condition", ["new", "like-new", "good", "fair", "needs-love"]);
 export const listingStatusEnum = pgEnum("listing_status", ["active", "reserved", "sold", "archived", "pending-review", "hidden"]);
 export const exchangeStatusEnum = pgEnum("exchange_status", ["inquiry", "negotiating", "reserved", "completed", "cancelled", "reported"]);
+export const offerStatusEnum = pgEnum("offer_status", ["open", "countered", "accepted", "rejected", "expired", "withdrawn"]);
 export const reportTargetTypeEnum = pgEnum("report_target_type", ["listing", "user", "conversation"]);
 export const reportStatusEnum = pgEnum("report_status", ["open", "in-review", "actioned", "dismissed"]);
 export const promotionTypeEnum = pgEnum("promotion_type", ["featured", "seller-boost"]);
@@ -235,6 +236,25 @@ export const transactions = pgTable("transactions", {
   ...timestamps
 });
 
+export const listingOffers = pgTable("listing_offers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: uuid("listing_id").references(() => listings.id).notNull(),
+  transactionId: uuid("transaction_id").references(() => transactions.id).notNull(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  buyerId: uuid("buyer_id").references(() => users.id).notNull(),
+  sellerId: uuid("seller_id").references(() => users.id).notNull(),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id).notNull(),
+  parentOfferId: uuid("parent_offer_id").references((): any => listingOffers.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  state: offerStatusEnum("state").default("open").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  respondedAt: timestamp("responded_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => ({
+  conversationIdx: index("listing_offers_conversation_updated_idx").on(table.conversationId, table.updatedAt),
+  transactionIdx: index("listing_offers_transaction_idx").on(table.transactionId, table.updatedAt)
+}));
+
 export const reviews = pgTable("reviews", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   transactionId: uuid("transaction_id").references(() => transactions.id).notNull(),
@@ -300,6 +320,17 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+export const notificationEvents = pgTable("notification_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  notificationType: notificationTypeEnum("notification_type").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  userIdx: index("notification_events_user_created_idx").on(table.userId, table.createdAt),
+  dedupeIdx: index("notification_events_dedupe_idx").on(table.dedupeKey)
+}));
 
 export const waitlistLeads = pgTable("waitlist_leads", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

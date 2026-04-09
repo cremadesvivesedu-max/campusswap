@@ -5,6 +5,60 @@ import { env } from "@/lib/env";
 import { stripe } from "@/lib/payments/stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
+async function notifyPromotionEvent(
+  admin: NonNullable<ReturnType<typeof createAdminSupabaseClient>>,
+  {
+    userId,
+    dedupeKey,
+    title,
+    body
+  }: {
+    userId: string;
+    dedupeKey: string;
+    title: string;
+    body: string;
+  }
+) {
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const preferences =
+    (((profile as { notification_preferences?: string[] | null } | null)
+      ?.notification_preferences ?? []) as string[]);
+
+  if (preferences.length && !preferences.includes("promotions")) {
+    return;
+  }
+
+  const { error: dedupeError } = await admin.from("notification_events").insert({
+    user_id: userId,
+    dedupe_key: dedupeKey,
+    notification_type: "promotion"
+  });
+
+  if (dedupeError?.code === "23505") {
+    return;
+  }
+
+  if (dedupeError) {
+    throw new Error(dedupeError.message);
+  }
+
+  const { error } = await admin.from("notifications").insert({
+    user_id: userId,
+    type: "promotion",
+    title,
+    body
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 function getCheckoutMetadata(session: Stripe.Checkout.Session) {
   return {
     listingId: session.metadata?.listing_id ?? "",
@@ -80,12 +134,20 @@ async function handleCompletedCheckout(session: Stripe.Checkout.Session) {
     .eq("id", metadata.listingId)
     .eq("seller_id", metadata.sellerId);
 
-  await admin.from("notifications").insert({
-    user_id: metadata.sellerId,
-    type: "promotion",
-    title: "Featured listing payment received",
-    body: "Your listing is now active across CampusSwap featured discovery surfaces."
-  });
+  await Promise.all([
+    notifyPromotionEvent(admin, {
+      userId: metadata.sellerId,
+      dedupeKey: `promotion-payment-complete:${purchase.id}`,
+      title: "Payment completed",
+      body: "Your EUR 2 featured listing payment was processed successfully."
+    }),
+    notifyPromotionEvent(admin, {
+      userId: metadata.sellerId,
+      dedupeKey: `promotion-featured-active:${purchase.id}`,
+      title: "Featured listing is active",
+      body: "Your listing is now boosted across CampusSwap featured discovery surfaces."
+    })
+  ]);
 }
 
 async function handleExpiredCheckout(session: Stripe.Checkout.Session) {

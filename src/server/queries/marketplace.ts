@@ -14,6 +14,7 @@ import type {
   Conversation,
   Listing,
   ListingCondition,
+  ListingOffer,
   ListingSearchInput,
   ListingTransactionContext,
   Notification,
@@ -131,6 +132,23 @@ interface DbTransactionRow {
 interface DbTransactionWithUsers extends DbTransactionRow {
   buyer: DbUserWithProfile | null;
   seller: DbUserWithProfile | null;
+}
+
+interface DbOfferRow {
+  id: string;
+  listing_id: string;
+  transaction_id: string;
+  conversation_id: string;
+  buyer_id: string;
+  seller_id: string;
+  created_by_user_id: string;
+  parent_offer_id: string | null;
+  amount: number | string;
+  state: "open" | "countered" | "accepted" | "rejected" | "expired" | "withdrawn";
+  expires_at: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DbReviewRow {
@@ -594,6 +612,28 @@ function mapTransaction(row: DbTransactionRow): Transaction {
   };
 }
 
+function mapOffer(row: DbOfferRow): ListingOffer {
+  const expired =
+    row.state === "open" && row.expires_at && Date.parse(row.expires_at) <= Date.now();
+
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    transactionId: row.transaction_id,
+    conversationId: row.conversation_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    createdByUserId: row.created_by_user_id,
+    parentOfferId: row.parent_offer_id ?? undefined,
+    amount: numberValue(row.amount),
+    state: expired ? "expired" : row.state,
+    expiresAt: row.expires_at ?? undefined,
+    respondedAt: row.responded_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 function mapReview(row: DbReviewRow): Review {
   return {
     id: row.id,
@@ -645,6 +685,29 @@ function sortFeaturedOnlyByRecency(listings: Listing[]) {
   return [...listings].sort(
     (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)
   );
+}
+
+async function fetchLatestOfferForConversation(
+  conversationId: string
+): Promise<ListingOffer | undefined> {
+  const supabase = await getSupabaseClient();
+
+  if (!supabase) {
+    return undefined;
+  }
+
+  const { data } = await supabase
+    .from("listing_offers")
+    .select(
+      "id, listing_id, transaction_id, conversation_id, buyer_id, seller_id, created_by_user_id, parent_offer_id, amount, state, expires_at, responded_at, created_at, updated_at"
+    )
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const row = (data as unknown as DbOfferRow | null) ?? null;
+  return row ? mapOffer(row) : undefined;
 }
 
 async function getSupabaseClient() {
@@ -1351,6 +1414,7 @@ export async function getListingTransactionContext(
     return {
       activeTransaction,
       viewerTransaction,
+      latestOffer: undefined,
       reservedForCurrentUser: activeTransaction?.state === "reserved" && activeTransaction.buyerId === currentUserId,
       reservedForOtherBuyer:
         activeTransaction?.state === "reserved" &&
@@ -1452,10 +1516,16 @@ export async function getListingTransactionContext(
   const viewerRow = rows.find(
     (row) => row.buyer_id === currentUserId && row.state !== "cancelled"
   );
+  const latestOffer = viewerRow?.conversation_id || activeRow?.conversation_id
+    ? await fetchLatestOfferForConversation(
+        viewerRow?.conversation_id ?? activeRow?.conversation_id ?? ""
+      )
+    : undefined;
 
   return {
     activeTransaction: activeRow ? mapTransaction(activeRow) : undefined,
     viewerTransaction: viewerRow ? mapTransaction(viewerRow) : undefined,
+    latestOffer,
     reservedForCurrentUser:
       activeRow?.state === "reserved" && activeRow.buyer_id === currentUserId,
     reservedForOtherBuyer:
@@ -1754,6 +1824,154 @@ export async function getForYouFeed(userId?: string) {
     .slice(0, 8);
 
   return ranked;
+}
+
+export async function getBecauseYouViewedFeed(userId?: string) {
+  if (!isLiveMode) {
+    return [] as { listing: Listing; reasons: string[] }[];
+  }
+
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const supabase = await getSupabaseClient();
+
+  if (!supabase || !currentUser) {
+    return [];
+  }
+
+  const [candidateListings, viewRows] = await Promise.all([
+    fetchActiveListings({ sort: "recommended" }),
+    supabase
+      .from("view_events")
+      .select("listing_id")
+      .eq("user_id", currentUser.id)
+      .order("viewed_at", { ascending: false })
+      .limit(12)
+  ]);
+
+  const viewedIds = [
+    ...new Set(
+      (((viewRows.data as { listing_id: string }[] | null) ?? []).map(
+        (row) => row.listing_id
+      ))
+    )
+  ];
+
+  if (!viewedIds.length) {
+    return [];
+  }
+
+  const viewedListings = candidateListings.filter((listing) => viewedIds.includes(listing.id));
+
+  if (!viewedListings.length) {
+    return [];
+  }
+
+  const viewedCategories = new Set(viewedListings.map((listing) => listing.categorySlug));
+  const viewedAreas = new Set(
+    viewedListings.map((listing) =>
+      resolvePickupArea({ pickupArea: listing.pickupArea }).areaId
+    )
+  );
+  const viewedAveragePrice =
+    viewedListings.reduce((sum, listing) => sum + listing.price, 0) / viewedListings.length;
+
+  return candidateListings
+    .filter(
+      (listing) =>
+        listing.sellerId !== currentUser.id &&
+        !viewedIds.includes(listing.id)
+    )
+    .map((listing) => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      if (viewedCategories.has(listing.categorySlug)) {
+        score += 24;
+        reasons.push("same category as a recent view");
+      }
+
+      if (
+        viewedAreas.has(resolvePickupArea({ pickupArea: listing.pickupArea }).areaId)
+      ) {
+        score += 14;
+        reasons.push("same meetup area as something you viewed");
+      }
+
+      if (Math.abs(listing.price - viewedAveragePrice) <= Math.max(15, viewedAveragePrice * 0.2)) {
+        score += 12;
+        reasons.push("close to the price range you were checking");
+      }
+
+      const recentListingMatch = viewedListings.some((viewedListing) =>
+        viewedListing.tags.some((tag) => listing.tags.includes(tag))
+      );
+
+      if (recentListingMatch) {
+        score += 10;
+        reasons.push("shares tags with recent views");
+      }
+
+      score += listing.featured ? 8 : 0;
+      score += listing.saveCount * 2 + Math.min(10, listing.viewCount);
+
+      return { listing, reasons, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 6)
+    .map(({ listing, reasons }) => ({ listing, reasons }));
+}
+
+export async function getMostPopularInAreaFeed(userId?: string) {
+  if (!isLiveMode) {
+    return [] as Listing[];
+  }
+
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+
+  if (!currentUser) {
+    return [];
+  }
+
+  const areaSeed = currentUser.profile.neighborhood || "Maastricht";
+  const listings = await fetchActiveListings({
+    pickupArea: areaSeed,
+    distance: "nearby",
+    sort: "recommended"
+  });
+
+  return [...listings]
+    .filter((listing) => listing.sellerId !== currentUser.id)
+    .sort((left, right) => {
+      const leftScore =
+        left.saveCount * 4 +
+        left.viewCount +
+        Math.round(left.sellerRating * 5) +
+        (left.featured ? 10 : 0);
+      const rightScore =
+        right.saveCount * 4 +
+        right.viewCount +
+        Math.round(right.sellerRating * 5) +
+        (right.featured ? 10 : 0);
+
+      return rightScore - leftScore;
+    })
+    .slice(0, 6);
+}
+
+export async function getNewTodayFeed(userId?: string) {
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const listings = await fetchActiveListings({ sort: "newest" });
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  return listings
+    .filter(
+      (listing) =>
+        Date.parse(listing.createdAt) >= startOfDay.getTime() &&
+        listing.sellerId !== currentUser?.id
+    )
+    .slice(0, 6);
 }
 
 export async function getActiveSponsoredPlacements(location?: string) {

@@ -1,4 +1,4 @@
-import type { ExchangeStatus, ListingCondition, ListingStatus } from "@/types/domain";
+import type { ExchangeStatus, ListingCondition, ListingStatus, OfferStatus } from "@/types/domain";
 
 export const localeCookieName = "campusswap-locale";
 export const supportedLocales = ["en", "es", "nl"] as const;
@@ -553,6 +553,46 @@ type DeepWiden<T> = T extends readonly (infer U)[]
     : WidenPrimitive<T>;
 
 type DictionaryExtensions = {
+  appHome: DeepWiden<typeof dictionaries.en.appHome> & {
+    forYouEyebrow: string;
+    forYouTitle: string;
+    forYouDescription: string;
+    becauseViewedEyebrow: string;
+    becauseViewedTitle: string;
+    becauseViewedDescription: string;
+    popularAreaEyebrow: string;
+    popularAreaTitle: string;
+    popularAreaDescription: string;
+    newTodayEyebrow: string;
+    newTodayTitle: string;
+    newTodayDescription: string;
+  };
+  messages: DeepWiden<typeof dictionaries.en.messages> & {
+    offers: {
+      title: string;
+      description: string;
+      noOfferYet: string;
+      latestOffer: string;
+      sentByBuyer: string;
+      sentBySeller: string;
+      sentAt: string;
+      respondedAt: string;
+      expiresAt: string;
+      offerAmount: string;
+      counterAmount: string;
+      makeOffer: string;
+      sendingOffer: string;
+      counterOffer: string;
+      acceptOffer: string;
+      rejectOffer: string;
+      acceptCounter: string;
+      rejectCounter: string;
+      withdrawOffer: string;
+      acceptedHint: string;
+      genericError: string;
+      states: Record<OfferStatus, string>;
+    };
+  };
   search: {
     pickupArea: string;
     anyArea: string;
@@ -606,9 +646,6 @@ type DictionaryExtensions = {
     averageRating: string;
   };
   listing: DeepWiden<typeof dictionaries.en.listing> & {
-    quickView: string;
-    quickViewEyebrow: string;
-    closeQuickView: string;
     campusSwapSeller: string;
     memberSince: string;
     salesCount: string;
@@ -1695,9 +1732,6 @@ mutableDictionaries.en = {
   },
   listing: {
     ...mutableDictionaries.en.listing,
-    quickView: "Quick view",
-    quickViewEyebrow: "Quick view",
-    closeQuickView: "Close preview",
     campusSwapSeller: "CampusSwap seller",
     memberSince: "Member since",
     salesCount: "Sales count",
@@ -1768,9 +1802,6 @@ mutableDictionaries.es = {
   },
   listing: {
     ...mutableDictionaries.es.listing,
-    quickView: "Vista rápida",
-    quickViewEyebrow: "Vista rápida",
-    closeQuickView: "Cerrar vista",
     campusSwapSeller: "Vendedor de CampusSwap",
     memberSince: "En CampusSwap desde",
     salesCount: "Ventas",
@@ -1780,6 +1811,61 @@ mutableDictionaries.es = {
 
 mutableDictionaries.nl = {
   ...mutableDictionaries.nl,
+  appHome: {
+    ...mutableDictionaries.nl.appHome,
+    forYouEyebrow: "Voor jou",
+    forYouTitle: "Gebaseerd op wat je al volgt.",
+    forYouDescription:
+      "Voorkeurscategorieën, opgeslagen items en recente signalen sturen deze shortlist.",
+    becauseViewedEyebrow: "Omdat je dit bekeek",
+    becauseViewedTitle: "Vergelijkbare match met je recente views.",
+    becauseViewedDescription:
+      "Deze picks volgen dezelfde categorie, prijsklasse of meetup-zone als recente advertenties die je opende.",
+    popularAreaEyebrow: "Populair in jouw zone",
+    popularAreaTitle: "Meest populair rond {area}.",
+    popularAreaDescription:
+      "CampusSwap combineert saves, views en verkoperstrust om lokale momentum te tonen.",
+    newTodayEyebrow: "Nieuw vandaag",
+    newTodayTitle: "Verse listings die vandaag live gingen.",
+    newTodayDescription:
+      "Nieuwe actieve voorraad die nog vroeg in de ontdekkingcyclus zit."
+  },
+  messages: {
+    ...mutableDictionaries.nl.messages,
+    offers: {
+      title: "Biedingen",
+      description:
+        "Onderhandel hier zonder de echte listing- en transactiestatus kwijt te raken.",
+      noOfferYet: "Nog geen bod in deze uitwisseling.",
+      latestOffer: "Laatste bod",
+      sentByBuyer: "Verstuurd door koper",
+      sentBySeller: "Verstuurd door verkoper",
+      sentAt: "Verstuurd",
+      respondedAt: "Beantwoord",
+      expiresAt: "Verloopt",
+      offerAmount: "Bodbedrag",
+      counterAmount: "Tegenbod",
+      makeOffer: "Bod sturen",
+      sendingOffer: "Bod sturen...",
+      counterOffer: "Tegenbod sturen",
+      acceptOffer: "Bod accepteren",
+      rejectOffer: "Bod afwijzen",
+      acceptCounter: "Tegenbod accepteren",
+      rejectCounter: "Tegenbod afwijzen",
+      withdrawOffer: "Bod intrekken",
+      acceptedHint:
+        "Het afgesproken bedrag zit nu in deze uitwisseling. Reserveer of rond daarna de meetup af.",
+      genericError: "Kan het bod nu niet bijwerken.",
+      states: {
+        open: "Open",
+        countered: "Tegengeboden",
+        accepted: "Geaccepteerd",
+        rejected: "Afgewezen",
+        expired: "Verlopen",
+        withdrawn: "Ingetrokken"
+      }
+    }
+  },
   search: {
     ...mutableDictionaries.nl.search,
     pickupArea: "Afhaalgebied",
@@ -1841,13 +1927,128 @@ mutableDictionaries.nl = {
   },
   listing: {
     ...mutableDictionaries.nl.listing,
-    quickView: "Snelle preview",
-    quickViewEyebrow: "Snelle preview",
-    closeQuickView: "Preview sluiten",
     campusSwapSeller: "CampusSwap-verkoper",
     memberSince: "Lid sinds",
     salesCount: "Aantal verkopen",
     averageRating: "Gemiddelde beoordeling"
+  }
+};
+
+mutableDictionaries.en = {
+  ...mutableDictionaries.en,
+  appHome: {
+    ...mutableDictionaries.en.appHome,
+    forYouEyebrow: "For you",
+    forYouTitle: "Driven by what you already interact with.",
+    forYouDescription:
+      "Preferred categories, saved items, and recent searches shape this shortlist.",
+    becauseViewedEyebrow: "Because you viewed this",
+    becauseViewedTitle: "Similar listings to what you opened recently.",
+    becauseViewedDescription:
+      "These picks stay close to the categories, price band, and meetup areas you viewed most recently.",
+    popularAreaEyebrow: "Popular in your area",
+    popularAreaTitle: "Most popular around {area}.",
+    popularAreaDescription:
+      "CampusSwap combines saves, views, and seller trust to surface local momentum.",
+    newTodayEyebrow: "New today",
+    newTodayTitle: "Fresh listings that just went live.",
+    newTodayDescription:
+      "New active inventory that is still early in its discovery cycle."
+  },
+  messages: {
+    ...mutableDictionaries.en.messages,
+    offers: {
+      title: "Offers",
+      description:
+        "Negotiate here without losing the real listing and exchange context.",
+      noOfferYet: "No offer has been sent in this exchange yet.",
+      latestOffer: "Latest offer",
+      sentByBuyer: "Sent by buyer",
+      sentBySeller: "Sent by seller",
+      sentAt: "Sent",
+      respondedAt: "Responded",
+      expiresAt: "Expires",
+      offerAmount: "Offer amount",
+      counterAmount: "Counteroffer amount",
+      makeOffer: "Make offer",
+      sendingOffer: "Sending offer...",
+      counterOffer: "Send counteroffer",
+      acceptOffer: "Accept offer",
+      rejectOffer: "Reject offer",
+      acceptCounter: "Accept counteroffer",
+      rejectCounter: "Reject counteroffer",
+      withdrawOffer: "Withdraw offer",
+      acceptedHint:
+        "The agreed price is now tied to this exchange. You can reserve or complete the sale next.",
+      genericError: "Unable to update the offer right now.",
+      states: {
+        open: "Open",
+        countered: "Countered",
+        accepted: "Accepted",
+        rejected: "Rejected",
+        expired: "Expired",
+        withdrawn: "Withdrawn"
+      }
+    }
+  }
+};
+
+mutableDictionaries.es = {
+  ...mutableDictionaries.es,
+  appHome: {
+    ...mutableDictionaries.es.appHome,
+    forYouEyebrow: "Para ti",
+    forYouTitle: "Basado en lo que ya te interesa.",
+    forYouDescription:
+      "Tus categorías preferidas, guardados y búsquedas recientes dan forma a esta selección.",
+    becauseViewedEyebrow: "Porque viste esto",
+    becauseViewedTitle: "Anuncios parecidos a lo que abriste hace poco.",
+    becauseViewedDescription:
+      "Estas sugerencias siguen categorías, rango de precio y zonas de recogida similares a tus vistas recientes.",
+    popularAreaEyebrow: "Popular en tu zona",
+    popularAreaTitle: "Lo más popular cerca de {area}.",
+    popularAreaDescription:
+      "CampusSwap combina guardados, vistas y confianza del vendedor para mostrar el impulso local.",
+    newTodayEyebrow: "Nuevo hoy",
+    newTodayTitle: "Anuncios recientes que acaban de salir.",
+    newTodayDescription:
+      "Inventario activo nuevo que todavía está empezando su ciclo de descubrimiento."
+  },
+  messages: {
+    ...mutableDictionaries.es.messages,
+    offers: {
+      title: "Ofertas",
+      description:
+        "Negocia aquí sin perder el contexto real del anuncio y del intercambio.",
+      noOfferYet: "Todavía no se ha enviado ninguna oferta en este intercambio.",
+      latestOffer: "Última oferta",
+      sentByBuyer: "Enviada por el comprador",
+      sentBySeller: "Enviada por el vendedor",
+      sentAt: "Enviada",
+      respondedAt: "Respondida",
+      expiresAt: "Caduca",
+      offerAmount: "Importe de la oferta",
+      counterAmount: "Importe de la contraoferta",
+      makeOffer: "Hacer oferta",
+      sendingOffer: "Enviando oferta...",
+      counterOffer: "Enviar contraoferta",
+      acceptOffer: "Aceptar oferta",
+      rejectOffer: "Rechazar oferta",
+      acceptCounter: "Aceptar contraoferta",
+      rejectCounter: "Rechazar contraoferta",
+      withdrawOffer: "Retirar oferta",
+      acceptedHint:
+        "El precio acordado ya está vinculado a este intercambio. Ahora puedes reservar o cerrar la venta.",
+      genericError: "No se puede actualizar la oferta ahora mismo.",
+      states: {
+        open: "Abierta",
+        countered: "Contraofertada",
+        accepted: "Aceptada",
+        rejected: "Rechazada",
+        expired: "Caducada",
+        withdrawn: "Retirada"
+      }
+    }
   }
 };
 

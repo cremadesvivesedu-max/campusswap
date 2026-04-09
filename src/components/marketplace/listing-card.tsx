@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Images, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,6 @@ import { formatCurrency } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { MessageSellerButton } from "@/components/marketplace/message-seller-button";
-import { ListingQuickView } from "@/components/marketplace/listing-quick-view";
 import { StarRating } from "@/components/shared/star-rating";
 
 interface ListingCardProps {
@@ -31,7 +29,6 @@ export function ListingCard({
   messageActionMode = "chat"
 }: ListingCardProps) {
   const { dictionary } = useLocale();
-  const [showQuickView, setShowQuickView] = useState(false);
   const showChatAction = showMessageAction && listing.status !== "sold";
   const listingHref = `/app/listings/${listing.id}`;
 
@@ -116,14 +113,6 @@ export function ListingCard({
           <Button asChild className="sm:flex-1" variant="secondary">
             <Link href={listingHref}>{dictionary.common.actions.viewListing}</Link>
           </Button>
-          <Button
-            type="button"
-            className="sm:flex-1"
-            variant="outline"
-            onClick={() => setShowQuickView(true)}
-          >
-            {dictionary.listing.quickView}
-          </Button>
           {showChatAction ? (
             <MessageSellerButton
               listingId={listing.id}
@@ -135,9 +124,6 @@ export function ListingCard({
           ) : null}
         </div>
       </div>
-      {showQuickView ? (
-        <ListingQuickView listing={listing} onClose={() => setShowQuickView(false)} />
-      ) : null}
     </Card>
   );
 }

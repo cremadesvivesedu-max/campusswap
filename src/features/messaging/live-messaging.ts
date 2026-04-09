@@ -11,6 +11,7 @@ import type {
   ConversationPreview,
   ConversationThreadData,
   Listing,
+  ListingOffer,
   Message,
   Transaction,
   User
@@ -112,6 +113,23 @@ interface DbTransactionRow {
   reserved_at: string | null;
   cancelled_at: string | null;
   completed_at: string | null;
+}
+
+interface DbOfferRow {
+  id: string;
+  listing_id: string;
+  transaction_id: string;
+  conversation_id: string;
+  buyer_id: string;
+  seller_id: string;
+  created_by_user_id: string;
+  parent_offer_id: string | null;
+  amount: number | string;
+  state: ListingOffer["state"];
+  expires_at: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DbConversationWithRelations {
@@ -291,6 +309,28 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     reservedAt: row.reserved_at ?? undefined,
     cancelledAt: row.cancelled_at ?? undefined,
     completedAt: row.completed_at ?? undefined
+  };
+}
+
+function mapOffer(row: DbOfferRow): ListingOffer {
+  const expired =
+    row.state === "open" && row.expires_at && Date.parse(row.expires_at) <= Date.now();
+
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    transactionId: row.transaction_id,
+    conversationId: row.conversation_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    createdByUserId: row.created_by_user_id,
+    parentOfferId: row.parent_offer_id ?? undefined,
+    amount: numberValue(row.amount),
+    state: expired ? "expired" : row.state,
+    expiresAt: row.expires_at ?? undefined,
+    respondedAt: row.responded_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 
@@ -530,6 +570,16 @@ async function fetchConversationThread(conversationId: string, currentUserId: st
 
   const conversation = mapConversation(row);
   const transactionRow = pickTransactionRow(row.transaction);
+  const { data: offerData } = await supabase
+    .from("listing_offers")
+    .select(
+      "id, listing_id, transaction_id, conversation_id, buyer_id, seller_id, created_by_user_id, parent_offer_id, amount, state, expires_at, responded_at, created_at, updated_at"
+    )
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const offerRow = (offerData as unknown as DbOfferRow | null) ?? null;
 
   return {
     conversation: {
@@ -541,7 +591,8 @@ async function fetchConversationThread(conversationId: string, currentUserId: st
     seller: mapUser(row.seller),
     messages: conversation.messages,
     unreadCount: getUnreadCount(row, currentUserId),
-    transaction: transactionRow ? mapTransaction(transactionRow) : undefined
+    transaction: transactionRow ? mapTransaction(transactionRow) : undefined,
+    latestOffer: offerRow ? mapOffer(offerRow) : undefined
   } satisfies ConversationThreadData;
 }
 
@@ -742,6 +793,9 @@ export function useLiveConversationPreviews(currentUserId: string) {
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
         void sync();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "listing_offers" }, () => {
+        void sync();
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "listings" }, () => {
         void sync();
       })
@@ -819,6 +873,18 @@ export function useLiveConversationThread(
           event: "*",
           schema: "public",
           table: "transactions",
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        () => {
+          void sync();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "listing_offers",
           filter: `conversation_id=eq.${conversationId}`
         },
         () => {

@@ -13,7 +13,9 @@ import type {
   ExchangeStatus,
   ListingCondition,
   ListingDistanceFilter,
-  ListingStatus
+  ListingOffer,
+  ListingStatus,
+  OfferStatus
 } from "@/types/domain";
 
 interface ActionResult {
@@ -25,6 +27,11 @@ interface ToggleFavoriteResult extends ActionResult {
   isSaved: boolean;
 }
 
+interface OfferActionResult extends ActionResult {
+  conversationId?: string;
+  offerId?: string;
+}
+
 interface ListingDeletionHistoryFlags {
   hasConversations: boolean;
   hasTransactions: boolean;
@@ -32,6 +39,30 @@ interface ListingDeletionHistoryFlags {
   hasReports: boolean;
   hasAuditLogs: boolean;
 }
+
+interface DbOfferRow {
+  id: string;
+  listing_id: string;
+  transaction_id: string;
+  conversation_id: string;
+  buyer_id: string;
+  seller_id: string;
+  created_by_user_id: string;
+  parent_offer_id: string | null;
+  amount: number | string;
+  state: OfferStatus;
+  expires_at: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+type NotificationPreferenceKey =
+  | "listing_updates"
+  | "messages"
+  | "saved_searches"
+  | "featured_digest"
+  | "promotions";
 
 function parseOptionalNumber(value: FormDataEntryValue | null) {
   if (!value) {
@@ -113,6 +144,19 @@ function createSavedSearchSignature(input: {
   });
 }
 
+function numberValue(value: number | string | null | undefined) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
 async function requireMarketplaceContext() {
   const user = await getCurrentUser();
   const supabase = await createServerSupabaseClient();
@@ -146,19 +190,181 @@ async function syncListingSaveCount(listingId: string) {
   }
 }
 
-async function notifyUser(userId: string, title: string, body: string) {
+async function getNotificationPreferences(
+  userId: string,
+  admin: NonNullable<ReturnType<typeof createAdminSupabaseClient>>
+) {
+  const { data } = await admin
+    .from("profiles")
+    .select("notification_preferences")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return (((data as { notification_preferences?: string[] | null } | null)
+    ?.notification_preferences ?? []) as string[]);
+}
+
+async function notifyUser(
+  userId: string,
+  title: string,
+  body: string,
+  options?: {
+    type?: "message" | "promotion" | "review" | "listing" | "safety" | "system";
+    preference?: NotificationPreferenceKey;
+    dedupeKey?: string;
+  }
+) {
   const admin = createAdminSupabaseClient();
 
   if (!admin) {
     return;
   }
 
+  if (options?.preference) {
+    const preferences = await getNotificationPreferences(userId, admin);
+
+    if (!preferences.includes(options.preference)) {
+      return;
+    }
+  }
+
+  if (options?.dedupeKey) {
+    const { error: dedupeError } = await admin.from("notification_events").insert({
+      user_id: userId,
+      dedupe_key: options.dedupeKey,
+      notification_type: options.type ?? "system"
+    });
+
+    if (dedupeError?.code === "23505") {
+      return;
+    }
+
+    if (dedupeError) {
+      console.error("Notification dedupe insert failed:", dedupeError.message);
+      return;
+    }
+  }
+
   await admin.from("notifications").insert({
     user_id: userId,
-    type: "system",
+    type: options?.type ?? "system",
     title,
     body
   });
+}
+
+function mapOffer(row: DbOfferRow): ListingOffer {
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    transactionId: row.transaction_id,
+    conversationId: row.conversation_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    createdByUserId: row.created_by_user_id,
+    parentOfferId: row.parent_offer_id ?? undefined,
+    amount: numberValue(row.amount),
+    state: row.state,
+    expiresAt: row.expires_at ?? undefined,
+    respondedAt: row.responded_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+async function getLatestOfferForConversation(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  conversationId: string
+) {
+  const { data, error } = await supabase
+    .from("listing_offers")
+    .select(
+      "id, listing_id, transaction_id, conversation_id, buyer_id, seller_id, created_by_user_id, parent_offer_id, amount, state, expires_at, responded_at, created_at, updated_at"
+    )
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const row = (data as DbOfferRow | null) ?? null;
+
+  if (!row) {
+    return undefined;
+  }
+
+  if (row.state === "open" && row.expires_at && Date.parse(row.expires_at) <= Date.now()) {
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "expired",
+        responded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", row.id);
+
+    return {
+      ...mapOffer(row),
+      state: "expired",
+      respondedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } satisfies ListingOffer;
+  }
+
+  return mapOffer(row);
+}
+
+async function getOfferForParticipant(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  offerId: string,
+  currentUserId: string
+) {
+  const { data, error } = await supabase
+    .from("listing_offers")
+    .select(
+      "id, listing_id, transaction_id, conversation_id, buyer_id, seller_id, created_by_user_id, parent_offer_id, amount, state, expires_at, responded_at, created_at, updated_at"
+    )
+    .eq("id", offerId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const row = (data as DbOfferRow | null) ?? null;
+
+  if (!row) {
+    throw new Error("That offer could not be found.");
+  }
+
+  if (row.buyer_id !== currentUserId && row.seller_id !== currentUserId) {
+    throw new Error("Only the buyer or seller can manage this offer.");
+  }
+
+  const mapped = mapOffer(row);
+
+  if (mapped.state === "open" && mapped.expiresAt && Date.parse(mapped.expiresAt) <= Date.now()) {
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "expired",
+        responded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", mapped.id);
+
+    return {
+      ...mapped,
+      state: "expired",
+      respondedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } satisfies ListingOffer;
+  }
+
+  return mapped;
 }
 
 async function collectListingDeletionHistoryFlags(
@@ -412,6 +618,70 @@ async function ensureTransactionRecord(
   return data.id;
 }
 
+async function ensureListingOfferContext(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  {
+    listingId,
+    buyerId,
+    sellerId,
+    amount
+  }: {
+    listingId: string;
+    buyerId: string;
+    sellerId: string;
+    amount: number;
+  }
+) {
+  const conversationId = await ensureConversationRecord(
+    supabase,
+    listingId,
+    buyerId,
+    sellerId
+  );
+  const transactionId = await ensureTransactionRecord(supabase, {
+    listingId,
+    buyerId,
+    sellerId,
+    conversationId,
+    amount
+  });
+
+  await supabase
+    .from("transactions")
+    .update({
+      state: "negotiating",
+      amount,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", transactionId)
+    .neq("state", "completed");
+
+  return { conversationId, transactionId };
+}
+
+async function insertOfferTimelineMessage(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  {
+    conversationId,
+    senderId,
+    text
+  }: {
+    conversationId: string;
+    senderId: string;
+    text: string;
+  }
+) {
+  const { error } = await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    sender_id: senderId,
+    text
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 async function cancelCompetingTransactions(
   listingId: string,
   preservedTransactionId: string | undefined,
@@ -528,12 +798,32 @@ export async function toggleFavoriteAction(listingId: string): Promise<ToggleFav
   }
 
   await syncListingSaveCount(listingId);
-  await supabase.from("notifications").insert({
-    user_id: user.id,
-    type: "listing",
-    title: "Saved to your shortlist",
-    body: "CampusSwap will keep this listing close in your saved feed."
+  await notifyUser(user.id, "Saved to your shortlist", "CampusSwap will keep this listing close in your saved feed.", {
+    type: "listing"
   });
+
+  const admin = createAdminSupabaseClient();
+
+  if (admin) {
+    const { data: listing } = await admin
+      .from("listings")
+      .select("seller_id, title")
+      .eq("id", listingId)
+      .maybeSingle();
+
+    if (listing?.seller_id && listing.seller_id !== user.id) {
+      await notifyUser(
+        listing.seller_id,
+        "Someone saved your listing",
+        `${user.profile.fullName} saved ${listing.title}.`,
+        {
+          type: "listing",
+          preference: "listing_updates",
+          dedupeKey: `favorite:${listingId}:${user.id}`
+        }
+      );
+    }
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/saved");
@@ -717,7 +1007,12 @@ export async function startPurchaseIntentAction(
     await notifyUser(
       listing.seller_id,
       "New purchase request",
-      `${user.profile.fullName} wants to buy ${listing.title}.`
+      `${user.profile.fullName} wants to buy ${listing.title}.`,
+      {
+        type: "listing",
+        preference: "listing_updates",
+        dedupeKey: `purchase-request:${transactionId}`
+      }
     );
 
     revalidatePath(`/app/listings/${listingId}`);
@@ -738,6 +1033,455 @@ export async function startPurchaseIntentAction(
         error instanceof Error
           ? error.message
           : "Unable to start the purchase flow right now."
+    };
+  }
+}
+
+export async function submitOfferAction(
+  listingId: string,
+  amount: number
+): Promise<OfferActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to send offers."
+    };
+  }
+
+  const offerAmount = Number(amount);
+
+  if (!Number.isFinite(offerAmount) || offerAmount <= 0) {
+    return {
+      success: false,
+      message: "Enter a valid offer amount."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: listing, error: listingError } = await supabase
+    .from("listings")
+    .select("id, seller_id, title, status, price")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (listingError || !listing) {
+    return {
+      success: false,
+      message: listingError?.message ?? "That listing could not be found."
+    };
+  }
+
+  if (listing.seller_id === user.id) {
+    return {
+      success: false,
+      message: "You cannot make an offer on your own listing."
+    };
+  }
+
+  if (["sold", "archived", "hidden", "pending-review"].includes(listing.status)) {
+    return {
+      success: false,
+      message: "This listing is not available for offers right now."
+    };
+  }
+
+  const openTransactions = await getOpenTransactionForListing(supabase, listingId);
+  const reservedForAnotherBuyer = openTransactions.find(
+    (transaction) =>
+      transaction.state === "reserved" && transaction.buyer_id !== user.id
+  );
+
+  if (reservedForAnotherBuyer) {
+    return {
+      success: false,
+      message: "This item is already reserved for another buyer."
+    };
+  }
+
+  try {
+    const { conversationId, transactionId } = await ensureListingOfferContext(supabase, {
+      listingId,
+      buyerId: user.id,
+      sellerId: listing.seller_id,
+      amount: offerAmount
+    });
+    const latestOffer = await getLatestOfferForConversation(supabase, conversationId);
+
+    if (latestOffer?.state === "open") {
+      return {
+        success: false,
+        message:
+          latestOffer.createdByUserId === user.id
+            ? "You already have an open offer in this conversation."
+            : "The seller already has a counteroffer waiting for your response."
+      };
+    }
+
+    if (latestOffer?.state === "accepted") {
+      return {
+        success: false,
+        message: "An offer has already been accepted for this conversation."
+      };
+    }
+
+    const { data: created, error } = await supabase
+      .from("listing_offers")
+      .insert({
+        listing_id: listingId,
+        transaction_id: transactionId,
+        conversation_id: conversationId,
+        buyer_id: user.id,
+        seller_id: listing.seller_id,
+        created_by_user_id: user.id,
+        amount: offerAmount,
+        state: "open"
+      })
+      .select("id")
+      .single();
+
+    if (error || !created?.id) {
+      return {
+        success: false,
+        message: error?.message ?? "Unable to send the offer right now."
+      };
+    }
+
+    await insertOfferTimelineMessage(supabase, {
+      conversationId,
+      senderId: user.id,
+      text: `Offer sent: EUR ${offerAmount.toFixed(2)}`
+    });
+
+    revalidatePath(`/app/listings/${listingId}`);
+    revalidatePath("/app/messages");
+    revalidatePath(`/app/messages/${conversationId}`);
+    revalidatePath("/app/my-purchases");
+
+    return {
+      success: true,
+      message: "Offer sent.",
+      conversationId,
+      offerId: created.id
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to send the offer right now."
+    };
+  }
+}
+
+export async function counterOfferAction(
+  offerId: string,
+  amount: number
+): Promise<OfferActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to send counteroffers."
+    };
+  }
+
+  const counterAmount = Number(amount);
+
+  if (!Number.isFinite(counterAmount) || counterAmount <= 0) {
+    return {
+      success: false,
+      message: "Enter a valid counteroffer amount."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+
+  try {
+    const offer = await getOfferForParticipant(supabase, offerId, user.id);
+
+    if (offer.sellerId !== user.id) {
+      return {
+        success: false,
+        message: "Only the seller can send a counteroffer."
+      };
+    }
+
+    if (offer.state !== "open") {
+      return {
+        success: false,
+        message: "Only open offers can be countered."
+      };
+    }
+
+    if (offer.createdByUserId === user.id) {
+      return {
+        success: false,
+        message: "Wait for the buyer to respond before sending another counteroffer."
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "countered",
+        responded_at: now,
+        updated_at: now
+      })
+      .eq("id", offer.id);
+
+    const { data: created, error } = await supabase
+      .from("listing_offers")
+      .insert({
+        listing_id: offer.listingId,
+        transaction_id: offer.transactionId,
+        conversation_id: offer.conversationId,
+        buyer_id: offer.buyerId,
+        seller_id: offer.sellerId,
+        created_by_user_id: user.id,
+        parent_offer_id: offer.id,
+        amount: counterAmount,
+        state: "open"
+      })
+      .select("id")
+      .single();
+
+    if (error || !created?.id) {
+      return {
+        success: false,
+        message: error?.message ?? "Unable to send the counteroffer right now."
+      };
+    }
+
+    await insertOfferTimelineMessage(supabase, {
+      conversationId: offer.conversationId,
+      senderId: user.id,
+      text: `Counteroffer sent: EUR ${counterAmount.toFixed(2)}`
+    });
+
+    revalidatePath(`/app/listings/${offer.listingId}`);
+    revalidatePath("/app/messages");
+    revalidatePath(`/app/messages/${offer.conversationId}`);
+    revalidatePath("/app/my-purchases");
+    revalidatePath("/app/my-listings");
+
+    return {
+      success: true,
+      message: "Counteroffer sent.",
+      conversationId: offer.conversationId,
+      offerId: created.id
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to send the counteroffer right now."
+    };
+  }
+}
+
+export async function acceptOfferAction(offerId: string): Promise<OfferActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to accept offers."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+
+  try {
+    const offer = await getOfferForParticipant(supabase, offerId, user.id);
+
+    if (offer.state !== "open") {
+      return {
+        success: false,
+        message: "Only open offers can be accepted."
+      };
+    }
+
+    if (offer.createdByUserId === user.id) {
+      return {
+        success: false,
+        message: "You cannot accept your own offer."
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "accepted",
+        responded_at: now,
+        updated_at: now
+      })
+      .eq("id", offer.id);
+
+    await supabase
+      .from("transactions")
+      .update({
+        amount: offer.amount,
+        state: "negotiating",
+        updated_at: now
+      })
+      .eq("id", offer.transactionId)
+      .neq("state", "completed");
+
+    await insertOfferTimelineMessage(supabase, {
+      conversationId: offer.conversationId,
+      senderId: user.id,
+      text: `Offer accepted at EUR ${offer.amount.toFixed(2)}`
+    });
+
+    revalidatePath(`/app/listings/${offer.listingId}`);
+    revalidatePath("/app/messages");
+    revalidatePath(`/app/messages/${offer.conversationId}`);
+    revalidatePath("/app/my-purchases");
+    revalidatePath("/app/my-listings");
+
+    return {
+      success: true,
+      message: "Offer accepted. The agreed price is now reflected in the exchange.",
+      conversationId: offer.conversationId,
+      offerId: offer.id
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to accept this offer."
+    };
+  }
+}
+
+export async function rejectOfferAction(offerId: string): Promise<OfferActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to reject offers."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+
+  try {
+    const offer = await getOfferForParticipant(supabase, offerId, user.id);
+
+    if (offer.state !== "open") {
+      return {
+        success: false,
+        message: "Only open offers can be rejected."
+      };
+    }
+
+    if (offer.createdByUserId === user.id) {
+      return {
+        success: false,
+        message: "Use withdraw if you want to remove your own open offer."
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "rejected",
+        responded_at: now,
+        updated_at: now
+      })
+      .eq("id", offer.id);
+
+    await insertOfferTimelineMessage(supabase, {
+      conversationId: offer.conversationId,
+      senderId: user.id,
+      text: "Offer declined."
+    });
+
+    revalidatePath(`/app/listings/${offer.listingId}`);
+    revalidatePath("/app/messages");
+    revalidatePath(`/app/messages/${offer.conversationId}`);
+    revalidatePath("/app/my-purchases");
+    revalidatePath("/app/my-listings");
+
+    return {
+      success: true,
+      message: "Offer declined.",
+      conversationId: offer.conversationId,
+      offerId: offer.id
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to reject this offer."
+    };
+  }
+}
+
+export async function withdrawOfferAction(offerId: string): Promise<OfferActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to withdraw offers."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+
+  try {
+    const offer = await getOfferForParticipant(supabase, offerId, user.id);
+
+    if (offer.state !== "open") {
+      return {
+        success: false,
+        message: "Only open offers can be withdrawn."
+      };
+    }
+
+    if (offer.createdByUserId !== user.id) {
+      return {
+        success: false,
+        message: "Only the person who sent the offer can withdraw it."
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("listing_offers")
+      .update({
+        state: "withdrawn",
+        responded_at: now,
+        updated_at: now
+      })
+      .eq("id", offer.id);
+
+    await insertOfferTimelineMessage(supabase, {
+      conversationId: offer.conversationId,
+      senderId: user.id,
+      text: "Offer withdrawn."
+    });
+
+    revalidatePath(`/app/listings/${offer.listingId}`);
+    revalidatePath("/app/messages");
+    revalidatePath(`/app/messages/${offer.conversationId}`);
+    revalidatePath("/app/my-purchases");
+    revalidatePath("/app/my-listings");
+
+    return {
+      success: true,
+      message: "Offer withdrawn.",
+      conversationId: offer.conversationId,
+      offerId: offer.id
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to withdraw this offer."
     };
   }
 }
@@ -833,10 +1577,14 @@ export async function reserveConversationBuyerAction(
         text: "I reserved this item for you while we arrange the meetup."
       });
 
-      await notifyUser(
-        conversation.buyer_id,
+    await notifyUser(
+      conversation.buyer_id,
       "Item reserved for you",
-      `${listing.title} is now reserved while you arrange the meetup.`
+      `${listing.title} is now reserved while you arrange the meetup.`,
+      {
+        type: "listing",
+        preference: "listing_updates"
+      }
     );
 
     revalidatePath(`/app/listings/${conversation.listing_id}`);
@@ -918,7 +1666,11 @@ export async function releaseReservationAction(
   await notifyUser(
     transaction.buyer_id,
     "Reservation released",
-    "The seller reopened the listing for new buyers."
+    "The seller reopened the listing for new buyers.",
+    {
+      type: "listing",
+      preference: "listing_updates"
+    }
   );
 
   revalidatePath(`/app/listings/${transaction.listing_id}`);
@@ -1006,7 +1758,11 @@ export async function cancelTransactionAction(
   await notifyUser(
     counterpartId,
     "Exchange cancelled",
-    "The purchase request was cancelled and the listing was updated."
+    "The purchase request was cancelled and the listing was updated.",
+    {
+      type: "listing",
+      preference: "listing_updates"
+    }
   );
 
   revalidatePath(`/app/listings/${transaction.listing_id}`);
@@ -1082,11 +1838,26 @@ export async function completeTransactionAction(
     "The listing was sold to another buyer."
   );
 
-  await notifyUser(
-    transaction.buyer_id,
-    "Sale completed",
-    "The seller marked this exchange as completed. Both sides can now leave a review."
-  );
+  await Promise.all([
+    notifyUser(
+      transaction.buyer_id,
+      "Review now available",
+      "Your exchange is complete. You can now leave a review for the seller.",
+      {
+        type: "review",
+        dedupeKey: `review-eligible:${transaction.id}:${transaction.buyer_id}`
+      }
+    ),
+    notifyUser(
+      transaction.seller_id,
+      "Review now available",
+      "Your exchange is complete. You can now leave a review for the buyer.",
+      {
+        type: "review",
+        dedupeKey: `review-eligible:${transaction.id}:${transaction.seller_id}`
+      }
+    )
+  ]);
 
   revalidatePath(`/app/listings/${transaction.listing_id}`);
   revalidatePath("/app/messages");
