@@ -7,6 +7,18 @@ import { useDemoConversations } from "@/features/messaging/demo-messaging-store"
 import { useLiveConversationPreviews } from "@/features/messaging/live-messaging";
 import { demoData } from "@/lib/demo-data";
 import { isLiveClientMode } from "@/lib/public-env";
+import type { ConversationPreview } from "@/types/domain";
+
+function isRenderablePreview(
+  preview: ConversationPreview | undefined | null
+): preview is ConversationPreview {
+  return Boolean(
+    preview?.conversation?.id &&
+      preview?.listing?.id &&
+      preview?.counterpart?.id &&
+      preview?.counterpart?.profile?.fullName
+  );
+}
 
 export function MessagesInbox({ currentUserId }: { currentUserId: string }) {
   if (isLiveClientMode) {
@@ -42,7 +54,7 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
         unreadCount: conversation.unreadCount
       };
     })
-    .filter(Boolean);
+    .filter(isRenderablePreview);
 
   if (!previews.length) {
     return (
@@ -65,6 +77,7 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
 function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   const { dictionary } = useLocale();
   const { previews, error } = useLiveConversationPreviews(currentUserId);
+  const safePreviews = previews.filter(isRenderablePreview);
 
   if (error) {
     return (
@@ -75,7 +88,7 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
     );
   }
 
-  if (!previews.length) {
+  if (!safePreviews.length) {
     return (
       <EmptyState
         title={dictionary.messages.inbox.emptyTitle}
@@ -86,7 +99,7 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {previews.map((preview) => (
+      {safePreviews.map((preview) => (
         <MessagePreview key={preview.conversation.id} preview={preview} />
       ))}
     </div>

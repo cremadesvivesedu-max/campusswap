@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
@@ -8,26 +8,46 @@ import { useLocale } from "@/components/providers/locale-provider";
 import { getListingStatusLabel } from "@/lib/i18n-shared";
 import type { ConversationPreview } from "@/types/domain";
 
+function formatPreviewTimestamp(value: string | undefined, fallback: string) {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Date.parse(value);
+
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+
+  return new Date(parsed).toLocaleString("en-GB", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 export function MessagePreview({ preview }: { preview: ConversationPreview }) {
+  const router = useRouter();
   const { dictionary } = useLocale();
   const latest = preview.latestMessage;
+  const listingTitle = preview.listing.title?.trim() || "CampusSwap listing";
+  const counterpartName =
+    preview.counterpart.profile?.fullName?.trim() || "CampusSwap student";
   const latestSummary = latest?.text
     ? latest.text
     : latest?.attachment
       ? dictionary.messages.actions.photoAttachment
       : dictionary.messages.actions.noMessagesYet;
-  const latestLabel = latest?.sentAt
-    ? new Date(latest.sentAt).toLocaleString("en-GB", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    : dictionary.messages.actions.noMessagesYet;
+  const latestLabel = formatPreviewTimestamp(
+    latest?.sentAt,
+    dictionary.messages.actions.noMessagesYet
+  );
 
   return (
-    <Link
-      href={`/app/messages/${preview.conversation.id}`}
+    <button
+      type="button"
+      onClick={() => router.push(`/app/messages/${preview.conversation.id}`)}
       className="block rounded-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
     >
       <Card className="bg-white transition hover:-translate-y-0.5 hover:shadow-glow">
@@ -35,16 +55,16 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
           <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={preview.counterpart.id}
-              name={preview.counterpart.profile.fullName}
+              name={counterpartName}
               src={preview.counterpart.avatar}
               className="h-12 w-12"
             />
             <div>
               <p className="font-display text-lg font-semibold text-slate-950">
-                {preview.listing.title}
+                {listingTitle}
               </p>
               <p className="text-sm text-slate-500">
-                {preview.counterpart.profile.fullName} - {latestLabel}
+                {counterpartName} - {latestLabel}
               </p>
             </div>
           </div>
@@ -86,6 +106,6 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
           </p>
         </CardContent>
       </Card>
-    </Link>
+    </button>
   );
 }

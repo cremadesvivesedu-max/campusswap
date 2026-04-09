@@ -554,25 +554,35 @@ async function fetchUserConversations(currentUserId: string) {
   const previews: ConversationPreview[] = [];
 
   for (const row of (data as unknown as DbConversationWithRelations[] | null) ?? []) {
-    const conversation = mapConversation(row);
-    const listing = row.listing ? mapListing(row.listing) : undefined;
-    const counterpartRow = row.seller_id === currentUserId ? row.buyer : row.seller;
-    const counterpart = counterpartRow ? mapUser(counterpartRow) : undefined;
+    try {
+      const conversation = mapConversation(row);
+      const listing = row.listing ? mapListing(row.listing) : undefined;
+      const counterpartRow = row.seller_id === currentUserId ? row.buyer : row.seller;
+      const counterpart = counterpartRow ? mapUser(counterpartRow) : undefined;
+      const unreadCount = getUnreadCount(row, currentUserId);
 
-    if (!listing || !counterpart) {
+      if (
+        !conversation.id ||
+        !listing?.id ||
+        !counterpart?.id ||
+        !counterpart.profile.fullName
+      ) {
+        continue;
+      }
+
+      previews.push({
+        conversation: {
+          ...conversation,
+          unreadCount
+        },
+        listing,
+        counterpart,
+        latestMessage: conversation.messages[conversation.messages.length - 1],
+        unreadCount
+      });
+    } catch {
       continue;
     }
-
-    previews.push({
-      conversation: {
-        ...conversation,
-        unreadCount: getUnreadCount(row, currentUserId)
-      },
-      listing,
-      counterpart,
-      latestMessage: conversation.messages[conversation.messages.length - 1],
-      unreadCount: getUnreadCount(row, currentUserId)
-    });
   }
 
   return previews;
