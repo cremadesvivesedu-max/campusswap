@@ -11,6 +11,7 @@ import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type {
   ExchangeStatus,
+  FulfillmentMethod,
   ListingCondition,
   ListingDistanceFilter,
   ListingOffer,
@@ -155,6 +156,109 @@ function numberValue(value: number | string | null | undefined) {
   }
 
   return 0;
+}
+
+const openTransactionStates = [
+  "pending",
+  "reserved",
+  "paid",
+  "ready-for-pickup",
+  "shipped",
+  "delivered",
+  "completed"
+] as const satisfies ExchangeStatus[];
+
+const cancellableTransactionStates = [
+  "pending",
+  "reserved",
+  "paid",
+  "ready-for-pickup"
+] as const satisfies ExchangeStatus[];
+
+function normalizeExchangeStatus(value: string): ExchangeStatus {
+  if (value === "inquiry" || value === "negotiating") {
+    return "pending";
+  }
+
+  if (value === "reported") {
+    return "reported";
+  }
+
+  return value as ExchangeStatus;
+}
+
+function isHeldTransactionState(state: ExchangeStatus) {
+  return [
+    "reserved",
+    "paid",
+    "ready-for-pickup",
+    "shipped",
+    "delivered"
+  ].includes(state);
+}
+
+function resolveListingStatusForTransaction(state: ExchangeStatus): ListingStatus {
+  if (state === "completed") {
+    return "sold";
+  }
+
+  return isHeldTransactionState(state) ? "reserved" : "active";
+}
+
+function createOrderBreakdown(input: {
+  itemAmount: number;
+  shippingAmount: number;
+  platformFee?: number;
+}) {
+  const platformFee = input.platformFee ?? 0;
+  const totalAmount = input.itemAmount + input.shippingAmount + platformFee;
+
+  return {
+    amount: input.itemAmount,
+    shipping_amount: input.shippingAmount,
+    platform_fee: platformFee,
+    total_amount: totalAmount
+  };
+}
+
+function createFulfillmentContext(input: {
+  fulfillmentMethod: FulfillmentMethod;
+}) {
+  if (input.fulfillmentMethod === "shipping") {
+    return {
+      meetup_spot: "Shipping address to be confirmed in chat",
+      meetup_window: "Dispatch timing to be scheduled"
+    };
+  }
+
+  return {
+    meetup_spot: "To be agreed in chat",
+    meetup_window: "To be scheduled"
+  };
+}
+
+function resolveRequestedFulfillment(input: {
+  pickupAvailable: boolean;
+  shippingAvailable: boolean;
+  requestedMethod?: string;
+}): FulfillmentMethod | null {
+  if (input.requestedMethod === "pickup" && input.pickupAvailable) {
+    return "pickup";
+  }
+
+  if (input.requestedMethod === "shipping" && input.shippingAvailable) {
+    return "shipping";
+  }
+
+  if (input.pickupAvailable && !input.shippingAvailable) {
+    return "pickup";
+  }
+
+  if (!input.pickupAvailable && input.shippingAvailable) {
+    return "shipping";
+  }
+
+  return null;
 }
 
 async function requireMarketplaceContext() {
@@ -539,7 +643,7 @@ async function getOpenTransactionForListing(
     .from("transactions")
     .select("id, buyer_id, seller_id, state, conversation_id")
     .eq("listing_id", listingId)
-    .in("state", ["inquiry", "negotiating", "reserved", "completed"])
+    .in("state", [...openTransactionStates])
     .order("updated_at", { ascending: false });
 
   return (
@@ -552,7 +656,10 @@ async function getOpenTransactionForListing(
           conversation_id: string | null;
         }[]
       | null) ?? []
-  );
+  ).map((transaction) => ({
+    ...transaction,
+    state: normalizeExchangeStatus(transaction.state)
+  }));
 }
 
 async function ensureTransactionRecord(
@@ -562,26 +669,35 @@ async function ensureTransactionRecord(
     buyerId,
     sellerId,
     conversationId,
-    amount
+    amount,
+    fulfillmentMethod,
+    shippingAmount
   }: {
     listingId: string;
     buyerId: string;
     sellerId: string;
     conversationId: string;
     amount: number;
+    fulfillmentMethod: FulfillmentMethod;
+    shippingAmount: number;
   }
 ) {
   const { data: existing } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .eq("listing_id", listingId)
     .eq("buyer_id", buyerId)
     .eq("seller_id", sellerId)
-    .in("state", ["inquiry", "negotiating", "reserved"])
+    .in("state", ["pending", "reserved", "paid", "ready-for-pickup", "shipped", "delivered"])
     .order("updated_at", { ascending: false })
     .maybeSingle();
+
+  const breakdown = createOrderBreakdown({
+    itemAmount: amount,
+    shippingAmount
+  });
 
   if (existing?.id) {
     await supabase
@@ -589,6 +705,9 @@ async function ensureTransactionRecord(
       .update({
         conversation_id: existing.conversation_id ?? conversationId,
         amount,
+        fulfillment_method: existing.fulfillment_method ?? fulfillmentMethod,
+        shipping_amount: shippingAmount,
+        total_amount: breakdown.total_amount,
         updated_at: new Date().toISOString()
       })
       .eq("id", existing.id);
@@ -596,17 +715,21 @@ async function ensureTransactionRecord(
     return existing.id;
   }
 
+  const fulfillmentContext = createFulfillmentContext({
+    fulfillmentMethod
+  });
+
   const { data, error } = await supabase
     .from("transactions")
     .insert({
       listing_id: listingId,
       buyer_id: buyerId,
       seller_id: sellerId,
-      state: "inquiry",
-      amount,
+      state: "pending",
+      fulfillment_method: fulfillmentMethod,
+      ...breakdown,
       conversation_id: conversationId,
-      meetup_spot: "To be agreed in chat",
-      meetup_window: "To be scheduled"
+      ...fulfillmentContext
     })
     .select("id")
     .single();
@@ -624,12 +747,16 @@ async function ensureListingOfferContext(
     listingId,
     buyerId,
     sellerId,
-    amount
+    amount,
+    fulfillmentMethod,
+    shippingAmount
   }: {
     listingId: string;
     buyerId: string;
     sellerId: string;
     amount: number;
+    fulfillmentMethod: FulfillmentMethod;
+    shippingAmount: number;
   }
 ) {
   const conversationId = await ensureConversationRecord(
@@ -640,17 +767,23 @@ async function ensureListingOfferContext(
   );
   const transactionId = await ensureTransactionRecord(supabase, {
     listingId,
-    buyerId,
-    sellerId,
-    conversationId,
-    amount
-  });
+      buyerId,
+      sellerId,
+      conversationId,
+      amount,
+      fulfillmentMethod,
+      shippingAmount
+    });
 
   await supabase
     .from("transactions")
     .update({
-      state: "negotiating",
-      amount,
+      state: "pending",
+      ...createOrderBreakdown({
+        itemAmount: amount,
+        shippingAmount
+      }),
+      fulfillment_method: fulfillmentMethod,
       updated_at: new Date().toISOString()
     })
     .eq("id", transactionId)
@@ -697,7 +830,7 @@ async function cancelCompetingTransactions(
     .from("transactions")
     .select("id, buyer_id, state")
     .eq("listing_id", listingId)
-    .in("state", ["inquiry", "negotiating", "reserved"]);
+    .in("state", ["pending", "reserved", "paid", "ready-for-pickup", "shipped", "delivered"]);
 
   if (preservedTransactionId) {
     query = query.neq("id", preservedTransactionId);
@@ -913,7 +1046,8 @@ export async function updateListingStatusAction(
 }
 
 export async function startPurchaseIntentAction(
-  listingId: string
+  listingId: string,
+  requestedFulfillmentMethod?: FulfillmentMethod
 ): Promise<ActionResult & { conversationId?: string; transactionId?: string }> {
   if (!isLiveMode) {
     return {
@@ -925,7 +1059,9 @@ export async function startPurchaseIntentAction(
   const { user, supabase } = await requireMarketplaceContext();
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, seller_id, title, status, price")
+    .select(
+      "id, seller_id, title, status, price, pickup_available, shipping_available, shipping_cost"
+    )
     .eq("id", listingId)
     .maybeSingle();
 
@@ -950,10 +1086,27 @@ export async function startPurchaseIntentAction(
     };
   }
 
+  const fulfillmentMethod = resolveRequestedFulfillment({
+    pickupAvailable: listing.pickup_available,
+    shippingAvailable: listing.shipping_available,
+    requestedMethod: requestedFulfillmentMethod
+  });
+
+  if (!fulfillmentMethod) {
+    return {
+      success: false,
+      message:
+        "Choose whether you want pickup or shipping before starting this order."
+    };
+  }
+
+  const shippingAmount =
+    fulfillmentMethod === "shipping" ? numberValue(listing.shipping_cost) : 0;
+
   const openTransactions = await getOpenTransactionForListing(supabase, listingId);
   const reservedForAnotherBuyer = openTransactions.find(
     (transaction) =>
-      transaction.state === "reserved" && transaction.buyer_id !== user.id
+      isHeldTransactionState(transaction.state) && transaction.buyer_id !== user.id
   );
   const alreadyCompleted = openTransactions.find(
     (transaction) => transaction.state === "completed"
@@ -985,14 +1138,20 @@ export async function startPurchaseIntentAction(
       buyerId: user.id,
       sellerId: listing.seller_id,
       conversationId,
-      amount: Number(listing.price)
+      amount: Number(listing.price),
+      fulfillmentMethod,
+      shippingAmount
     });
 
     await supabase
       .from("transactions")
       .update({
-        state: "negotiating",
-        amount: Number(listing.price),
+        state: "pending",
+        fulfillment_method: fulfillmentMethod,
+        ...createOrderBreakdown({
+          itemAmount: Number(listing.price),
+          shippingAmount
+        }),
         updated_at: new Date().toISOString()
       })
       .eq("id", transactionId)
@@ -1001,13 +1160,16 @@ export async function startPurchaseIntentAction(
     await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      text: "I want to buy this item. Can you reserve it for me?"
+      text:
+        fulfillmentMethod === "shipping"
+          ? `I want to buy this item with shipping. Total shown now is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)}.`
+          : "I want to buy this item with pickup. Can you reserve it for me?"
     });
 
     await notifyUser(
       listing.seller_id,
       "New purchase request",
-      `${user.profile.fullName} wants to buy ${listing.title}.`,
+      `${user.profile.fullName} wants to buy ${listing.title} with ${fulfillmentMethod}.`,
       {
         type: "listing",
         preference: "listing_updates",
@@ -1022,7 +1184,10 @@ export async function startPurchaseIntentAction(
 
     return {
       success: true,
-      message: "Purchase request created. No online payment has been taken yet.",
+      message:
+        fulfillmentMethod === "shipping"
+          ? `Purchase request created with shipping. Current total is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)} and no online payment has been taken yet.`
+          : "Purchase request created for pickup. No online payment has been taken yet.",
       conversationId,
       transactionId
     };
@@ -1060,7 +1225,9 @@ export async function submitOfferAction(
   const { user, supabase } = await requireMarketplaceContext();
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, seller_id, title, status, price")
+    .select(
+      "id, seller_id, title, status, price, pickup_available, shipping_available, shipping_cost"
+    )
     .eq("id", listingId)
     .maybeSingle();
 
@@ -1099,11 +1266,22 @@ export async function submitOfferAction(
   }
 
   try {
+    const fulfillmentMethod =
+      resolveRequestedFulfillment({
+        pickupAvailable: listing.pickup_available,
+        shippingAvailable: listing.shipping_available,
+        requestedMethod: listing.pickup_available ? "pickup" : "shipping"
+      }) ?? "pickup";
+    const shippingAmount =
+      fulfillmentMethod === "shipping" ? Number(listing.shipping_cost ?? 0) : 0;
+
     const { conversationId, transactionId } = await ensureListingOfferContext(supabase, {
       listingId,
       buyerId: user.id,
       sellerId: listing.seller_id,
-      amount: offerAmount
+      amount: offerAmount,
+      fulfillmentMethod,
+      shippingAmount
     });
     const latestOffer = await getLatestOfferForConversation(supabase, conversationId);
 
@@ -1319,11 +1497,21 @@ export async function acceptOfferAction(offerId: string): Promise<OfferActionRes
       })
       .eq("id", offer.id);
 
+    const { data: transactionPricing } = await supabase
+      .from("transactions")
+      .select("shipping_amount, platform_fee")
+      .eq("id", offer.transactionId)
+      .maybeSingle();
+
     await supabase
       .from("transactions")
       .update({
         amount: offer.amount,
-        state: "negotiating",
+        total_amount:
+          offer.amount +
+          numberValue(transactionPricing?.shipping_amount) +
+          numberValue(transactionPricing?.platform_fee),
+        state: "pending",
         updated_at: now
       })
       .eq("id", offer.transactionId)
@@ -1519,7 +1707,9 @@ export async function reserveConversationBuyerAction(
 
   const { data: listing } = await supabase
     .from("listings")
-    .select("id, title, status, price")
+    .select(
+      "id, title, status, price, pickup_available, shipping_available, shipping_cost"
+    )
     .eq("id", conversation.listing_id)
     .single();
 
@@ -1544,19 +1734,29 @@ export async function reserveConversationBuyerAction(
   }
 
   try {
+    const fulfillmentMethod =
+      resolveRequestedFulfillment({
+        pickupAvailable: listing.pickup_available,
+        shippingAvailable: listing.shipping_available,
+        requestedMethod: listing.pickup_available ? "pickup" : "shipping"
+      }) ?? "pickup";
+    const shippingAmount =
+      fulfillmentMethod === "shipping" ? Number(listing.shipping_cost ?? 0) : 0;
+
     const transactionId = await ensureTransactionRecord(supabase, {
       listingId: conversation.listing_id,
       buyerId: conversation.buyer_id,
       sellerId: conversation.seller_id,
       conversationId: conversation.id,
-      amount: Number(listing.price)
+      amount: Number(listing.price),
+      fulfillmentMethod,
+      shippingAmount
     });
 
     await supabase
       .from("transactions")
       .update({
         state: "reserved",
-        amount: Number(listing.price),
         reserved_at: new Date().toISOString(),
         cancelled_at: null,
         updated_at: new Date().toISOString()
@@ -1641,7 +1841,7 @@ export async function releaseReservationAction(
   await supabase
     .from("transactions")
     .update({
-      state: "negotiating",
+      state: "pending",
       reserved_at: null,
       updated_at: new Date().toISOString()
     })
@@ -1681,6 +1881,394 @@ export async function releaseReservationAction(
   return {
     success: true,
     message: "Reservation released."
+  };
+}
+
+export async function markTransactionPaidAction(
+  transactionId: string
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to update order payment."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+    )
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  if (error || !transaction) {
+    return {
+      success: false,
+      message: error?.message ?? "That order could not be found."
+    };
+  }
+
+  if (transaction.seller_id !== user.id) {
+    return {
+      success: false,
+      message: "Only the seller can record payment for this order."
+    };
+  }
+
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (!["reserved", "pending"].includes(normalizedState)) {
+    return {
+      success: false,
+      message: "Only pending or reserved orders can move into paid status."
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("transactions")
+    .update({
+      state: "paid",
+      paid_at: now,
+      updated_at: now
+    })
+    .eq("id", transaction.id);
+
+  await supabase
+    .from("listings")
+    .update({
+      status: "reserved",
+      updated_at: now
+    })
+    .eq("id", transaction.listing_id);
+
+  if (transaction.conversation_id) {
+    await supabase.from("messages").insert({
+      conversation_id: transaction.conversation_id,
+      sender_id: user.id,
+      text:
+        transaction.fulfillment_method === "shipping"
+          ? "I marked this order as paid. Next step is shipment."
+          : "I marked this order as paid. Next step is pickup prep."
+    });
+  }
+
+  await notifyUser(
+    transaction.buyer_id,
+    "Payment recorded",
+    transaction.fulfillment_method === "shipping"
+      ? "The seller marked this order as paid and can prepare shipment now."
+      : "The seller marked this order as paid and can prepare pickup now.",
+    {
+      type: "listing",
+      preference: "listing_updates",
+      dedupeKey: `order-paid:${transaction.id}`
+    }
+  );
+
+  revalidatePath(`/app/listings/${transaction.listing_id}`);
+  revalidatePath("/app/messages");
+  revalidatePath("/app/my-purchases");
+  revalidatePath("/app/my-listings");
+
+  return {
+    success: true,
+    message:
+      transaction.fulfillment_method === "shipping"
+        ? "Order marked as paid. Shipment can now be prepared."
+        : "Order marked as paid. Pickup can now be arranged."
+  };
+}
+
+export async function markTransactionReadyForPickupAction(
+  transactionId: string
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to update pickup readiness."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+    )
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  if (error || !transaction) {
+    return {
+      success: false,
+      message: error?.message ?? "That order could not be found."
+    };
+  }
+
+  if (transaction.seller_id !== user.id) {
+    return {
+      success: false,
+      message: "Only the seller can mark an order ready for pickup."
+    };
+  }
+
+  if ((transaction.fulfillment_method ?? "pickup") !== "pickup") {
+    return {
+      success: false,
+      message: "This order is using shipping, not local pickup."
+    };
+  }
+
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (!["paid", "reserved"].includes(normalizedState)) {
+    return {
+      success: false,
+      message: "Only reserved or paid pickup orders can be marked ready."
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("transactions")
+    .update({
+      state: "ready-for-pickup",
+      ready_at: now,
+      updated_at: now
+    })
+    .eq("id", transaction.id);
+
+  await supabase
+    .from("listings")
+    .update({
+      status: "reserved",
+      updated_at: now
+    })
+    .eq("id", transaction.listing_id);
+
+  if (transaction.conversation_id) {
+    await supabase.from("messages").insert({
+      conversation_id: transaction.conversation_id,
+      sender_id: user.id,
+      text: "Your order is ready for pickup."
+    });
+  }
+
+  await notifyUser(
+    transaction.buyer_id,
+    "Ready for pickup",
+    "The seller marked your order as ready for pickup.",
+    {
+      type: "listing",
+      preference: "listing_updates",
+      dedupeKey: `ready-for-pickup:${transaction.id}`
+    }
+  );
+
+  revalidatePath(`/app/listings/${transaction.listing_id}`);
+  revalidatePath("/app/messages");
+  revalidatePath("/app/my-purchases");
+  revalidatePath("/app/my-listings");
+
+  return {
+    success: true,
+    message: "Order marked as ready for pickup."
+  };
+}
+
+export async function markTransactionShippedAction(
+  transactionId: string
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to update shipment status."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+    )
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  if (error || !transaction) {
+    return {
+      success: false,
+      message: error?.message ?? "That order could not be found."
+    };
+  }
+
+  if (transaction.seller_id !== user.id) {
+    return {
+      success: false,
+      message: "Only the seller can mark an order as shipped."
+    };
+  }
+
+  if (transaction.fulfillment_method !== "shipping") {
+    return {
+      success: false,
+      message: "This order is not using shipping."
+    };
+  }
+
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (!["paid", "reserved"].includes(normalizedState)) {
+    return {
+      success: false,
+      message: "Only reserved or paid shipping orders can be marked shipped."
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("transactions")
+    .update({
+      state: "shipped",
+      shipped_at: now,
+      updated_at: now
+    })
+    .eq("id", transaction.id);
+
+  await supabase
+    .from("listings")
+    .update({
+      status: "reserved",
+      updated_at: now
+    })
+    .eq("id", transaction.listing_id);
+
+  if (transaction.conversation_id) {
+    await supabase.from("messages").insert({
+      conversation_id: transaction.conversation_id,
+      sender_id: user.id,
+      text: "I marked this order as shipped."
+    });
+  }
+
+  await notifyUser(
+    transaction.buyer_id,
+    "Order shipped",
+    "The seller marked your order as shipped.",
+    {
+      type: "listing",
+      preference: "listing_updates",
+      dedupeKey: `order-shipped:${transaction.id}`
+    }
+  );
+
+  revalidatePath(`/app/listings/${transaction.listing_id}`);
+  revalidatePath("/app/messages");
+  revalidatePath("/app/my-purchases");
+  revalidatePath("/app/my-listings");
+
+  return {
+    success: true,
+    message: "Order marked as shipped."
+  };
+}
+
+export async function markTransactionDeliveredAction(
+  transactionId: string
+): Promise<ActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to update delivery."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: transaction, error } = await supabase
+    .from("transactions")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+    )
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  if (error || !transaction) {
+    return {
+      success: false,
+      message: error?.message ?? "That order could not be found."
+    };
+  }
+
+  if (transaction.buyer_id !== user.id && transaction.seller_id !== user.id) {
+    return {
+      success: false,
+      message: "Only the buyer or seller can confirm delivery."
+    };
+  }
+
+  if (transaction.fulfillment_method !== "shipping") {
+    return {
+      success: false,
+      message: "Only shipping orders can move into delivered status."
+    };
+  }
+
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (normalizedState !== "shipped") {
+    return {
+      success: false,
+      message: "Only shipped orders can move into delivered status."
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("transactions")
+    .update({
+      state: "delivered",
+      delivered_at: now,
+      updated_at: now
+    })
+    .eq("id", transaction.id);
+
+  if (transaction.conversation_id) {
+    await supabase.from("messages").insert({
+      conversation_id: transaction.conversation_id,
+      sender_id: user.id,
+      text: "Delivery confirmed. The final step is completing the order."
+    });
+  }
+
+  const counterpartId =
+    transaction.buyer_id === user.id ? transaction.seller_id : transaction.buyer_id;
+
+  await notifyUser(
+    counterpartId,
+    "Order delivered",
+    "The order was marked as delivered. You can now complete the exchange when everything looks good.",
+    {
+      type: "listing",
+      preference: "listing_updates",
+      dedupeKey: `order-delivered:${transaction.id}`
+    }
+  );
+
+  revalidatePath(`/app/listings/${transaction.listing_id}`);
+  revalidatePath("/app/messages");
+  revalidatePath("/app/my-purchases");
+  revalidatePath("/app/my-listings");
+
+  return {
+    success: true,
+    message: "Order marked as delivered."
   };
 }
 
@@ -1725,6 +2313,19 @@ export async function cancelTransactionAction(
     };
   }
 
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (
+    !cancellableTransactionStates.includes(
+      normalizedState as (typeof cancellableTransactionStates)[number]
+    )
+  ) {
+    return {
+      success: false,
+      message: "This order can no longer be cancelled from the buyer/seller flow."
+    };
+  }
+
   await supabase
     .from("transactions")
     .update({
@@ -1734,7 +2335,7 @@ export async function cancelTransactionAction(
     })
     .eq("id", transaction.id);
 
-  if (transaction.state === "reserved") {
+  if (isHeldTransactionState(normalizedState)) {
     await supabase
       .from("listings")
       .update({
@@ -1789,7 +2390,9 @@ export async function completeTransactionAction(
   const { user, supabase } = await requireMarketplaceContext();
   const { data: transaction, error } = await supabase
     .from("transactions")
-    .select("id, listing_id, buyer_id, seller_id, state, conversation_id")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+    )
     .eq("id", transactionId)
     .maybeSingle();
 
@@ -1800,10 +2403,23 @@ export async function completeTransactionAction(
     };
   }
 
-  if (transaction.seller_id !== user.id) {
+  if (transaction.seller_id !== user.id && transaction.buyer_id !== user.id) {
     return {
       success: false,
-      message: "Only the seller can mark this exchange as completed."
+      message: "Only the buyer or seller can complete this order."
+    };
+  }
+
+  const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (
+    !["ready-for-pickup", "delivered", "paid", "reserved", "pending"].includes(
+      normalizedState
+    )
+  ) {
+    return {
+      success: false,
+      message: "This order is not ready to be completed yet."
     };
   }
 
@@ -1828,7 +2444,10 @@ export async function completeTransactionAction(
     await supabase.from("messages").insert({
       conversation_id: transaction.conversation_id,
       sender_id: user.id,
-      text: "I marked this exchange as completed. You can now leave a review."
+      text:
+        transaction.fulfillment_method === "shipping"
+          ? "I marked this order as completed. You can now leave a review."
+          : "I marked this pickup order as completed. You can now leave a review."
     });
   }
 
@@ -1867,7 +2486,7 @@ export async function completeTransactionAction(
 
   return {
     success: true,
-    message: "Listing marked as sold and the exchange is now complete."
+    message: "Order completed, listing marked as sold, and reviews are now unlocked."
   };
 }
 

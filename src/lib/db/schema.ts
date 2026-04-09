@@ -5,8 +5,21 @@ export const userRoleEnum = pgEnum("user_role", ["student", "moderator", "admin"
 export const verificationStatusEnum = pgEnum("verification_status", ["unverified", "pending", "verified"]);
 export const listingConditionEnum = pgEnum("listing_condition", ["new", "like-new", "good", "fair", "needs-love"]);
 export const listingStatusEnum = pgEnum("listing_status", ["active", "reserved", "sold", "archived", "pending-review", "hidden"]);
-export const exchangeStatusEnum = pgEnum("exchange_status", ["inquiry", "negotiating", "reserved", "completed", "cancelled", "reported"]);
+export const exchangeStatusEnum = pgEnum("exchange_status", [
+  "pending",
+  "reserved",
+  "paid",
+  "ready-for-pickup",
+  "shipped",
+  "delivered",
+  "completed",
+  "cancelled",
+  "reported",
+  "inquiry",
+  "negotiating"
+]);
 export const offerStatusEnum = pgEnum("offer_status", ["open", "countered", "accepted", "rejected", "expired", "withdrawn"]);
+export const fulfillmentMethodEnum = pgEnum("fulfillment_method", ["pickup", "shipping"]);
 export const reportTargetTypeEnum = pgEnum("report_target_type", ["listing", "user", "conversation"]);
 export const reportStatusEnum = pgEnum("report_status", ["open", "in-review", "actioned", "dismissed"]);
 export const promotionTypeEnum = pgEnum("promotion_type", ["featured", "seller-boost"]);
@@ -102,6 +115,9 @@ export const listings = pgTable("listings", {
   negotiable: boolean("negotiable").default(false).notNull(),
   location: varchar("location", { length: 120 }).notNull(),
   pickupArea: varchar("pickup_area", { length: 160 }).notNull(),
+  pickupAvailable: boolean("pickup_available").default(true).notNull(),
+  shippingAvailable: boolean("shipping_available").default(false).notNull(),
+  shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }).default("0").notNull(),
   status: listingStatusEnum("status").default("active").notNull(),
   outlet: boolean("outlet").default(false).notNull(),
   featured: boolean("featured").default(false).notNull(),
@@ -225,12 +241,20 @@ export const transactions = pgTable("transactions", {
   listingId: uuid("listing_id").references(() => listings.id).notNull(),
   buyerId: uuid("buyer_id").references(() => users.id).notNull(),
   sellerId: uuid("seller_id").references(() => users.id).notNull(),
-  state: exchangeStatusEnum("state").default("inquiry").notNull(),
+  state: exchangeStatusEnum("state").default("pending").notNull(),
   conversationId: uuid("conversation_id").references(() => conversations.id),
   amount: numeric("amount", { precision: 10, scale: 2 }).default("0").notNull(),
+  fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method"),
+  shippingAmount: numeric("shipping_amount", { precision: 10, scale: 2 }).default("0").notNull(),
+  platformFee: numeric("platform_fee", { precision: 10, scale: 2 }).default("0").notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).default("0").notNull(),
   meetupSpot: text("meetup_spot").notNull(),
   meetupWindow: text("meetup_window").notNull(),
   reservedAt: timestamp("reserved_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  readyAt: timestamp("ready_at", { withTimezone: true }),
+  shippedAt: timestamp("shipped_at", { withTimezone: true }),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   ...timestamps

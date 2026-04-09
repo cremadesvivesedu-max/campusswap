@@ -2,9 +2,19 @@
 export type VerificationStatus = "unverified" | "pending" | "verified";
 export type ListingCondition = "new" | "like-new" | "good" | "fair" | "needs-love";
 export type ListingStatus = "active" | "reserved" | "sold" | "archived" | "pending-review" | "hidden";
-export type ExchangeStatus = "inquiry" | "negotiating" | "reserved" | "completed" | "cancelled" | "reported";
+export type ExchangeStatus =
+  | "pending"
+  | "reserved"
+  | "paid"
+  | "ready-for-pickup"
+  | "shipped"
+  | "delivered"
+  | "completed"
+  | "cancelled"
+  | "reported";
 export type OfferStatus = "open" | "countered" | "accepted" | "rejected" | "expired" | "withdrawn";
 export type ListingDistanceFilter = "same-area" | "nearby" | "citywide";
+export type FulfillmentMethod = "pickup" | "shipping";
 export type ReportTargetType = "listing" | "user" | "conversation";
 export type ReportStatus = "open" | "in-review" | "actioned" | "dismissed";
 export type PromotionType = "featured" | "seller-boost";
@@ -95,6 +105,11 @@ export interface ListingImage {
   isPrimary: boolean;
 }
 
+export interface ListingAnalytics {
+  messagesReceived: number;
+  offersReceived: number;
+}
+
 export interface Listing {
   id: string;
   title: string;
@@ -105,6 +120,9 @@ export interface Listing {
   negotiable: boolean;
   location: string;
   pickupArea: string;
+  pickupAvailable: boolean;
+  shippingAvailable: boolean;
+  shippingCost: number;
   outlet: boolean;
   featured: boolean;
   urgent: boolean;
@@ -124,6 +142,7 @@ export interface Listing {
   isSaved?: boolean;
   tags: string[];
   images: ListingImage[];
+  analytics?: ListingAnalytics;
   removedAt?: string;
 }
 
@@ -225,12 +244,20 @@ export interface Transaction {
   sellerId: string;
   state: ExchangeStatus;
   amount: number;
+  fulfillmentMethod?: FulfillmentMethod;
+  shippingAmount: number;
+  platformFee: number;
+  totalAmount: number;
   meetupSpot: string;
   meetupWindow: string;
   conversationId?: string;
   createdAt: string;
   updatedAt: string;
   reservedAt?: string;
+  paidAt?: string;
+  readyAt?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
   cancelledAt?: string;
   completedAt?: string;
 }

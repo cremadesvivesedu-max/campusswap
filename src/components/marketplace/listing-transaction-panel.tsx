@@ -1,25 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLocale } from "@/components/providers/locale-provider";
-import { getExchangeStatusLabel, getListingStatusLabel } from "@/lib/i18n-shared";
+import { OfferNegotiationPanel } from "@/components/marketplace/offer-negotiation-panel";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
-import { OfferNegotiationPanel } from "@/components/marketplace/offer-negotiation-panel";
 import {
   cancelTransactionAction,
   completeTransactionAction,
+  markTransactionDeliveredAction,
+  markTransactionPaidAction,
+  markTransactionReadyForPickupAction,
+  markTransactionShippedAction,
   releaseReservationAction,
   reserveConversationBuyerAction,
   startPurchaseIntentAction
 } from "@/server/actions/marketplace";
+import {
+  getExchangeStatusLabel,
+  getListingStatusLabel
+} from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
-import type { ListingTransactionContext, ListingStatus, User } from "@/types/domain";
+import type {
+  FulfillmentMethod,
+  ListingStatus,
+  ListingTransactionContext,
+  Transaction,
+  User
+} from "@/types/domain";
+
+type LocaleDictionary = ReturnType<typeof useLocale>["dictionary"];
 
 function formatEventTime(value?: string) {
   if (!value) {
@@ -34,20 +49,178 @@ function formatEventTime(value?: string) {
   });
 }
 
+function getDefaultFulfillmentMethod(
+  pickupAvailable: boolean,
+  shippingAvailable: boolean
+): FulfillmentMethod {
+  if (!pickupAvailable && shippingAvailable) {
+    return "shipping";
+  }
+
+  return "pickup";
+}
+
+function getFulfillmentLabel(
+  dictionary: LocaleDictionary,
+  method: FulfillmentMethod | undefined,
+  pickupAvailable: boolean,
+  shippingAvailable: boolean
+) {
+  const resolvedMethod =
+    method ?? getDefaultFulfillmentMethod(pickupAvailable, shippingAvailable);
+
+  if (pickupAvailable && shippingAvailable) {
+    return resolvedMethod === "shipping"
+      ? dictionary.messages.exchange.shippingOption
+      : dictionary.messages.exchange.pickupOption;
+  }
+
+  return pickupAvailable
+    ? dictionary.messages.exchange.pickupOnly
+    : dictionary.messages.exchange.shippingOnly;
+}
+
+function OrderSummary({
+  dictionary,
+  transaction,
+  listingPrice,
+  listingShippingCost,
+  pickupArea
+}: {
+  dictionary: LocaleDictionary;
+  transaction?: Transaction;
+  listingPrice: number;
+  listingShippingCost: number;
+  pickupArea: string;
+}) {
+  const itemAmount = transaction?.amount ?? listingPrice;
+  const shippingAmount = transaction?.shippingAmount ?? 0;
+  const platformFee = transaction?.platformFee ?? 0;
+  const totalAmount =
+    transaction?.totalAmount ?? itemAmount + shippingAmount + platformFee;
+
+  const timelineRows = [
+    {
+      label: dictionary.messages.exchange.reservedAt,
+      value: formatEventTime(transaction?.reservedAt)
+    },
+    {
+      label: dictionary.messages.exchange.paidAt,
+      value: formatEventTime(transaction?.paidAt)
+    },
+    {
+      label: dictionary.messages.exchange.readyAt,
+      value: formatEventTime(transaction?.readyAt)
+    },
+    {
+      label: dictionary.messages.exchange.shippedAt,
+      value: formatEventTime(transaction?.shippedAt)
+    },
+    {
+      label: dictionary.messages.exchange.deliveredAt,
+      value: formatEventTime(transaction?.deliveredAt)
+    },
+    {
+      label: dictionary.messages.exchange.completedAt,
+      value: formatEventTime(transaction?.completedAt)
+    },
+    {
+      label: dictionary.messages.exchange.cancelledAt,
+      value: formatEventTime(transaction?.cancelledAt)
+    }
+  ].filter((entry) => entry.value);
+
+  return (
+    <div className="space-y-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {dictionary.messages.exchange.orderBreakdownTitle}
+        </p>
+        <div className="grid gap-2 text-sm text-slate-600">
+          <div className="flex items-center justify-between gap-3">
+            <span>{dictionary.messages.exchange.itemPrice}</span>
+            <span className="font-medium text-slate-950">{formatCurrency(itemAmount)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>{dictionary.messages.exchange.shippingCost}</span>
+            <span className="font-medium text-slate-950">
+              {formatCurrency(transaction ? shippingAmount : listingShippingCost)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>{dictionary.messages.exchange.platformFee}</span>
+            <span className="font-medium text-slate-950">{formatCurrency(platformFee)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
+            <span className="font-semibold text-slate-950">
+              {dictionary.messages.exchange.totalAmount}
+            </span>
+            <span className="font-semibold text-slate-950">
+              {formatCurrency(transaction ? totalAmount : listingPrice + listingShippingCost)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-2 text-sm text-slate-600">
+        <div className="flex items-center justify-between gap-3">
+          <span>{dictionary.messages.exchange.fulfillmentMethod}</span>
+          <span className="font-medium text-slate-950">
+            {transaction?.fulfillmentMethod === "shipping"
+              ? dictionary.messages.exchange.shippingOption
+              : dictionary.messages.exchange.pickupOption}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span>{dictionary.messages.exchange.meetupArea}</span>
+          <span className="font-medium text-slate-950">
+            {transaction?.fulfillmentMethod === "shipping"
+              ? dictionary.messages.exchange.shippingOption
+              : pickupArea}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span>{dictionary.messages.exchange.meetupWindow}</span>
+          <span className="font-medium text-slate-950">
+            {transaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}
+          </span>
+        </div>
+      </div>
+
+      {timelineRows.length ? (
+        <div className="grid gap-1 border-t border-slate-200 pt-3 text-xs text-slate-500">
+          {timelineRows.map((entry) => (
+            <div key={entry.label} className="flex items-center justify-between gap-3">
+              <span>{entry.label}</span>
+              <span>{entry.value}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ListingTransactionPanel({
   listingId,
-  listingTitle,
   listingPrice,
   listingStatus,
+  listingPickupArea,
+  listingPickupAvailable,
+  listingShippingAvailable,
+  listingShippingCost,
   currentUserId,
   seller,
   context,
   isOwnListing
 }: {
   listingId: string;
-  listingTitle: string;
   listingPrice: number;
   listingStatus: ListingStatus;
+  listingPickupArea: string;
+  listingPickupAvailable: boolean;
+  listingShippingAvailable: boolean;
+  listingShippingCost: number;
   currentUserId: string;
   seller: User;
   context: ListingTransactionContext;
@@ -59,7 +232,11 @@ export function ListingTransactionPanel({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const transaction = context.viewerTransaction ?? context.activeTransaction;
+  const viewerTransaction = context.viewerTransaction;
   const buyer = context.buyer;
+  const currentFulfillment =
+    transaction?.fulfillmentMethod ??
+    getDefaultFulfillmentMethod(listingPickupAvailable, listingShippingAvailable);
 
   const runAction = (
     action: () => Promise<{ success: boolean; message: string; conversationId?: string }>
@@ -94,11 +271,30 @@ export function ListingTransactionPanel({
   };
 
   if (isOwnListing) {
+    const transactionState = transaction?.state;
+    const transactionId = transaction?.id;
     const canReserve =
-      !!transaction?.conversationId && ["inquiry", "negotiating"].includes(transaction.state);
-    const canRelease = transaction?.state === "reserved";
+      Boolean(transaction?.conversationId) && transactionState === "pending";
+    const canRelease = transactionState === "reserved";
+    const canMarkPaid =
+      transactionState ? ["pending", "reserved"].includes(transactionState) : false;
+    const canMarkReadyForPickup =
+      Boolean(transactionState) &&
+      currentFulfillment === "pickup" &&
+      (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
+    const canMarkShipped =
+      Boolean(transactionState) &&
+      currentFulfillment === "shipping" &&
+      (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
+    const canMarkDelivered =
+      Boolean(transactionState) &&
+      currentFulfillment === "shipping" &&
+      transactionState === "shipped";
     const canComplete =
-      !!transaction && ["inquiry", "negotiating", "reserved"].includes(transaction.state);
+      Boolean(transactionState) &&
+      (transactionState
+        ? ["ready-for-pickup", "delivered"].includes(transactionState)
+        : false);
 
     return (
       <Card className="bg-white">
@@ -116,7 +312,7 @@ export function ListingTransactionPanel({
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
           {buyer ? (
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-4">
               <div className="flex items-center gap-3">
                 <ProfileAvatar
                   userId={buyer.id}
@@ -133,20 +329,20 @@ export function ListingTransactionPanel({
                   />
                 </div>
               </div>
-              <div className="mt-3 grid gap-1">
-                <p>{dictionary.messages.exchange.price}: {formatCurrency(transaction?.amount ?? listingPrice)}</p>
-                <p>{dictionary.messages.exchange.meetupArea}: {transaction?.meetupSpot ?? dictionary.messages.exchange.meetupTbd}</p>
-                <p>{dictionary.messages.exchange.meetupWindow}: {transaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}</p>
-                {transaction?.reservedAt ? (
-                  <p>{dictionary.messages.exchange.reservedAt}: {formatEventTime(transaction.reservedAt)}</p>
-                ) : null}
-              </div>
             </div>
           ) : (
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               {dictionary.messages.exchange.noBuyerLinked}
             </div>
           )}
+
+          <OrderSummary
+            dictionary={dictionary}
+            transaction={transaction}
+            listingPrice={listingPrice}
+            listingShippingCost={listingShippingCost}
+            pickupArea={listingPickupArea}
+          />
 
           <div className="flex flex-wrap gap-2">
             {transaction?.conversationId ? (
@@ -164,17 +360,67 @@ export function ListingTransactionPanel({
                 }
                 disabled={isPending}
               >
-                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.reserveForBuyer}
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.reserveForBuyer}
+              </Button>
+            ) : null}
+            {canMarkPaid && transaction ? (
+              <Button
+                type="button"
+                onClick={() => runAction(() => markTransactionPaidAction(transactionId!))}
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.markPaid}
+              </Button>
+            ) : null}
+            {canMarkReadyForPickup && transaction ? (
+              <Button
+                type="button"
+                onClick={() =>
+                  runAction(() => markTransactionReadyForPickupAction(transactionId!))
+                }
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.markReadyForPickup}
+              </Button>
+            ) : null}
+            {canMarkShipped && transaction ? (
+              <Button
+                type="button"
+                onClick={() => runAction(() => markTransactionShippedAction(transactionId!))}
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.markShipped}
+              </Button>
+            ) : null}
+            {canMarkDelivered && transaction ? (
+              <Button
+                type="button"
+                onClick={() => runAction(() => markTransactionDeliveredAction(transactionId!))}
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.markDelivered}
               </Button>
             ) : null}
             {canRelease && transaction ? (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => runAction(() => releaseReservationAction(transaction.id))}
+                onClick={() => runAction(() => releaseReservationAction(transactionId!))}
                 disabled={isPending}
               >
-                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.releaseReservation}
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.releaseReservation}
               </Button>
             ) : null}
             {canComplete && transaction ? (
@@ -183,7 +429,9 @@ export function ListingTransactionPanel({
                 onClick={() => runAction(() => completeTransactionAction(transaction.id))}
                 disabled={isPending}
               >
-                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.markSold}
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.completeOrder}
               </Button>
             ) : null}
             {transaction ? (
@@ -191,11 +439,7 @@ export function ListingTransactionPanel({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  if (
-                    !window.confirm(
-                      dictionary.messages.exchange.confirmCancel
-                    )
-                  ) {
+                  if (!window.confirm(dictionary.messages.exchange.confirmCancel)) {
                     return;
                   }
 
@@ -203,7 +447,9 @@ export function ListingTransactionPanel({
                 }}
                 disabled={isPending}
               >
-                {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.cancelExchange}
+                {isPending
+                  ? dictionary.common.actions.updating
+                  : dictionary.messages.exchange.cancelExchange}
               </Button>
             ) : null}
           </div>
@@ -228,11 +474,25 @@ export function ListingTransactionPanel({
   }
 
   const canStartPurchase =
-    listingStatus === "active" && !context.viewerTransaction && !context.reservedForOtherBuyer;
+    listingStatus === "active" && !viewerTransaction && !context.reservedForOtherBuyer;
+  const viewerTransactionState = viewerTransaction?.state;
   const canCancelOwnExchange =
-    !!context.viewerTransaction &&
-    context.viewerTransaction.state !== "completed" &&
-    context.viewerTransaction.state !== "cancelled";
+    Boolean(viewerTransactionState) &&
+    !(viewerTransactionState
+      ? ["completed", "cancelled"].includes(viewerTransactionState)
+      : false);
+  const canCompletePickupOrder =
+    Boolean(viewerTransaction) &&
+    currentFulfillment === "pickup" &&
+    viewerTransaction?.state === "ready-for-pickup";
+  const canConfirmDelivered =
+    Boolean(viewerTransaction) &&
+    currentFulfillment === "shipping" &&
+    viewerTransaction?.state === "shipped";
+  const canCompleteDeliveredOrder =
+    Boolean(viewerTransaction) &&
+    currentFulfillment === "shipping" &&
+    viewerTransaction?.state === "delivered";
 
   return (
     <Card className="bg-white">
@@ -251,7 +511,7 @@ export function ListingTransactionPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
-        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={seller.id}
@@ -268,12 +528,15 @@ export function ListingTransactionPanel({
               />
             </div>
           </div>
-          <div className="mt-3 grid gap-1">
-            <p>{dictionary.messages.exchange.price}: {formatCurrency(context.viewerTransaction?.amount ?? listingPrice)}</p>
-            <p>{dictionary.messages.exchange.meetupArea}: {context.viewerTransaction?.meetupSpot ?? dictionary.messages.exchange.meetupTbd}</p>
-            <p>{dictionary.messages.exchange.meetupWindow}: {context.viewerTransaction?.meetupWindow ?? dictionary.messages.exchange.windowTbd}</p>
-          </div>
         </div>
+
+        <OrderSummary
+          dictionary={dictionary}
+          transaction={context.viewerTransaction ?? context.activeTransaction}
+          listingPrice={listingPrice}
+          listingShippingCost={listingShippingCost}
+          pickupArea={listingPickupArea}
+        />
 
         {context.reservedForOtherBuyer ? (
           <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -286,17 +549,56 @@ export function ListingTransactionPanel({
             {dictionary.messages.exchange.completedReviewInfo}
             <div className="mt-3">
               <Button asChild size="sm" variant="outline">
-                <Link href="/app/my-purchases">{dictionary.messages.exchange.completedReviewCta}</Link>
+                <Link href="/app/my-purchases">
+                  {dictionary.messages.exchange.completedReviewCta}
+                </Link>
               </Button>
             </div>
           </div>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          {canStartPurchase ? (
+          {canStartPurchase && listingPickupAvailable && listingShippingAvailable ? (
+            <>
+              <Button
+                type="button"
+                onClick={() =>
+                  runAction(() => startPurchaseIntentAction(listingId, "pickup"))
+                }
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.messages.exchange.startingPurchase
+                  : `${dictionary.messages.exchange.startPurchase} · ${dictionary.messages.exchange.pickupOption}`}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  runAction(() => startPurchaseIntentAction(listingId, "shipping"))
+                }
+                disabled={isPending}
+              >
+                {isPending
+                  ? dictionary.messages.exchange.startingPurchase
+                  : `${dictionary.messages.exchange.startPurchase} · ${dictionary.messages.exchange.shippingOption}`}
+              </Button>
+            </>
+          ) : null}
+          {canStartPurchase && !(listingPickupAvailable && listingShippingAvailable) ? (
             <Button
               type="button"
-              onClick={() => runAction(() => startPurchaseIntentAction(listingId))}
+              onClick={() =>
+                runAction(() =>
+                  startPurchaseIntentAction(
+                    listingId,
+                    getDefaultFulfillmentMethod(
+                      listingPickupAvailable,
+                      listingShippingAvailable
+                    )
+                  )
+                )
+              }
               disabled={isPending}
             >
               {isPending
@@ -309,6 +611,30 @@ export function ListingTransactionPanel({
               <Link href={`/app/messages/${context.viewerTransaction.conversationId}`}>
                 {dictionary.common.actions.openPurchaseChat}
               </Link>
+            </Button>
+          ) : null}
+          {canConfirmDelivered && context.viewerTransaction ? (
+            <Button
+              type="button"
+              onClick={() =>
+                runAction(() => markTransactionDeliveredAction(context.viewerTransaction!.id))
+              }
+              disabled={isPending}
+            >
+              {isPending
+                ? dictionary.common.actions.updating
+                : dictionary.messages.exchange.markDelivered}
+            </Button>
+          ) : null}
+          {(canCompletePickupOrder || canCompleteDeliveredOrder) && context.viewerTransaction ? (
+            <Button
+              type="button"
+              onClick={() => runAction(() => completeTransactionAction(context.viewerTransaction!.id))}
+              disabled={isPending}
+            >
+              {isPending
+                ? dictionary.common.actions.updating
+                : dictionary.messages.exchange.completeOrder}
             </Button>
           ) : null}
           {canCancelOwnExchange && context.viewerTransaction ? (
@@ -324,7 +650,9 @@ export function ListingTransactionPanel({
               }}
               disabled={isPending}
             >
-              {isPending ? dictionary.common.actions.updating : dictionary.messages.exchange.cancelRequest}
+              {isPending
+                ? dictionary.common.actions.updating
+                : dictionary.messages.exchange.cancelRequest}
             </Button>
           ) : null}
         </div>
@@ -337,10 +665,10 @@ export function ListingTransactionPanel({
           listingPrice={listingPrice}
           sellerId={seller.id}
           currentUserId={currentUserId}
-          latestOffer={context.latestOffer}
-          transaction={context.viewerTransaction ?? context.activeTransaction}
-          conversationId={context.viewerTransaction?.conversationId}
-        />
+            latestOffer={context.latestOffer}
+            transaction={viewerTransaction ?? context.activeTransaction}
+            conversationId={viewerTransaction?.conversationId}
+          />
         {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
         {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
       </CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -19,7 +20,10 @@ import { useLiveNotifications } from "@/features/notifications/live-notification
 import { useLiveConversationPreviews } from "@/features/messaging/live-messaging";
 import { getNotificationTypeLabel } from "@/lib/i18n-shared";
 import { cn } from "@/lib/utils";
-import { markAllNotificationsReadAction } from "@/server/actions/marketplace";
+import {
+  markAllNotificationsReadAction,
+  markNotificationReadAction
+} from "@/server/actions/marketplace";
 import type { Notification } from "@/types/domain";
 
 function formatTimestamp(value: string) {
@@ -51,11 +55,18 @@ function notificationTone(type: Notification["type"]) {
 export function AppHeaderActivity() {
   const user = useCurrentUser();
   const { dictionary } = useLocale();
-  const { notifications, unreadCount, error: notificationsError } =
-    useLiveNotifications(user.id);
+  const router = useRouter();
+  const {
+    notifications,
+    unreadCount,
+    error: notificationsError,
+    markNotificationReadLocally,
+    markAllNotificationsReadLocally
+  } = useLiveNotifications(user.id);
   const { previews, error: messagesError } = useLiveConversationPreviews(user.id);
   const [isPending, startTransition] = useTransition();
   const [openPanel, setOpenPanel] = useState<"notifications" | "messages" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const unreadMessages = useMemo(
     () => previews.reduce((sum, preview) => sum + preview.unreadCount, 0),
@@ -74,6 +85,44 @@ export function AppHeaderActivity() {
       document.removeEventListener("mousedown", handlePointerDown);
     };
   }, []);
+
+  const openNotificationsPage = (notificationId?: string) => {
+    setOpenPanel(null);
+    setActionError(null);
+
+    if (notificationId) {
+      const notification = notifications.find((entry) => entry.id === notificationId);
+
+      if (notification && !notification.read) {
+        markNotificationReadLocally(notificationId);
+
+        startTransition(async () => {
+          const result = await markNotificationReadAction(notificationId);
+
+          if (!result.success) {
+            setActionError(result.message);
+          }
+        });
+      }
+    }
+
+    router.push("/app/notifications");
+  };
+
+  const markNotificationAsRead = (notificationId: string) => {
+    setActionError(null);
+
+    startTransition(async () => {
+      const result = await markNotificationReadAction(notificationId);
+
+      if (!result.success) {
+        setActionError(result.message);
+        return;
+      }
+
+      markNotificationReadLocally(notificationId);
+    });
+  };
 
   return (
     <div ref={containerRef} className="relative flex items-center gap-2">
@@ -191,7 +240,15 @@ export function AppHeaderActivity() {
                 variant="outline"
                 onClick={() =>
                   startTransition(async () => {
-                    await markAllNotificationsReadAction();
+                    setActionError(null);
+                    const result = await markAllNotificationsReadAction();
+
+                    if (!result.success) {
+                      setActionError(result.message);
+                      return;
+                    }
+
+                    markAllNotificationsReadLocally();
                   })
                 }
                 disabled={isPending || !unreadCount}
@@ -199,49 +256,71 @@ export function AppHeaderActivity() {
                 <CheckCheck className="mr-2 h-3.5 w-3.5" />
                 {dictionary.notifications.markAllRead}
               </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/app/notifications">
-                  {dictionary.notifications.openAll}
-                </Link>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openNotificationsPage()}
+              >
+                {dictionary.notifications.openAll}
               </Button>
             </div>
           </div>
 
-          {notificationsError ? (
+          {notificationsError || actionError ? (
             <p className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {notificationsError}
+              {actionError ?? notificationsError}
             </p>
           ) : notifications.length ? (
             <div className="space-y-3">
               {notifications.slice(0, 4).map((notification) => (
-                <Link
+                <div
                   key={notification.id}
-                  href="/app/notifications"
                   className={cn(
-                    "block rounded-[22px] border px-4 py-3 transition",
+                    "rounded-[22px] border px-4 py-3 transition",
                     notification.read
                       ? "border-slate-200 bg-slate-50 hover:bg-white"
                       : "border-emerald-200 bg-emerald-50/70 hover:bg-emerald-50"
                   )}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <Badge className={notificationTone(notification.type)}>
-                      {getNotificationTypeLabel(dictionary, notification.type)}
-                    </Badge>
+                  <button
+                    type="button"
+                    onClick={() => openNotificationsPage(notification.id)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge className={notificationTone(notification.type)}>
+                        {getNotificationTypeLabel(dictionary, notification.type)}
+                      </Badge>
+                      {!notification.read ? (
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-slate-950">
+                      {notification.title}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
+                      {notification.body}
+                    </p>
+                  </button>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-xs text-slate-500">
+                      {formatTimestamp(notification.createdAt)}
+                    </p>
                     {!notification.read ? (
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="px-0 text-xs text-slate-700 hover:bg-transparent hover:text-slate-950"
+                        onClick={() => markNotificationAsRead(notification.id)}
+                        disabled={isPending}
+                      >
+                        {dictionary.notifications.markRead}
+                      </Button>
                     ) : null}
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-950">
-                    {notification.title}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
-                    {notification.body}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {formatTimestamp(notification.createdAt)}
-                  </p>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (

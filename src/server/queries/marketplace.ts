@@ -12,7 +12,9 @@ import type {
   AllowedEmailDomain,
   Category,
   Conversation,
+  FulfillmentMethod,
   Listing,
+  ListingAnalytics,
   ListingCondition,
   ListingOffer,
   ListingSearchInput,
@@ -90,6 +92,9 @@ interface DbListingRow {
   negotiable: boolean;
   location: string;
   pickup_area: string;
+  pickup_available: boolean;
+  shipping_available: boolean;
+  shipping_cost: number | string;
   status: Listing["status"];
   outlet: boolean;
   featured: boolean;
@@ -119,12 +124,20 @@ interface DbTransactionRow {
   seller_id: string;
   state: Transaction["state"];
   amount: number | string;
+  fulfillment_method: FulfillmentMethod | null;
+  shipping_amount: number | string;
+  platform_fee: number | string;
+  total_amount: number | string;
   conversation_id: string | null;
   meetup_spot: string;
   meetup_window: string;
   created_at: string;
   updated_at: string;
   reserved_at: string | null;
+  paid_at: string | null;
+  ready_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
   cancelled_at: string | null;
   completed_at: string | null;
 }
@@ -218,6 +231,9 @@ const listingSelect = `
   negotiable,
   location,
   pickup_area,
+  pickup_available,
+  shipping_available,
+  shipping_cost,
   status,
   outlet,
   featured,
@@ -282,6 +298,28 @@ function numberValue(value: number | string | null | undefined) {
   }
 
   return 0;
+}
+
+function normalizeExchangeStatus(value: string): Transaction["state"] {
+  if (value === "inquiry" || value === "negotiating") {
+    return "pending";
+  }
+
+  if (value === "reported") {
+    return "reported";
+  }
+
+  return value as Transaction["state"];
+}
+
+function isHeldTransactionState(state: Transaction["state"]) {
+  return [
+    "reserved",
+    "paid",
+    "ready-for-pickup",
+    "shipped",
+    "delivered"
+  ].includes(state);
 }
 
 function getFreshnessLabel(createdAt: string, status: Listing["status"], outlet: boolean) {
@@ -541,11 +579,121 @@ async function fetchSellerMetricsMap(userIds: string[]) {
   );
 }
 
+async function fetchListingAnalyticsMap(listingIds: string[]) {
+  const resolvedIds = [...new Set(listingIds.filter(Boolean))];
+
+  if (!resolvedIds.length || !isLiveMode) {
+    return new Map<string, ListingAnalytics>();
+  }
+
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return new Map<string, ListingAnalytics>();
+  }
+
+  const [{ data: conversationRows }, { data: offerRows }] = await Promise.all([
+    admin
+      .from("conversations")
+      .select("id, listing_id, buyer_id")
+      .in("listing_id", resolvedIds),
+    admin
+      .from("listing_offers")
+      .select("listing_id, buyer_id, created_by_user_id")
+      .in("listing_id", resolvedIds)
+  ]);
+
+  const conversations =
+    ((conversationRows as
+      | {
+          id: string;
+          listing_id: string;
+          buyer_id: string;
+        }[]
+      | null) ?? []);
+  const conversationIds = conversations.map((conversation) => conversation.id);
+  const buyerByConversationId = new Map(
+    conversations.map((conversation) => [conversation.id, conversation.buyer_id])
+  );
+  const listingByConversationId = new Map(
+    conversations.map((conversation) => [conversation.id, conversation.listing_id])
+  );
+  const analyticsByListingId = new Map<string, ListingAnalytics>(
+    resolvedIds.map((listingId) => [
+      listingId,
+      {
+        messagesReceived: 0,
+        offersReceived: 0
+      }
+    ])
+  );
+
+  if (conversationIds.length) {
+    const { data: messageRows } = await admin
+      .from("messages")
+      .select("conversation_id, sender_id")
+      .in("conversation_id", conversationIds);
+
+    for (const message of
+      ((messageRows as
+        | {
+            conversation_id: string;
+            sender_id: string;
+          }[]
+        | null) ?? [])) {
+      const listingId = listingByConversationId.get(message.conversation_id);
+      const buyerId = buyerByConversationId.get(message.conversation_id);
+
+      if (!listingId || !buyerId || message.sender_id !== buyerId) {
+        continue;
+      }
+
+      const current = analyticsByListingId.get(listingId);
+
+      if (!current) {
+        continue;
+      }
+
+      analyticsByListingId.set(listingId, {
+        ...current,
+        messagesReceived: current.messagesReceived + 1
+      });
+    }
+  }
+
+  for (const offer of
+    ((offerRows as
+      | {
+          listing_id: string;
+          buyer_id: string;
+          created_by_user_id: string;
+        }[]
+      | null) ?? [])) {
+    if (offer.created_by_user_id !== offer.buyer_id) {
+      continue;
+    }
+
+    const current = analyticsByListingId.get(offer.listing_id);
+
+    if (!current) {
+      continue;
+    }
+
+    analyticsByListingId.set(offer.listing_id, {
+      ...current,
+      offersReceived: current.offersReceived + 1
+    });
+  }
+
+  return analyticsByListingId;
+}
+
 function mapListing(
   row: DbListingWithRelations,
   options?: {
     savedListingIds?: Set<string>;
     sellerMetricsByUserId?: Map<string, SellerTrustMetrics>;
+    listingAnalyticsByListingId?: Map<string, ListingAnalytics>;
   }
 ): Listing {
   const images = [...(row.listing_images ?? [])].sort((left, right) =>
@@ -564,6 +712,9 @@ function mapListing(
     negotiable: row.negotiable,
     location: row.location,
     pickupArea: row.pickup_area,
+    pickupAvailable: row.pickup_available,
+    shippingAvailable: row.shipping_available,
+    shippingCost: numberValue(row.shipping_cost),
     outlet: row.outlet,
     featured: row.featured,
     urgent: row.urgent,
@@ -583,6 +734,7 @@ function mapListing(
     saveCount: row.save_count,
     isSaved: options?.savedListingIds?.has(row.id) ?? false,
     tags: row.tags ?? [],
+    analytics: options?.listingAnalyticsByListingId?.get(row.id),
     removedAt: row.removed_at ?? undefined,
     images: images.map((image) => ({
       id: image.id,
@@ -599,14 +751,22 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     listingId: row.listing_id,
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
-    state: row.state,
+    state: normalizeExchangeStatus(row.state),
     amount: numberValue(row.amount),
+    fulfillmentMethod: row.fulfillment_method ?? undefined,
+    shippingAmount: numberValue(row.shipping_amount),
+    platformFee: numberValue(row.platform_fee),
+    totalAmount: numberValue(row.total_amount),
     meetupSpot: row.meetup_spot,
     meetupWindow: row.meetup_window,
     conversationId: row.conversation_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     reservedAt: row.reserved_at ?? undefined,
+    paidAt: row.paid_at ?? undefined,
+    readyAt: row.ready_at ?? undefined,
+    shippedAt: row.shipped_at ?? undefined,
+    deliveredAt: row.delivered_at ?? undefined,
     cancelledAt: row.cancelled_at ?? undefined,
     completedAt: row.completed_at ?? undefined
   };
@@ -1218,7 +1378,12 @@ export async function getListingById(
   }
 
   const sellerMetricsByUserId = await fetchSellerMetricsMap([row.seller_id]);
-  return mapListing(row, { savedListingIds, sellerMetricsByUserId });
+  const listingAnalyticsByListingId = await fetchListingAnalyticsMap([row.id]);
+  return mapListing(row, {
+    savedListingIds,
+    sellerMetricsByUserId,
+    listingAnalyticsByListingId
+  });
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -1341,7 +1506,7 @@ export async function getTransactionsForUser(userId?: string) {
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
     .order("updated_at", { ascending: false });
@@ -1373,7 +1538,7 @@ export async function getTransactionForConversation(
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .eq("conversation_id", conversationId)
     .maybeSingle();
@@ -1391,12 +1556,13 @@ export async function getListingTransactionContext(
       demoData.transactions.find(
         (transaction) =>
           transaction.listingId === listingId &&
-          (transaction.state === "reserved" || transaction.state === "completed")
+          (isHeldTransactionState(transaction.state) ||
+            transaction.state === "completed")
       ) ??
       demoData.transactions.find(
         (transaction) =>
           transaction.listingId === listingId &&
-          (transaction.state === "negotiating" || transaction.state === "inquiry")
+          transaction.state === "pending"
       );
     const viewerTransaction = demoData.transactions.find(
       (transaction) =>
@@ -1410,15 +1576,20 @@ export async function getListingTransactionContext(
     const seller = activeTransaction
       ? demoData.users.find((candidate) => candidate.id === activeTransaction.sellerId)
       : undefined;
+    const activeTransactionState = activeTransaction?.state;
+    const activeTransactionBuyerId = activeTransaction?.buyerId;
+    const activeTransactionHeld = activeTransactionState
+      ? isHeldTransactionState(activeTransactionState)
+      : false;
 
     return {
       activeTransaction,
       viewerTransaction,
       latestOffer: undefined,
-      reservedForCurrentUser: activeTransaction?.state === "reserved" && activeTransaction.buyerId === currentUserId,
+      reservedForCurrentUser:
+        activeTransactionHeld && activeTransactionBuyerId === currentUserId,
       reservedForOtherBuyer:
-        activeTransaction?.state === "reserved" &&
-        activeTransaction.buyerId !== currentUserId,
+        activeTransactionHeld && activeTransactionBuyerId !== currentUserId,
       buyer,
       seller
     };
@@ -1443,12 +1614,20 @@ export async function getListingTransactionContext(
         seller_id,
         state,
         amount,
+        fulfillment_method,
+        shipping_amount,
+        platform_fee,
+        total_amount,
         conversation_id,
         meetup_spot,
         meetup_window,
         created_at,
         updated_at,
         reserved_at,
+        paid_at,
+        ready_at,
+        shipped_at,
+        delivered_at,
         cancelled_at,
         completed_at,
         buyer:users!transactions_buyer_id_fkey (
@@ -1504,32 +1683,41 @@ export async function getListingTransactionContext(
       `
     )
     .eq("listing_id", listingId)
-    .in("state", ["inquiry", "negotiating", "reserved", "completed"])
+    .in("state", [
+      "pending",
+      "reserved",
+      "paid",
+      "ready-for-pickup",
+      "shipped",
+      "delivered",
+      "completed"
+    ])
     .order("updated_at", { ascending: false });
 
   const rows = (data as unknown as DbTransactionWithUsers[] | null) ?? [];
   const activeRow =
-    rows.find((row) => row.state === "reserved") ??
+    rows.find((row) => isHeldTransactionState(normalizeExchangeStatus(row.state))) ??
     rows.find((row) => row.state === "completed") ??
-    rows.find((row) => row.state === "negotiating") ??
-    rows.find((row) => row.state === "inquiry");
+    rows.find((row) => normalizeExchangeStatus(row.state) === "pending");
   const viewerRow = rows.find(
-    (row) => row.buyer_id === currentUserId && row.state !== "cancelled"
+    (row) =>
+      row.buyer_id === currentUserId &&
+      !["cancelled", "reported"].includes(normalizeExchangeStatus(row.state))
   );
   const latestOffer = viewerRow?.conversation_id || activeRow?.conversation_id
     ? await fetchLatestOfferForConversation(
         viewerRow?.conversation_id ?? activeRow?.conversation_id ?? ""
       )
     : undefined;
+  const activeRowState = activeRow ? normalizeExchangeStatus(activeRow.state) : undefined;
+  const activeRowHeld = activeRowState ? isHeldTransactionState(activeRowState) : false;
 
   return {
     activeTransaction: activeRow ? mapTransaction(activeRow) : undefined,
     viewerTransaction: viewerRow ? mapTransaction(viewerRow) : undefined,
     latestOffer,
-    reservedForCurrentUser:
-      activeRow?.state === "reserved" && activeRow.buyer_id === currentUserId,
-    reservedForOtherBuyer:
-      activeRow?.state === "reserved" && activeRow.buyer_id !== currentUserId,
+    reservedForCurrentUser: activeRowHeld && activeRow?.buyer_id === currentUserId,
+    reservedForOtherBuyer: activeRowHeld && activeRow?.buyer_id !== currentUserId,
     buyer: activeRow?.buyer ? mapUser(activeRow.buyer) : undefined,
     seller: activeRow?.seller ? mapUser(activeRow.seller) : undefined
   };
@@ -1543,7 +1731,15 @@ export async function getSellerListingTransactions(
       .filter(
         (transaction) =>
           transaction.sellerId === sellerId &&
-          ["inquiry", "negotiating", "reserved", "completed"].includes(transaction.state)
+          [
+            "pending",
+            "reserved",
+            "paid",
+            "ready-for-pickup",
+            "shipped",
+            "delivered",
+            "completed"
+          ].includes(transaction.state)
       )
       .reduce<Record<string, SellerListingTransaction>>((accumulator, transaction) => {
         const buyer = demoData.users.find((candidate) => candidate.id === transaction.buyerId);
@@ -1575,12 +1771,20 @@ export async function getSellerListingTransactions(
         seller_id,
         state,
         amount,
+        fulfillment_method,
+        shipping_amount,
+        platform_fee,
+        total_amount,
         conversation_id,
         meetup_spot,
         meetup_window,
         created_at,
         updated_at,
         reserved_at,
+        paid_at,
+        ready_at,
+        shipped_at,
+        delivered_at,
         cancelled_at,
         completed_at,
         buyer:users!transactions_buyer_id_fkey (
@@ -1611,7 +1815,15 @@ export async function getSellerListingTransactions(
       `
     )
     .eq("seller_id", sellerId)
-    .in("state", ["inquiry", "negotiating", "reserved", "completed"])
+    .in("state", [
+      "pending",
+      "reserved",
+      "paid",
+      "ready-for-pickup",
+      "shipped",
+      "delivered",
+      "completed"
+    ])
     .order("updated_at", { ascending: false });
 
   return (((data as unknown as DbTransactionWithUsers[] | null) ?? [])).reduce<
@@ -1685,7 +1897,16 @@ export async function getListingsForSeller(userId: string) {
 
   const sellerRows = rows.filter((row) => row.seller_id === userId);
   const sellerMetricsByUserId = await fetchSellerMetricsMap([userId]);
-  return sellerRows.map((row) => mapListing(row, { sellerMetricsByUserId }));
+  const listingAnalyticsByListingId = await fetchListingAnalyticsMap(
+    sellerRows.map((row) => row.id)
+  );
+
+  return sellerRows.map((row) =>
+    mapListing(row, {
+      sellerMetricsByUserId,
+      listingAnalyticsByListingId
+    })
+  );
 }
 
 export async function getHomeFeed() {

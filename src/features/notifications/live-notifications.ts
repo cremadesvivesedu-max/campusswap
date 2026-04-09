@@ -54,6 +54,32 @@ export function useLiveNotifications(currentUserId: string) {
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
+  const markNotificationReadLocally = (notificationId: string) => {
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === notificationId
+          ? {
+              ...notification,
+              read: true
+            }
+          : notification
+      )
+    );
+  };
+
+  const markAllNotificationsReadLocally = () => {
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.read
+          ? notification
+          : {
+              ...notification,
+              read: true
+            }
+      )
+    );
+  };
+
   useEffect(() => {
     let active = true;
 
@@ -125,6 +151,8 @@ export function useLiveNotifications(currentUserId: string) {
   return {
     notifications,
     unreadCount: notifications.filter((notification) => !notification.read).length,
-    error
+    error,
+    markNotificationReadLocally,
+    markAllNotificationsReadLocally
   };
 }

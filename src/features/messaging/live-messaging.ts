@@ -62,6 +62,9 @@ interface DbListingRow {
   negotiable: boolean;
   location: string;
   pickup_area: string;
+  pickup_available: boolean;
+  shipping_available: boolean;
+  shipping_cost: number | string;
   status: Listing["status"];
   outlet: boolean;
   featured: boolean;
@@ -105,12 +108,20 @@ interface DbTransactionRow {
   seller_id: string;
   state: Transaction["state"];
   amount: number | string;
+  fulfillment_method: Transaction["fulfillmentMethod"] | null;
+  shipping_amount: number | string;
+  platform_fee: number | string;
+  total_amount: number | string;
   conversation_id: string | null;
   meetup_spot: string;
   meetup_window: string;
   created_at: string;
   updated_at: string;
   reserved_at: string | null;
+  paid_at: string | null;
+  ready_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
   cancelled_at: string | null;
   completed_at: string | null;
 }
@@ -237,6 +248,9 @@ function mapListing(row: DbListingRow): Listing {
     negotiable: row.negotiable,
     location: row.location,
     pickupArea: row.pickup_area,
+    pickupAvailable: row.pickup_available,
+    shippingAvailable: row.shipping_available,
+    shippingCost: numberValue(row.shipping_cost),
     outlet: row.outlet,
     featured: row.featured,
     urgent: row.urgent,
@@ -301,12 +315,20 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     sellerId: row.seller_id,
     state: row.state,
     amount: numberValue(row.amount),
+    fulfillmentMethod: row.fulfillment_method ?? undefined,
+    shippingAmount: numberValue(row.shipping_amount),
+    platformFee: numberValue(row.platform_fee),
+    totalAmount: numberValue(row.total_amount),
     conversationId: row.conversation_id ?? undefined,
     meetupSpot: row.meetup_spot,
     meetupWindow: row.meetup_window,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     reservedAt: row.reserved_at ?? undefined,
+    paidAt: row.paid_at ?? undefined,
+    readyAt: row.ready_at ?? undefined,
+    shippedAt: row.shipped_at ?? undefined,
+    deliveredAt: row.delivered_at ?? undefined,
     cancelledAt: row.cancelled_at ?? undefined,
     completedAt: row.completed_at ?? undefined
   };
@@ -377,6 +399,9 @@ const conversationSelect = `
     negotiable,
     location,
     pickup_area,
+    pickup_available,
+    shipping_available,
+    shipping_cost,
     status,
     outlet,
     featured,
@@ -479,12 +504,20 @@ const conversationSelect = `
     seller_id,
     state,
     amount,
+    fulfillment_method,
+    shipping_amount,
+    platform_fee,
+    total_amount,
     conversation_id,
     meetup_spot,
     meetup_window,
     created_at,
     updated_at,
     reserved_at,
+    paid_at,
+    ready_at,
+    shipped_at,
+    delivered_at,
     cancelled_at,
     completed_at
   ),

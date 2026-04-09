@@ -51,7 +51,19 @@ export const dictionaries = {
       typicalRange: "Typical range",
       conditionLabels: { new: "New", "like-new": "Like new", good: "Good", fair: "Fair", "needs-love": "Needs love" },
       listingStatusLabels: { active: "Active", reserved: "Reserved", sold: "Sold", archived: "Archived", "pending-review": "Pending review", hidden: "Removed" },
-      exchangeStatusLabels: { inquiry: "Conversation started", negotiating: "Purchase requested", reserved: "Reserved", completed: "Completed", cancelled: "Cancelled", reported: "Reported" },
+      exchangeStatusLabels: {
+        inquiry: "Conversation started",
+        negotiating: "Purchase requested",
+        pending: "Pending",
+        reserved: "Reserved",
+        paid: "Paid",
+        "ready-for-pickup": "Ready for pickup",
+        shipped: "Shipped",
+        delivered: "Delivered",
+        completed: "Completed",
+        cancelled: "Cancelled",
+        reported: "Reported"
+      },
       notificationPreferenceLabels: { messages: "Messages", listingUpdates: "Listing updates", savedSearches: "Saved search alerts", featuredDigest: "Featured digest", promotions: "Promotion updates" }
     },
     auth: {
@@ -208,7 +220,22 @@ export const dictionaries = {
         price: "Price",
         meetupArea: "Meetup area",
         meetupWindow: "Meetup window",
+        fulfillmentMethod: "Fulfillment",
+        chooseFulfillment: "Choose fulfillment",
+        pickupOption: "Pickup",
+        shippingOption: "Shipping",
+        pickupOnly: "Pickup only",
+        shippingOnly: "Shipping only",
+        orderBreakdownTitle: "Order breakdown",
+        itemPrice: "Item price",
+        shippingCost: "Shipping",
+        platformFee: "Platform fee",
+        totalAmount: "Total",
         reservedAt: "Reserved at",
+        paidAt: "Paid at",
+        readyAt: "Ready for pickup at",
+        shippedAt: "Shipped at",
+        deliveredAt: "Delivered at",
         completedAt: "Completed at",
         cancelledAt: "Cancelled at",
         pricePending: "Pending confirmation",
@@ -220,6 +247,11 @@ export const dictionaries = {
         completedReviewInfo: "This listing has already been completed. Reviews unlock only for the buyer and seller involved in the finished exchange.",
         reserveForBuyer: "Reserve for this buyer",
         releaseReservation: "Release reservation",
+        markPaid: "Mark paid",
+        markReadyForPickup: "Mark ready for pickup",
+        markShipped: "Mark shipped",
+        markDelivered: "Confirm delivered",
+        completeOrder: "Complete order",
         markSold: "Mark sold",
         cancelExchange: "Cancel exchange",
         cancelRequest: "Cancel request",
@@ -249,6 +281,14 @@ export const dictionaries = {
       statusDescription: "Active and archived states are managed here. Reservation and sold status now come from buyer-linked exchange flows.",
       openExchangeChat: "Open exchange chat",
       buyerLabel: "Buyer",
+      analyticsTitle: "Listing performance",
+      views: "Views",
+      saves: "Saves",
+      messagesReceived: "Messages",
+      offersReceived: "Offers",
+      fulfillmentSummary: "Fulfillment",
+      pickupLabel: "Pickup",
+      shippingLabel: "Shipping",
       statusOptions: { active: "Active", archived: "Archive" }
     },
     myPurchases: {
@@ -258,9 +298,18 @@ export const dictionaries = {
       sellerLabel: "Seller",
       buyerLabel: "Buyer",
       recordedValue: "Recorded value",
+      fulfillmentMethod: "Fulfillment",
       meetupSpot: "Meetup spot",
       meetupWindow: "Meetup window",
+      orderBreakdown: "Order breakdown",
+      shippingAmount: "Shipping",
+      platformFee: "Platform fee",
+      totalAmount: "Total",
       reservedAt: "Reserved at",
+      paidAt: "Paid at",
+      readyAt: "Ready for pickup at",
+      shippedAt: "Shipped at",
+      deliveredAt: "Delivered at",
       completedAt: "Completed at",
       openConversation: "Open conversation",
       alreadyReviewed: "You already reviewed this exchange.",
@@ -327,6 +376,10 @@ export const dictionaries = {
       safeMeetup: "Safe meetup guidance",
       ownListing: "This is your listing. Purchase and reservation state now stay linked to real exchange records instead of manual status toggles.",
       pickupArea: "Pickup area",
+      fulfillmentTitle: "Fulfillment",
+      pickupAvailable: "Pickup available",
+      shippingAvailable: "Shipping available",
+      shippingCost: "Shipping cost",
       responseRate: "Response rate",
       reservedForOther: "This item is currently reserved for another buyer. You can still follow the listing, but a new purchase request cannot start until the seller releases the reservation.",
       hiddenOwn: "This listing is hidden from public browse pages. You can relist it from My listings or keep it removed while preserving past chat and review history.",
@@ -399,6 +452,12 @@ export const dictionaries = {
       descriptionPlaceholder: "Describe condition, pickup timing, and what is included",
       pricePlaceholder: "Price",
       pickupAreaPlaceholder: "Pickup area",
+      fulfillmentTitle: "Fulfillment options",
+      pickupAvailable: "Local pickup available",
+      shippingAvailable: "Shipping available",
+      shippingCostPlaceholder: "Shipping cost",
+      fulfillmentHelp:
+        "Choose at least one fulfillment option. Buyers can choose between pickup and shipping when both are available.",
       currentPhotos: "Current photos",
       addMorePhotos: "Add more photos",
       listingPhotos: "Listing photos",
@@ -696,7 +755,19 @@ mutableDictionaries.es = {
     typicalRange: "Rango habitual",
     conditionLabels: { new: "Nuevo", "like-new": "Como nuevo", good: "Bueno", fair: "Aceptable", "needs-love": "Necesita arreglo" },
     listingStatusLabels: { active: "Activo", reserved: "Reservado", sold: "Vendido", archived: "Archivado", "pending-review": "Pendiente de revision", hidden: "Retirado" },
-    exchangeStatusLabels: { inquiry: "Conversacion iniciada", negotiating: "Compra solicitada", reserved: "Reservado", completed: "Completado", cancelled: "Cancelado", reported: "Reportado" },
+    exchangeStatusLabels: {
+      inquiry: "Conversacion iniciada",
+      negotiating: "Compra solicitada",
+      pending: "Pendiente",
+      reserved: "Reservado",
+      paid: "Pagado",
+      "ready-for-pickup": "Listo para recoger",
+      shipped: "Enviado",
+      delivered: "Entregado",
+      completed: "Completado",
+      cancelled: "Cancelado",
+      reported: "Reportado"
+    },
     notificationPreferenceLabels: { messages: "Mensajes", listingUpdates: "Actualizaciones de anuncios", savedSearches: "Alertas de busquedas guardadas", featuredDigest: "Resumen de destacados", promotions: "Actualizaciones de promocion" }
   },
   auth: {
@@ -1121,7 +1192,19 @@ mutableDictionaries.nl = {
     typicalRange: "Typische prijsklasse",
     conditionLabels: { new: "Nieuw", "like-new": "Zo goed als nieuw", good: "Goed", fair: "Redelijk", "needs-love": "Heeft wat werk nodig" },
     listingStatusLabels: { active: "Actief", reserved: "Gereserveerd", sold: "Verkocht", archived: "Gearchiveerd", "pending-review": "Wacht op review", hidden: "Verwijderd" },
-    exchangeStatusLabels: { inquiry: "Conversatie gestart", negotiating: "Koopverzoek", reserved: "Gereserveerd", completed: "Afgerond", cancelled: "Geannuleerd", reported: "Gemeld" },
+    exchangeStatusLabels: {
+      inquiry: "Conversatie gestart",
+      negotiating: "Koopverzoek",
+      pending: "In afwachting",
+      reserved: "Gereserveerd",
+      paid: "Betaald",
+      "ready-for-pickup": "Klaar voor afhalen",
+      shipped: "Verzonden",
+      delivered: "Bezorgd",
+      completed: "Afgerond",
+      cancelled: "Geannuleerd",
+      reported: "Gemeld"
+    },
     notificationPreferenceLabels: { messages: "Berichten", listingUpdates: "Advertentie-updates", savedSearches: "Meldingen voor opgeslagen zoekopdrachten", featuredDigest: "Uitgelichte digest", promotions: "Promotie-updates" }
   },
   auth: {
@@ -2103,6 +2186,246 @@ mutableDictionaries.es = {
         withdrawn: "Retirada"
       }
     }
+  }
+};
+
+mutableDictionaries.nl = {
+  ...mutableDictionaries.nl,
+  common: {
+    ...mutableDictionaries.nl.common,
+    exchangeStatusLabels: {
+      ...mutableDictionaries.nl.common.exchangeStatusLabels,
+      pending: "In afwachting",
+      paid: "Betaald",
+      "ready-for-pickup": "Klaar voor afhalen",
+      shipped: "Verzonden",
+      delivered: "Bezorgd"
+    }
+  },
+  messages: {
+    ...mutableDictionaries.nl.messages,
+    exchange: {
+      ...mutableDictionaries.nl.messages.exchange,
+      fulfillmentMethod: "Levering",
+      chooseFulfillment: "Kies levering",
+      pickupOption: "Afhalen",
+      shippingOption: "Verzending",
+      pickupOnly: "Alleen afhalen",
+      shippingOnly: "Alleen verzending",
+      orderBreakdownTitle: "Besteloverzicht",
+      itemPrice: "Itemprijs",
+      shippingCost: "Verzending",
+      platformFee: "Platformkosten",
+      totalAmount: "Totaal",
+      paidAt: "Betaald op",
+      readyAt: "Klaar voor afhalen op",
+      shippedAt: "Verzonden op",
+      deliveredAt: "Bezorgd op",
+      markPaid: "Markeer als betaald",
+      markReadyForPickup: "Markeer als klaar voor afhalen",
+      markShipped: "Markeer als verzonden",
+      markDelivered: "Bevestig bezorgd",
+      completeOrder: "Bestelling afronden"
+    }
+  },
+  myListings: {
+    ...mutableDictionaries.nl.myListings,
+    analyticsTitle: "Advertentieprestaties",
+    views: "Weergaven",
+    saves: "Opslagen",
+    messagesReceived: "Berichten",
+    offersReceived: "Biedingen",
+    fulfillmentSummary: "Levering",
+    pickupLabel: "Afhalen",
+    shippingLabel: "Verzending"
+  },
+  myPurchases: {
+    ...mutableDictionaries.nl.myPurchases,
+    fulfillmentMethod: "Levering",
+    orderBreakdown: "Besteloverzicht",
+    shippingAmount: "Verzending",
+    platformFee: "Platformkosten",
+    totalAmount: "Totaal",
+    paidAt: "Betaald op",
+    readyAt: "Klaar voor afhalen op",
+    shippedAt: "Verzonden op",
+    deliveredAt: "Bezorgd op"
+  },
+  listing: {
+    ...mutableDictionaries.nl.listing,
+    fulfillmentTitle: "Levering",
+    pickupAvailable: "Afhalen beschikbaar",
+    shippingAvailable: "Verzending beschikbaar",
+    shippingCost: "Verzendkosten"
+  },
+  listingForm: {
+    ...mutableDictionaries.nl.listingForm,
+    fulfillmentTitle: "Leveringsopties",
+    pickupAvailable: "Lokaal afhalen beschikbaar",
+    shippingAvailable: "Verzending beschikbaar",
+    shippingCostPlaceholder: "Verzendkosten",
+    fulfillmentHelp:
+      "Kies minstens een leveringsoptie. Kopers kunnen tussen afhalen en verzending kiezen wanneer beide beschikbaar zijn."
+  }
+};
+
+mutableDictionaries.en = {
+  ...mutableDictionaries.en,
+  common: {
+    ...mutableDictionaries.en.common,
+    exchangeStatusLabels: {
+      ...mutableDictionaries.en.common.exchangeStatusLabels,
+      pending: "Pending",
+      paid: "Paid",
+      "ready-for-pickup": "Ready for pickup",
+      shipped: "Shipped",
+      delivered: "Delivered"
+    }
+  },
+  messages: {
+    ...mutableDictionaries.en.messages,
+    exchange: {
+      ...mutableDictionaries.en.messages.exchange,
+      fulfillmentMethod: "Fulfillment",
+      chooseFulfillment: "Choose fulfillment",
+      pickupOption: "Pickup",
+      shippingOption: "Shipping",
+      pickupOnly: "Pickup only",
+      shippingOnly: "Shipping only",
+      orderBreakdownTitle: "Order breakdown",
+      itemPrice: "Item price",
+      shippingCost: "Shipping",
+      platformFee: "Platform fee",
+      totalAmount: "Total",
+      paidAt: "Paid at",
+      readyAt: "Ready for pickup at",
+      shippedAt: "Shipped at",
+      deliveredAt: "Delivered at",
+      markPaid: "Mark paid",
+      markReadyForPickup: "Mark ready for pickup",
+      markShipped: "Mark shipped",
+      markDelivered: "Confirm delivered",
+      completeOrder: "Complete order"
+    }
+  },
+  myListings: {
+    ...mutableDictionaries.en.myListings,
+    analyticsTitle: "Listing performance",
+    views: "Views",
+    saves: "Saves",
+    messagesReceived: "Messages",
+    offersReceived: "Offers",
+    fulfillmentSummary: "Fulfillment",
+    pickupLabel: "Pickup",
+    shippingLabel: "Shipping"
+  },
+  myPurchases: {
+    ...mutableDictionaries.en.myPurchases,
+    fulfillmentMethod: "Fulfillment",
+    orderBreakdown: "Order breakdown",
+    shippingAmount: "Shipping",
+    platformFee: "Platform fee",
+    totalAmount: "Total",
+    paidAt: "Paid at",
+    readyAt: "Ready for pickup at",
+    shippedAt: "Shipped at",
+    deliveredAt: "Delivered at"
+  },
+  listing: {
+    ...mutableDictionaries.en.listing,
+    fulfillmentTitle: "Fulfillment",
+    pickupAvailable: "Pickup available",
+    shippingAvailable: "Shipping available",
+    shippingCost: "Shipping cost"
+  },
+  listingForm: {
+    ...mutableDictionaries.en.listingForm,
+    fulfillmentTitle: "Fulfillment options",
+    pickupAvailable: "Local pickup available",
+    shippingAvailable: "Shipping available",
+    shippingCostPlaceholder: "Shipping cost",
+    fulfillmentHelp:
+      "Choose at least one fulfillment option. Buyers can choose between pickup and shipping when both are available."
+  }
+};
+
+mutableDictionaries.es = {
+  ...mutableDictionaries.es,
+  common: {
+    ...mutableDictionaries.es.common,
+    exchangeStatusLabels: {
+      ...mutableDictionaries.es.common.exchangeStatusLabels,
+      pending: "Pendiente",
+      paid: "Pagado",
+      "ready-for-pickup": "Listo para recoger",
+      shipped: "Enviado",
+      delivered: "Entregado"
+    }
+  },
+  messages: {
+    ...mutableDictionaries.es.messages,
+    exchange: {
+      ...mutableDictionaries.es.messages.exchange,
+      fulfillmentMethod: "Entrega",
+      chooseFulfillment: "Elegir entrega",
+      pickupOption: "Recogida",
+      shippingOption: "Env\u00edo",
+      pickupOnly: "Solo recogida",
+      shippingOnly: "Solo env\u00edo",
+      orderBreakdownTitle: "Resumen del pedido",
+      itemPrice: "Precio del art\u00edculo",
+      shippingCost: "Env\u00edo",
+      platformFee: "Tarifa de plataforma",
+      totalAmount: "Total",
+      paidAt: "Pagado el",
+      readyAt: "Listo para recoger el",
+      shippedAt: "Enviado el",
+      deliveredAt: "Entregado el",
+      markPaid: "Marcar como pagado",
+      markReadyForPickup: "Marcar listo para recoger",
+      markShipped: "Marcar como enviado",
+      markDelivered: "Confirmar entrega",
+      completeOrder: "Completar pedido"
+    }
+  },
+  myListings: {
+    ...mutableDictionaries.es.myListings,
+    analyticsTitle: "Rendimiento del anuncio",
+    views: "Vistas",
+    saves: "Guardados",
+    messagesReceived: "Mensajes",
+    offersReceived: "Ofertas",
+    fulfillmentSummary: "Entrega",
+    pickupLabel: "Recogida",
+    shippingLabel: "Env\u00edo"
+  },
+  myPurchases: {
+    ...mutableDictionaries.es.myPurchases,
+    fulfillmentMethod: "Entrega",
+    orderBreakdown: "Resumen del pedido",
+    shippingAmount: "Env\u00edo",
+    platformFee: "Tarifa de plataforma",
+    totalAmount: "Total",
+    paidAt: "Pagado el",
+    readyAt: "Listo para recoger el",
+    shippedAt: "Enviado el",
+    deliveredAt: "Entregado el"
+  },
+  listing: {
+    ...mutableDictionaries.es.listing,
+    fulfillmentTitle: "Entrega",
+    pickupAvailable: "Recogida disponible",
+    shippingAvailable: "Env\u00edo disponible",
+    shippingCost: "Coste de env\u00edo"
+  },
+  listingForm: {
+    ...mutableDictionaries.es.listingForm,
+    fulfillmentTitle: "Opciones de entrega",
+    pickupAvailable: "Recogida local disponible",
+    shippingAvailable: "Env\u00edo disponible",
+    shippingCostPlaceholder: "Coste de env\u00edo",
+    fulfillmentHelp:
+      "Elige al menos una opci\u00f3n de entrega. Si ambas est\u00e1n disponibles, el comprador podr\u00e1 elegir entre recogida y env\u00edo."
   }
 };
 

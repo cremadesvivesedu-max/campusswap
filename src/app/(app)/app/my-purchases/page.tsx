@@ -93,15 +93,53 @@ export default async function MyPurchasesPage() {
                     {formatCurrency(transaction.amount)}
                   </p>
                   <p>
+                    {dictionary.myPurchases.fulfillmentMethod}:{" "}
+                    {transaction.fulfillmentMethod === "shipping"
+                      ? dictionary.messages.exchange.shippingOption
+                      : dictionary.messages.exchange.pickupOption}
+                  </p>
+                  <p>
                     {dictionary.myPurchases.meetupSpot}: {transaction.meetupSpot}
                   </p>
                   <p>
                     {dictionary.myPurchases.meetupWindow}: {transaction.meetupWindow}
                   </p>
+                  <p>
+                    {dictionary.myPurchases.shippingAmount}:{" "}
+                    {formatCurrency(transaction.shippingAmount)}
+                  </p>
+                  <p>
+                    {dictionary.myPurchases.totalAmount}:{" "}
+                    {formatCurrency(transaction.totalAmount)}
+                  </p>
                   {transaction.reservedAt ? (
                     <p>
                       {dictionary.myPurchases.reservedAt}:{" "}
                       {new Date(transaction.reservedAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
+                  {transaction.paidAt ? (
+                    <p>
+                      {dictionary.myPurchases.paidAt}:{" "}
+                      {new Date(transaction.paidAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
+                  {transaction.readyAt ? (
+                    <p>
+                      {dictionary.myPurchases.readyAt}:{" "}
+                      {new Date(transaction.readyAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
+                  {transaction.shippedAt ? (
+                    <p>
+                      {dictionary.myPurchases.shippedAt}:{" "}
+                      {new Date(transaction.shippedAt).toLocaleString("en-GB")}
+                    </p>
+                  ) : null}
+                  {transaction.deliveredAt ? (
+                    <p>
+                      {dictionary.myPurchases.deliveredAt}:{" "}
+                      {new Date(transaction.deliveredAt).toLocaleString("en-GB")}
                     </p>
                   ) : null}
                   {transaction.completedAt ? (
@@ -110,6 +148,40 @@ export default async function MyPurchasesPage() {
                       {new Date(transaction.completedAt).toLocaleString("en-GB")}
                     </p>
                   ) : null}
+                </div>
+
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    {dictionary.myPurchases.orderBreakdown}
+                  </p>
+                  <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{dictionary.messages.exchange.itemPrice}</span>
+                      <span className="font-medium text-slate-950">
+                        {formatCurrency(transaction.amount)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{dictionary.myPurchases.shippingAmount}</span>
+                      <span className="font-medium text-slate-950">
+                        {formatCurrency(transaction.shippingAmount)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{dictionary.myPurchases.platformFee}</span>
+                      <span className="font-medium text-slate-950">
+                        {formatCurrency(transaction.platformFee)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
+                      <span className="font-semibold text-slate-950">
+                        {dictionary.myPurchases.totalAmount}
+                      </span>
+                      <span className="font-semibold text-slate-950">
+                        {formatCurrency(transaction.totalAmount)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {transaction.conversationId ? (

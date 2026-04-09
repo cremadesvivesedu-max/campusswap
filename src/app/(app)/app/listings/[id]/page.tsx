@@ -88,6 +88,44 @@ export default async function ListingDetailPage({
               {formatCurrency(listing.price)}
             </p>
             <p className="text-sm leading-7 text-slate-600">{listing.description}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.fulfillmentTitle}
+                </p>
+                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                  <p>
+                    {dictionary.listing.pickupAvailable}:{" "}
+                    <span className="font-medium text-slate-950">
+                      {listing.pickupAvailable ? dictionary.messages.exchange.pickupOption : "-"}
+                    </span>
+                  </p>
+                  <p>
+                    {dictionary.listing.shippingAvailable}:{" "}
+                    <span className="font-medium text-slate-950">
+                      {listing.shippingAvailable
+                        ? `${dictionary.messages.exchange.shippingOption} (${formatCurrency(
+                            listing.shippingCost
+                          )})`
+                        : "-"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.listing.pickupArea}
+                </p>
+                <p className="mt-3 text-sm font-medium text-slate-950">
+                  {listing.pickupArea}
+                </p>
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  {listing.shippingAvailable
+                    ? dictionary.map.privacyBody
+                    : dictionary.map.description}
+                </p>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {listing.tags.map((tag) => (
                 <Badge key={tag}>{tag}</Badge>
@@ -222,9 +260,12 @@ export default async function ListingDetailPage({
         {seller ? (
           <ListingTransactionPanel
             listingId={listing.id}
-            listingTitle={listing.title}
             listingPrice={listing.price}
             listingStatus={listing.status}
+            listingPickupArea={listing.pickupArea}
+            listingPickupAvailable={listing.pickupAvailable}
+            listingShippingAvailable={listing.shippingAvailable}
+            listingShippingCost={listing.shippingCost}
             currentUserId={currentUser.id}
             seller={seller}
             context={transactionContext}

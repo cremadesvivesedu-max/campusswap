@@ -49,7 +49,13 @@ export function NotificationsFeed({
   currentUserId: string;
 }) {
   const { dictionary } = useLocale();
-  const { notifications, unreadCount, error } = useLiveNotifications(currentUserId);
+  const {
+    notifications,
+    unreadCount,
+    error,
+    markNotificationReadLocally,
+    markAllNotificationsReadLocally
+  } = useLiveNotifications(currentUserId);
   const [isPending, startTransition] = useTransition();
 
   if (!notifications.length && !error) {
@@ -84,7 +90,11 @@ export function NotificationsFeed({
           variant="outline"
           onClick={() =>
             startTransition(async () => {
-              await markAllNotificationsReadAction();
+              const result = await markAllNotificationsReadAction();
+
+              if (result.success) {
+                markAllNotificationsReadLocally();
+              }
             })
           }
           disabled={isPending || !unreadCount}
@@ -149,7 +159,11 @@ export function NotificationsFeed({
                     variant="outline"
                     onClick={() =>
                       startTransition(async () => {
-                        await markNotificationReadAction(notification.id);
+                        const result = await markNotificationReadAction(notification.id);
+
+                        if (result.success) {
+                          markNotificationReadLocally(notification.id);
+                        }
                       })
                     }
                     disabled={isPending}

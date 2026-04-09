@@ -34,6 +34,9 @@ interface ListingFormValues {
   title: string;
   description: string;
   pickupArea: string;
+  pickupAvailable: boolean;
+  shippingAvailable: boolean;
+  shippingCost: number;
   categorySlug: string;
   condition: string;
   price: number;
@@ -97,6 +100,9 @@ function readListingFormValues(formData: FormData): ListingFormValues {
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     pickupArea: String(formData.get("pickupArea") ?? "").trim(),
+    pickupAvailable: formData.get("pickupAvailable") === "on",
+    shippingAvailable: formData.get("shippingAvailable") === "on",
+    shippingCost: Number(formData.get("shippingCost") ?? 0),
     categorySlug: String(formData.get("category") ?? "").trim(),
     condition: String(formData.get("condition") ?? "good").trim(),
     price: Number(formData.get("price") ?? 0),
@@ -109,6 +115,22 @@ function readListingFormValues(formData: FormData): ListingFormValues {
       .getAll("images")
       .filter((value): value is File => value instanceof File && value.size > 0)
   };
+}
+
+function validateFulfillmentValues(values: ListingFormValues) {
+  if (!values.pickupAvailable && !values.shippingAvailable) {
+    return "Enable pickup, shipping, or both before publishing this listing.";
+  }
+
+  if (!Number.isFinite(values.shippingCost) || values.shippingCost < 0) {
+    return "Shipping cost must be zero or higher.";
+  }
+
+  if (!values.shippingAvailable && values.shippingCost > 0) {
+    return "Enable shipping before adding a shipping cost.";
+  }
+
+  return null;
 }
 
 function toNumber(value: number | string | null | undefined) {
@@ -136,6 +158,9 @@ function buildAlertListing(input: {
   outlet: boolean;
   urgent: boolean;
   pickupArea: string;
+  pickupAvailable: boolean;
+  shippingAvailable: boolean;
+  shippingCost: number;
   location: string;
   status: Listing["status"];
   createdAt?: string;
@@ -151,6 +176,9 @@ function buildAlertListing(input: {
     negotiable: input.negotiable,
     location: input.location,
     pickupArea: input.pickupArea,
+    pickupAvailable: input.pickupAvailable,
+    shippingAvailable: input.shippingAvailable,
+    shippingCost: input.shippingCost,
     outlet: input.outlet,
     featured: false,
     urgent: input.urgent,
@@ -994,6 +1022,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
     title,
     description,
     pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost,
     categorySlug,
     condition,
     price,
@@ -1006,11 +1037,36 @@ export async function createListingAction(_: unknown, formData: FormData) {
   const flaggedForModeration = shouldModerateListing(title, description);
   const requiresTrustReview = user.verificationStatus !== "verified";
   const needsReview = flaggedForModeration || requiresTrustReview;
+  const fulfillmentValidationError = validateFulfillmentValues({
+    listingId: undefined,
+    title,
+    description,
+    pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost,
+    categorySlug,
+    condition,
+    price,
+    negotiable,
+    outlet,
+    urgent,
+    requestFeatured,
+    replaceImages: false,
+    imageFiles
+  });
 
   if (!title || !description || !pickupArea || !categorySlug || !price) {
     return {
       success: false,
       message: "Fill in the required title, description, price, category, and pickup area."
+    } satisfies ActionState;
+  }
+
+  if (fulfillmentValidationError) {
+    return {
+      success: false,
+      message: fulfillmentValidationError
     } satisfies ActionState;
   }
 
@@ -1053,6 +1109,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
       negotiable,
       location: user.profile.neighborhood,
       pickup_area: pickupArea,
+      pickup_available: pickupAvailable,
+      shipping_available: shippingAvailable,
+      shipping_cost: shippingAvailable ? shippingCost : 0,
       status: needsReview ? "pending-review" : "active",
       outlet,
       featured: false,
@@ -1170,6 +1229,9 @@ export async function createListingAction(_: unknown, formData: FormData) {
         outlet,
         urgent,
         pickupArea,
+        pickupAvailable,
+        shippingAvailable,
+        shippingCost: shippingAvailable ? shippingCost : 0,
         location: user.profile.neighborhood,
         status: "active",
         seller: user
@@ -1205,6 +1267,9 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     title,
     description,
     pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost,
     categorySlug,
     condition,
     price,
@@ -1227,6 +1292,32 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     return {
       success: false,
       message: "Fill in the required title, description, price, category, and pickup area."
+    } satisfies ActionState;
+  }
+
+  const fulfillmentValidationError = validateFulfillmentValues({
+    listingId,
+    title,
+    description,
+    pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost,
+    categorySlug,
+    condition,
+    price,
+    negotiable,
+    outlet,
+    urgent,
+    requestFeatured,
+    replaceImages,
+    imageFiles
+  });
+
+  if (fulfillmentValidationError) {
+    return {
+      success: false,
+      message: fulfillmentValidationError
     } satisfies ActionState;
   }
 
@@ -1305,6 +1396,9 @@ export async function updateListingAction(_: unknown, formData: FormData) {
       price,
       negotiable,
       pickup_area: pickupArea,
+      pickup_available: pickupAvailable,
+      shipping_available: shippingAvailable,
+      shipping_cost: shippingAvailable ? shippingCost : 0,
       outlet,
       urgent,
       status: nextStatus,
@@ -1418,6 +1512,9 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     outlet,
     urgent,
     pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost: shippingAvailable ? shippingCost : 0,
     location: user.profile.neighborhood,
     status: nextStatus,
     seller: user

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getConditionLabel } from "@/lib/i18n-shared";
 import {
@@ -40,6 +40,12 @@ export function ListingForm({
   const isEditing = Boolean(initialListing);
   const paymentTargetListingId = initialListing?.id ?? state.listingId;
   const effectivePromotionState = state.promotionStatus ?? promotionState;
+  const [pickupEnabled, setPickupEnabled] = useState(
+    initialListing?.pickupAvailable ?? true
+  );
+  const [shippingEnabled, setShippingEnabled] = useState(
+    initialListing?.shippingAvailable ?? false
+  );
 
   return (
     <form
@@ -72,6 +78,48 @@ export function ListingForm({
           placeholder={dictionary.listingForm.pickupAreaPlaceholder}
           defaultValue={initialListing?.pickupArea}
         />
+      </div>
+      <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {dictionary.listingForm.fulfillmentTitle}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
+            <input
+              className="mr-2"
+              name="pickupAvailable"
+              type="checkbox"
+              checked={pickupEnabled}
+              onChange={(event) => setPickupEnabled(event.target.checked)}
+            />
+            {dictionary.listingForm.pickupAvailable}
+          </label>
+          <label className="rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
+            <input
+              className="mr-2"
+              name="shippingAvailable"
+              type="checkbox"
+              checked={shippingEnabled}
+              onChange={(event) => setShippingEnabled(event.target.checked)}
+            />
+            {dictionary.listingForm.shippingAvailable}
+          </label>
+        </div>
+        {shippingEnabled ? (
+          <Input
+            name="shippingCost"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder={dictionary.listingForm.shippingCostPlaceholder}
+            defaultValue={initialListing?.shippingCost ?? 0}
+          />
+        ) : (
+          <input type="hidden" name="shippingCost" value="0" />
+        )}
+        <p className="text-xs leading-6 text-slate-500">
+          {dictionary.listingForm.fulfillmentHelp}
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <select
