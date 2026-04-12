@@ -16,6 +16,13 @@ interface DbNotificationRow {
   created_at: string;
 }
 
+let realtimeChannelSequence = 0;
+
+function createRealtimeChannelName(prefix: string) {
+  realtimeChannelSequence += 1;
+  return `${prefix}-${Date.now()}-${realtimeChannelSequence}`;
+}
+
 function mapNotification(row: DbNotificationRow): Notification {
   return {
     id: row.id,
@@ -127,7 +134,7 @@ export function useLiveNotifications(currentUserId: string) {
     }
 
     const channel = supabase
-      .channel(`notifications-${currentUserId}`)
+      .channel(createRealtimeChannelName(`notifications-${currentUserId}`))
       .on(
         "postgres_changes",
         {
@@ -144,6 +151,7 @@ export function useLiveNotifications(currentUserId: string) {
 
     return () => {
       active = false;
+      void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
   }, [currentUserId, supabase]);

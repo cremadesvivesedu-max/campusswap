@@ -24,6 +24,13 @@ const defaultQuickActions = [
   "Is the price negotiable?"
 ];
 
+let realtimeChannelSequence = 0;
+
+function createRealtimeChannelName(prefix: string) {
+  realtimeChannelSequence += 1;
+  return `${prefix}-${Date.now()}-${realtimeChannelSequence}`;
+}
+
 interface DbProfileRow {
   user_id: string;
   full_name: string;
@@ -826,7 +833,7 @@ export function useLiveConversationPreviews(currentUserId: string) {
     }
 
     const channel = supabase
-      .channel(`conversation-previews-${currentUserId}`)
+      .channel(createRealtimeChannelName(`conversation-previews-${currentUserId}`))
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
         void sync();
       })
@@ -846,6 +853,7 @@ export function useLiveConversationPreviews(currentUserId: string) {
 
     return () => {
       active = false;
+      void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
   }, [currentUserId, supabase]);
@@ -897,7 +905,7 @@ export function useLiveConversationThread(
     }
 
     const channel = supabase
-      .channel(`conversation-thread-${conversationId}`)
+      .channel(createRealtimeChannelName(`conversation-thread-${conversationId}`))
       .on(
         "postgres_changes",
         {
@@ -966,6 +974,7 @@ export function useLiveConversationThread(
 
     return () => {
       active = false;
+      void activeChannel.unsubscribe();
       void supabase.removeChannel(activeChannel);
     };
   }, [conversationId, currentUserId, listingId, supabase]);
