@@ -16,7 +16,7 @@ export const dictionaries = {
     languageSwitcher: { label: "Language" },
     nav: {
       public: { categories: "Categories", featured: "Featured", outlet: "Outlet", trustSafety: "Trust & Safety", faq: "FAQ", join: "Join" },
-      app: { home: "Home", forYou: "For You", search: "Search", saved: "Saved", messages: "Messages", settings: "Settings" },
+      app: { home: "Home", forYou: "For You", search: "Search", saved: "Saved", messages: "Messages", support: "Support", settings: "Settings" },
       admin: { dashboard: "Dashboard", users: "Users", listings: "Listings", reports: "Reports", analytics: "Analytics", settings: "Settings" }
     },
     site: {
@@ -25,6 +25,65 @@ export const dictionaries = {
       adminLabel: "Admin",
       logIn: "Log in",
       sellItem: "Sell an item"
+    },
+    support: {
+      eyebrow: "Support center",
+      title: "Resolve marketplace issues without leaving CampusSwap.",
+      description: "Report suspicious activity, ask for help, and keep every issue tied to the real listing, seller, or order context.",
+      chooseCategory: "Choose the issue type that best matches what happened.",
+      contactFallback: "For urgent issues outside the app, you can also reach CampusSwap at {email}.",
+      contextRequiredListing: "Open this flow from a listing so CampusSwap knows which listing to review.",
+      contextRequiredUser: "Open this flow from a seller profile so CampusSwap knows who you are reporting.",
+      openForm: "Open form",
+      openListing: "Open listing",
+      openConversation: "Open conversation",
+      openPurchases: "Open purchases",
+      openProfile: "Open profile",
+      reportListingCta: "Report listing",
+      reportUserCta: "Report user",
+      purchaseDisputeCta: "Open dispute",
+      paymentHelpCta: "Payment help",
+      shippingHelpCta: "Shipping help",
+      orderHelpTitle: "Need help with this order?",
+      cards: {
+        reportUserTitle: "Report user",
+        reportUserDescription: "Flag suspicious, unsafe, or misleading seller behavior for moderation review.",
+        reportListingTitle: "Report listing",
+        reportListingDescription: "Report inaccurate, suspicious, or unsafe listing details from the live listing context.",
+        purchaseDisputeTitle: "Purchase dispute",
+        purchaseDisputeDescription: "Get help when the meetup, handoff, or item condition does not match what was agreed.",
+        paymentHelpTitle: "Payment help",
+        paymentHelpDescription: "Ask for help with featured payments, payment confirmations, or billing confusion.",
+        shippingHelpTitle: "Shipping help",
+        shippingHelpDescription: "Get help with shipping delays, shipping expectations, or delivery confusion."
+      },
+      form: {
+        contextLabel: "Attached context",
+        subjectLabel: "Subject",
+        subjectPlaceholder: "Short summary of what you need help with",
+        reportSubjectHidden: "",
+        submit: "Send request",
+        submitting: "Sending...",
+        detailsLabel: "What happened",
+        reportUserPlaceholder: "Tell CampusSwap what happened with this user and why it feels unsafe, misleading, or inappropriate.",
+        reportListingPlaceholder: "Tell CampusSwap what feels inaccurate, unsafe, or suspicious about this listing.",
+        purchaseDisputePlaceholder: "Explain what happened with the order, meetup, or item condition so CampusSwap can review the dispute.",
+        paymentHelpPlaceholder: "Describe the payment or promotion issue you need help with.",
+        shippingHelpPlaceholder: "Describe the shipping issue, delay, or delivery problem you need help with."
+      },
+      yourTicketsEyebrow: "Support tickets",
+      yourTicketsTitle: "Your active support requests",
+      yourTicketsDescription: "Track dispute, payment, and shipping requests without losing listing context.",
+      noTicketsTitle: "No support tickets yet",
+      noTicketsDescription: "When you ask CampusSwap for help, your requests will appear here with their latest status.",
+      yourReportsEyebrow: "Reports",
+      yourReportsTitle: "Your safety reports",
+      yourReportsDescription: "Marketplace reports stay visible here while moderation reviews them.",
+      noReportsTitle: "No reports yet",
+      noReportsDescription: "When you report a listing or user, CampusSwap will track it here.",
+      ticketStatusLabels: { open: "Open", inReview: "In review", resolved: "Resolved", closed: "Closed" },
+      reportStatusLabels: { open: "Open", inReview: "In review", actioned: "Actioned", dismissed: "Dismissed" },
+      targetLabels: { listing: "Listing", user: "User", conversation: "Conversation", transaction: "Transaction" }
     },
     common: {
       actions: {
@@ -648,6 +707,12 @@ type DictionaryExtensions = {
     newTodayEyebrow: string;
     newTodayTitle: string;
     newTodayDescription: string;
+    outletEyebrow: string;
+    outletTitle: string;
+    outletDescription: string;
+    lastChanceEyebrow: string;
+    lastChanceTitle: string;
+    lastChanceDescription: string;
   };
   messages: DeepWiden<typeof dictionaries.en.messages> & {
     offers: {
@@ -733,6 +798,7 @@ type DictionaryExtensions = {
     salesCount: string;
     averageRating: string;
   };
+  support: DeepWiden<typeof dictionaries.en.support>;
 };
 
 export type Dictionary = DeepWiden<typeof dictionaries.en> & DictionaryExtensions;
@@ -1879,8 +1945,8 @@ mutableDictionaries.en = {
   }
 };
 
-mutableDictionaries.es = {
-  ...mutableDictionaries.es,
+  mutableDictionaries.es = {
+    ...mutableDictionaries.es,
   search: {
     ...mutableDictionaries.es.search,
     pickupArea: "Zona de recogida",
@@ -2421,18 +2487,393 @@ mutableDictionaries.es = {
     shippingAvailable: "Env\u00edo disponible",
     shippingCost: "Coste de env\u00edo"
   },
-  listingForm: {
-    ...mutableDictionaries.es.listingForm,
-    fulfillmentTitle: "Opciones de entrega",
-    pickupAvailable: "Recogida local disponible",
-    shippingAvailable: "Env\u00edo disponible",
-    shippingCostPlaceholder: "Coste de env\u00edo",
-    fulfillmentHelp:
-      "Elige al menos una opci\u00f3n de entrega. Si ambas est\u00e1n disponibles, el comprador podr\u00e1 elegir entre recogida y env\u00edo."
-  }
-};
+    listingForm: {
+      ...mutableDictionaries.es.listingForm,
+      fulfillmentTitle: "Opciones de entrega",
+      pickupAvailable: "Recogida local disponible",
+      shippingAvailable: "Env\u00edo disponible",
+      shippingCostPlaceholder: "Coste de env\u00edo",
+      fulfillmentHelp:
+        "Elige al menos una opci\u00f3n de entrega. Si ambas est\u00e1n disponibles, el comprador podr\u00e1 elegir entre recogida y env\u00edo."
+    }
+  };
 
-export function getConditionLabel(dictionary: Dictionary, condition: ListingCondition) {
+  mutableDictionaries.en = {
+    ...mutableDictionaries.en,
+    nav: {
+      ...mutableDictionaries.en.nav,
+      app: {
+        ...mutableDictionaries.en.nav.app,
+        support: "Support"
+      }
+    },
+    appHome: {
+      ...mutableDictionaries.en.appHome,
+      featuredTitle: "Paid featured listings",
+      featuredDescription:
+        "Only paid and active featured placements surface here first.",
+      popularAreaEyebrow: "Trending nearby",
+      popularAreaTitle: "Trending around {area}.",
+      popularAreaDescription:
+        "Real saves, views, offers, and seller trust highlight what students nearby are acting on.",
+      newTodayEyebrow: "New near you",
+      newTodayTitle: "Fresh listings close to your meetup zones.",
+      newTodayDescription:
+        "New live inventory near your preferred area, with a wider recent fallback when today is quiet.",
+      outletEyebrow: "Outlet",
+      outletTitle: "Budget-friendly outlet picks.",
+      outletDescription:
+        "Urgent, discounted, and honest-condition listings for faster move-ins and move-outs.",
+      lastChanceEyebrow: "Last chance",
+      lastChanceTitle: "Latest opportunities that may move fast.",
+      lastChanceDescription:
+        "Urgent and high-momentum listings that deserve a quick look before they are gone."
+    },
+    support: {
+      eyebrow: "Support center",
+      title: "Resolve marketplace issues without leaving CampusSwap.",
+      description:
+        "Report suspicious activity, ask for help, and keep every issue tied to the real listing, seller, or order context.",
+      chooseCategory: "Choose the issue type that best matches what happened.",
+      contactFallback:
+        "For urgent issues outside the app, you can also reach CampusSwap at {email}.",
+      contextRequiredListing:
+        "Open this flow from a listing so CampusSwap knows which listing to review.",
+      contextRequiredUser:
+        "Open this flow from a seller profile so CampusSwap knows who you are reporting.",
+      openForm: "Open form",
+      openListing: "Open listing",
+      openConversation: "Open conversation",
+      openPurchases: "Open purchases",
+      openProfile: "Open profile",
+      reportListingCta: "Report listing",
+      reportUserCta: "Report user",
+      purchaseDisputeCta: "Open dispute",
+      paymentHelpCta: "Payment help",
+      shippingHelpCta: "Shipping help",
+      orderHelpTitle: "Need help with this order?",
+      cards: {
+        reportUserTitle: "Report user",
+        reportUserDescription:
+          "Flag suspicious, unsafe, or misleading seller behavior for moderation review.",
+        reportListingTitle: "Report listing",
+        reportListingDescription:
+          "Report inaccurate, suspicious, or unsafe listing details from the live listing context.",
+        purchaseDisputeTitle: "Purchase dispute",
+        purchaseDisputeDescription:
+          "Get help when the meetup, handoff, or item condition does not match what was agreed.",
+        paymentHelpTitle: "Payment help",
+        paymentHelpDescription:
+          "Ask for help with featured payments, payment confirmations, or billing confusion.",
+        shippingHelpTitle: "Shipping help",
+        shippingHelpDescription:
+          "Get help with shipping delays, shipping expectations, or delivery confusion."
+      },
+      form: {
+        contextLabel: "Attached context",
+        subjectLabel: "Subject",
+        subjectPlaceholder: "Short summary of what you need help with",
+        reportSubjectHidden: "",
+        submit: "Send request",
+        submitting: "Sending...",
+        detailsLabel: "What happened",
+        reportUserPlaceholder:
+          "Tell CampusSwap what happened with this user and why it feels unsafe, misleading, or inappropriate.",
+        reportListingPlaceholder:
+          "Tell CampusSwap what feels inaccurate, unsafe, or suspicious about this listing.",
+        purchaseDisputePlaceholder:
+          "Explain what happened with the order, meetup, or item condition so CampusSwap can review the dispute.",
+        paymentHelpPlaceholder:
+          "Describe the payment or promotion issue you need help with.",
+        shippingHelpPlaceholder:
+          "Describe the shipping issue, delay, or delivery problem you need help with."
+      },
+      yourTicketsEyebrow: "Support tickets",
+      yourTicketsTitle: "Your active support requests",
+      yourTicketsDescription:
+        "Track dispute, payment, and shipping requests without losing listing context.",
+      noTicketsTitle: "No support tickets yet",
+      noTicketsDescription:
+        "When you ask CampusSwap for help, your requests will appear here with their latest status.",
+      yourReportsEyebrow: "Reports",
+      yourReportsTitle: "Your safety reports",
+      yourReportsDescription:
+        "Marketplace reports stay visible here while moderation reviews them.",
+      noReportsTitle: "No reports yet",
+      noReportsDescription:
+        "When you report a listing or user, CampusSwap will track it here.",
+      ticketStatusLabels: {
+        open: "Open",
+        inReview: "In review",
+        resolved: "Resolved",
+        closed: "Closed"
+      },
+      reportStatusLabels: {
+        open: "Open",
+        inReview: "In review",
+        actioned: "Actioned",
+        dismissed: "Dismissed"
+      },
+      targetLabels: {
+        listing: "Listing",
+        user: "User",
+        conversation: "Conversation",
+        transaction: "Transaction"
+      }
+    }
+  };
+
+  mutableDictionaries.es = {
+    ...mutableDictionaries.es,
+    nav: {
+      ...mutableDictionaries.es.nav,
+      app: {
+        ...mutableDictionaries.es.nav.app,
+        support: "Soporte"
+      }
+    },
+    appHome: {
+      ...mutableDictionaries.es.appHome,
+      featuredTitle: "Anuncios destacados de pago",
+      featuredDescription:
+        "Aqu\u00ed solo aparecen primero los anuncios destacados realmente pagados y activos.",
+      popularAreaEyebrow: "Tendencia cerca de ti",
+      popularAreaTitle: "Tendencia en {area}.",
+      popularAreaDescription:
+        "Guardados, vistas, ofertas y confianza del vendedor muestran qu\u00e9 est\u00e1 movi\u00e9ndose de verdad en tu zona.",
+      newTodayEyebrow: "Nuevo cerca de ti",
+      newTodayTitle: "Anuncios recientes cerca de tus zonas de recogida.",
+      newTodayDescription:
+        "Inventario nuevo y activo cerca de tu zona preferida, con un respaldo reciente m\u00e1s amplio cuando hoy hay poco movimiento.",
+      outletEyebrow: "Outlet",
+      outletTitle: "Picks outlet para ahorrar m\u00e1s.",
+      outletDescription:
+        "Anuncios urgentes, rebajados y con condici\u00f3n descrita con honestidad para entrar o salir de piso m\u00e1s r\u00e1pido.",
+      lastChanceEyebrow: "\u00daltima oportunidad",
+      lastChanceTitle: "Oportunidades recientes que pueden volar.",
+      lastChanceDescription:
+        "Anuncios urgentes y con mucho movimiento que merece la pena revisar antes de que desaparezcan."
+    },
+    support: {
+      eyebrow: "Centro de soporte",
+      title: "Resuelve problemas del marketplace sin salir de CampusSwap.",
+      description:
+        "Denuncia actividad sospechosa, pide ayuda y mant\u00e9n cada incidencia vinculada al anuncio, vendedor o pedido real.",
+      chooseCategory: "Elige el tipo de problema que mejor encaja con lo ocurrido.",
+      contactFallback:
+        "Si el problema es urgente fuera de la app, tambi\u00e9n puedes escribir a CampusSwap en {email}.",
+      contextRequiredListing:
+        "Abre este flujo desde un anuncio para que CampusSwap sepa qu\u00e9 anuncio revisar.",
+      contextRequiredUser:
+        "Abre este flujo desde un perfil de vendedor para que CampusSwap sepa a qui\u00e9n est\u00e1s denunciando.",
+      openForm: "Abrir formulario",
+      openListing: "Abrir anuncio",
+      openConversation: "Abrir conversaci\u00f3n",
+      openPurchases: "Abrir compras",
+      openProfile: "Abrir perfil",
+      reportListingCta: "Denunciar anuncio",
+      reportUserCta: "Denunciar usuario",
+      purchaseDisputeCta: "Abrir disputa",
+      paymentHelpCta: "Ayuda con pago",
+      shippingHelpCta: "Ayuda con env\u00edo",
+      orderHelpTitle: "\u00bfNecesitas ayuda con este pedido?",
+      cards: {
+        reportUserTitle: "Denunciar usuario",
+        reportUserDescription:
+          "Se\u00f1ala comportamiento sospechoso, inseguro o enga\u00f1oso para que moderaci\u00f3n lo revise.",
+        reportListingTitle: "Denunciar anuncio",
+        reportListingDescription:
+          "Denuncia detalles inexactos, sospechosos o inseguros desde el contexto real del anuncio.",
+        purchaseDisputeTitle: "Disputa de compra",
+        purchaseDisputeDescription:
+          "Pide ayuda cuando la entrega, el meetup o el estado del producto no coincide con lo acordado.",
+        paymentHelpTitle: "Ayuda con pago",
+        paymentHelpDescription:
+          "Pide ayuda con pagos de destacados, confirmaciones de pago o dudas de cobro.",
+        shippingHelpTitle: "Ayuda con env\u00edo",
+        shippingHelpDescription:
+          "Pide ayuda con retrasos, expectativas de env\u00edo o confusi\u00f3n en la entrega."
+      },
+      form: {
+        contextLabel: "Contexto vinculado",
+        subjectLabel: "Asunto",
+        subjectPlaceholder: "Resumen corto de lo que necesitas",
+        reportSubjectHidden: "",
+        submit: "Enviar solicitud",
+        submitting: "Enviando...",
+        detailsLabel: "Qu\u00e9 ha pasado",
+        reportUserPlaceholder:
+          "Cuenta a CampusSwap qu\u00e9 ha pasado con este usuario y por qu\u00e9 te parece inseguro, enga\u00f1oso o inapropiado.",
+        reportListingPlaceholder:
+          "Cuenta a CampusSwap qu\u00e9 te parece inexacto, inseguro o sospechoso en este anuncio.",
+        purchaseDisputePlaceholder:
+          "Explica qu\u00e9 ocurri\u00f3 con el pedido, el meetup o el estado del producto para que CampusSwap pueda revisar la disputa.",
+        paymentHelpPlaceholder:
+          "Describe el problema de pago o promoci\u00f3n con el que necesitas ayuda.",
+        shippingHelpPlaceholder:
+          "Describe el problema de env\u00edo, retraso o entrega con el que necesitas ayuda."
+      },
+      yourTicketsEyebrow: "Tickets de soporte",
+      yourTicketsTitle: "Tus solicitudes activas",
+      yourTicketsDescription:
+        "Sigue disputas, incidencias de pago y problemas de env\u00edo sin perder el contexto del anuncio.",
+      noTicketsTitle: "Todav\u00eda no hay tickets de soporte",
+      noTicketsDescription:
+        "Cuando pidas ayuda a CampusSwap, tus solicitudes aparecer\u00e1n aqu\u00ed con su estado m\u00e1s reciente.",
+      yourReportsEyebrow: "Denuncias",
+      yourReportsTitle: "Tus denuncias de seguridad",
+      yourReportsDescription:
+        "Las denuncias del marketplace siguen visibles aqu\u00ed mientras moderaci\u00f3n las revisa.",
+      noReportsTitle: "Todav\u00eda no hay denuncias",
+      noReportsDescription:
+        "Cuando denuncies un anuncio o un usuario, CampusSwap lo seguir\u00e1 aqu\u00ed.",
+      ticketStatusLabels: {
+        open: "Abierto",
+        inReview: "En revisi\u00f3n",
+        resolved: "Resuelto",
+        closed: "Cerrado"
+      },
+      reportStatusLabels: {
+        open: "Abierto",
+        inReview: "En revisi\u00f3n",
+        actioned: "Actuado",
+        dismissed: "Descartado"
+      },
+      targetLabels: {
+        listing: "Anuncio",
+        user: "Usuario",
+        conversation: "Conversaci\u00f3n",
+        transaction: "Transacci\u00f3n"
+      }
+    }
+  };
+
+  mutableDictionaries.nl = {
+    ...mutableDictionaries.nl,
+    nav: {
+      ...mutableDictionaries.nl.nav,
+      app: {
+        ...mutableDictionaries.nl.nav.app,
+        support: "Support"
+      }
+    },
+    appHome: {
+      ...mutableDictionaries.nl.appHome,
+      featuredTitle: "Betaalde uitgelichte advertenties",
+      featuredDescription:
+        "Alleen echt betaalde en actieve uitgelichte advertenties komen hier eerst naar voren.",
+      popularAreaEyebrow: "Trending dichtbij",
+      popularAreaTitle: "Trending rond {area}.",
+      popularAreaDescription:
+        "Opslagen, weergaven, biedingen en verkopervertrouwen laten zien wat lokaal echt beweegt.",
+      newTodayEyebrow: "Nieuw bij jou in de buurt",
+      newTodayTitle: "Verse advertenties dicht bij jouw afhaalzones.",
+      newTodayDescription:
+        "Nieuwe actieve voorraad dicht bij jouw voorkeursgebied, met een bredere recente fallback als het vandaag rustig is.",
+      outletEyebrow: "Outlet",
+      outletTitle: "Outletkeuzes voor een lager budget.",
+      outletDescription:
+        "Dringende, afgeprijsde en eerlijk beschreven advertenties voor snellere verhuis- en vertrekmomenten.",
+      lastChanceEyebrow: "Laatste kans",
+      lastChanceTitle: "Recente kansen die snel kunnen verdwijnen.",
+      lastChanceDescription:
+        "Dringende advertenties met veel momentum die een snelle blik waard zijn."
+    },
+    support: {
+      eyebrow: "Supportcentrum",
+      title: "Los marketplaceproblemen op zonder CampusSwap te verlaten.",
+      description:
+        "Meld verdachte activiteit, vraag hulp en houd elke kwestie gekoppeld aan de echte advertentie, verkoper of bestelling.",
+      chooseCategory: "Kies het type probleem dat het beste past bij wat er is gebeurd.",
+      contactFallback:
+        "Voor urgente problemen buiten de app kun je CampusSwap ook bereiken via {email}.",
+      contextRequiredListing:
+        "Open deze flow vanuit een advertentie zodat CampusSwap weet welke advertentie moet worden bekeken.",
+      contextRequiredUser:
+        "Open deze flow vanuit een verkopersprofiel zodat CampusSwap weet wie je meldt.",
+      openForm: "Formulier openen",
+      openListing: "Advertentie openen",
+      openConversation: "Gesprek openen",
+      openPurchases: "Aankopen openen",
+      openProfile: "Profiel openen",
+      reportListingCta: "Advertentie melden",
+      reportUserCta: "Gebruiker melden",
+      purchaseDisputeCta: "Geschil openen",
+      paymentHelpCta: "Hulp bij betaling",
+      shippingHelpCta: "Hulp bij verzending",
+      orderHelpTitle: "Hulp nodig bij deze bestelling?",
+      cards: {
+        reportUserTitle: "Gebruiker melden",
+        reportUserDescription:
+          "Meld verdacht, onveilig of misleidend gedrag zodat moderatie het kan bekijken.",
+        reportListingTitle: "Advertentie melden",
+        reportListingDescription:
+          "Meld onjuiste, verdachte of onveilige advertentiedetails vanuit de live advertentiecontext.",
+        purchaseDisputeTitle: "Aankoopgeschil",
+        purchaseDisputeDescription:
+          "Vraag hulp wanneer de meetup, overdracht of staat van het item niet overeenkomt met wat was afgesproken.",
+        paymentHelpTitle: "Hulp bij betaling",
+        paymentHelpDescription:
+          "Vraag hulp bij uitgelichte betalingen, betaalbevestigingen of factuurverwarring.",
+        shippingHelpTitle: "Hulp bij verzending",
+        shippingHelpDescription:
+          "Vraag hulp bij verzendvertragingen, verzendverwachtingen of onduidelijkheid rond levering."
+      },
+      form: {
+        contextLabel: "Gekoppelde context",
+        subjectLabel: "Onderwerp",
+        subjectPlaceholder: "Korte samenvatting van je hulpvraag",
+        reportSubjectHidden: "",
+        submit: "Verzoek versturen",
+        submitting: "Versturen...",
+        detailsLabel: "Wat is er gebeurd",
+        reportUserPlaceholder:
+          "Vertel CampusSwap wat er met deze gebruiker is gebeurd en waarom het onveilig, misleidend of ongepast voelt.",
+        reportListingPlaceholder:
+          "Vertel CampusSwap wat er onjuist, onveilig of verdacht voelt aan deze advertentie.",
+        purchaseDisputePlaceholder:
+          "Leg uit wat er is gebeurd met de bestelling, meetup of staat van het item zodat CampusSwap het geschil kan beoordelen.",
+        paymentHelpPlaceholder:
+          "Beschrijf het betaal- of promotieprobleem waar je hulp bij nodig hebt.",
+        shippingHelpPlaceholder:
+          "Beschrijf het verzendprobleem, de vertraging of de leveringskwestie waar je hulp bij nodig hebt."
+      },
+      yourTicketsEyebrow: "Supporttickets",
+      yourTicketsTitle: "Jouw actieve supportverzoeken",
+      yourTicketsDescription:
+        "Volg geschillen, betaalvragen en verzendproblemen zonder de advertentiecontext kwijt te raken.",
+      noTicketsTitle: "Nog geen supporttickets",
+      noTicketsDescription:
+        "Wanneer je CampusSwap om hulp vraagt, verschijnen je verzoeken hier met hun laatste status.",
+      yourReportsEyebrow: "Meldingen",
+      yourReportsTitle: "Jouw veiligheidsmeldingen",
+      yourReportsDescription:
+        "Marketplace-meldingen blijven hier zichtbaar terwijl moderatie ze bekijkt.",
+      noReportsTitle: "Nog geen meldingen",
+      noReportsDescription:
+        "Wanneer je een advertentie of gebruiker meldt, volgt CampusSwap dat hier op.",
+      ticketStatusLabels: {
+        open: "Open",
+        inReview: "In beoordeling",
+        resolved: "Opgelost",
+        closed: "Gesloten"
+      },
+      reportStatusLabels: {
+        open: "Open",
+        inReview: "In beoordeling",
+        actioned: "Afgehandeld",
+        dismissed: "Afgesloten"
+      },
+      targetLabels: {
+        listing: "Advertentie",
+        user: "Gebruiker",
+        conversation: "Gesprek",
+        transaction: "Transactie"
+      }
+    }
+  };
+
+  export function getConditionLabel(dictionary: Dictionary, condition: ListingCondition) {
   return dictionary.common.conditionLabels[condition] ?? condition;
 }
 

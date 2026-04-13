@@ -16,7 +16,9 @@ import type {
   ListingDistanceFilter,
   ListingOffer,
   ListingStatus,
-  OfferStatus
+  OfferStatus,
+  ReportTargetType,
+  SupportTicketType
 } from "@/types/domain";
 
 interface ActionResult {
@@ -2813,33 +2815,138 @@ export async function deleteSavedSearchAction(
   };
 }
 
-export async function submitListingReportAction(
+async function createMarketplaceReport(input: {
+  reporterId: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: string;
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>;
+}) {
+  const { error } = await input.supabase.from("reports").insert({
+    reporter_id: input.reporterId,
+    target_type: input.targetType,
+    target_id: input.targetId,
+    reason: input.reason
+  });
+
+  if (error) {
+    return {
+      success: false,
+      message: error.message
+    } satisfies ActionResult;
+  }
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/app/support");
+
+  return {
+    success: true,
+    message:
+      input.targetType === "user"
+        ? "User report submitted. CampusSwap moderation can review it now."
+        : "Report submitted. CampusSwap moderation can review it now."
+  } satisfies ActionResult;
+}
+
+export async function submitSupportEntryAction(
   _: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const reason = String(formData.get("reason") ?? "").trim();
+  const type = String(formData.get("type") ?? "").trim() as SupportTicketType;
+  const details = String(formData.get("details") ?? formData.get("reason") ?? "").trim();
+  const subject = String(formData.get("subject") ?? "").trim();
   const listingId = String(formData.get("listingId") ?? "").trim();
+  const transactionId = String(formData.get("transactionId") ?? "").trim();
+  const conversationId = String(formData.get("conversationId") ?? "").trim();
+  const targetUserId = String(formData.get("targetUserId") ?? "").trim();
+  const validTypes = new Set<SupportTicketType>([
+    "report-user",
+    "report-listing",
+    "purchase-dispute",
+    "payment-help",
+    "shipping-help"
+  ]);
 
-  if (!reason || reason.length < 12) {
+  if (!validTypes.has(type)) {
     return {
       success: false,
-      message: "Share a short reason so the moderation team can review it properly."
+      message: "Choose a support category before sending this request."
+    };
+  }
+
+  if (!details || details.length < 12) {
+    return {
+      success: false,
+      message: "Share enough detail so CampusSwap can review the issue properly."
     };
   }
 
   if (!isLiveMode) {
     return {
       success: false,
-      message: "Switch to live mode to submit marketplace reports."
+      message: "Switch to live mode to submit support requests."
     };
   }
 
   const { user, supabase } = await requireMarketplaceContext();
-  const { error } = await supabase.from("reports").insert({
-    reporter_id: user.id,
-    target_type: "listing",
-    target_id: listingId,
-    reason
+
+  if (type === "report-listing") {
+    if (!listingId) {
+      return {
+        success: false,
+        message: "Open support from a listing so CampusSwap knows which listing to review."
+      };
+    }
+
+    const result = await createMarketplaceReport({
+      reporterId: user.id,
+      targetType: "listing",
+      targetId: listingId,
+      reason: details,
+      supabase
+    });
+
+    revalidatePath(`/app/listings/${listingId}`);
+    return result;
+  }
+
+  if (type === "report-user") {
+    if (!targetUserId) {
+      return {
+        success: false,
+        message: "Open support from a seller profile so CampusSwap knows who you are reporting."
+      };
+    }
+
+    const result = await createMarketplaceReport({
+      reporterId: user.id,
+      targetType: "user",
+      targetId: targetUserId,
+      reason: details,
+      supabase
+    });
+
+    revalidatePath(`/app/profile?userId=${targetUserId}`);
+    return result;
+  }
+
+  if (subject.length < 4) {
+    return {
+      success: false,
+      message: "Add a short subject so the support queue is easier to review."
+    };
+  }
+
+  const { error } = await supabase.from("support_tickets").insert({
+    user_id: user.id,
+    type,
+    status: "open",
+    subject,
+    details,
+    listing_id: listingId || null,
+    conversation_id: conversationId || null,
+    transaction_id: transactionId || null,
+    target_user_id: targetUserId || null
   });
 
   if (error) {
@@ -2849,13 +2956,36 @@ export async function submitListingReportAction(
     };
   }
 
-  revalidatePath(`/app/listings/${listingId}`);
+  revalidatePath("/app/support");
   revalidatePath("/admin/reports");
+
+  if (listingId) {
+    revalidatePath(`/app/listings/${listingId}`);
+  }
+
+  if (transactionId) {
+    revalidatePath("/app/my-purchases");
+  }
+
+  if (conversationId) {
+    revalidatePath(`/app/messages/${conversationId}`);
+  }
 
   return {
     success: true,
-    message: "Report submitted. CampusSwap moderation can review it now."
+    message: "Support request submitted. CampusSwap can review it from the support queue now."
   };
+}
+
+export async function submitListingReportAction(
+  _: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const proxy = new FormData();
+  proxy.set("type", "report-listing");
+  proxy.set("listingId", String(formData.get("listingId") ?? "").trim());
+  proxy.set("details", String(formData.get("reason") ?? "").trim());
+  return submitSupportEntryAction(_, proxy);
 }
 
 export async function submitTransactionReviewAction(

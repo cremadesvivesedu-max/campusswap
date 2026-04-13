@@ -146,11 +146,26 @@ export const demoData: DemoDataBundle = {
     { id: "review-2", transactionId: "txn-bookcase", authorId: "user-sanne", targetUserId: "user-omar", rating: 5, text: "Easy meetup, on time, and very clear communication.", createdAt: "2026-03-30T19:10:00.000Z" }
   ],
   reports: [
-    { id: "report-1", reporterId: "user-omar", targetType: "listing", targetId: "listing-headphones-1", status: "in-review", reason: "Condition looks more worn than photos suggest.", createdAt: "2026-04-01T18:55:00.000Z" }
-  ],
-  moderationActions: [
-    { id: "mod-1", reportId: "report-1", actorId: "user-admin", action: "Requested refreshed photos from seller.", createdAt: "2026-04-01T19:10:00.000Z" }
-  ],
+      { id: "report-1", reporterId: "user-omar", targetType: "listing", targetId: "listing-headphones-1", status: "in-review", reason: "Condition looks more worn than photos suggest.", createdAt: "2026-04-01T18:55:00.000Z" }
+    ],
+    supportTickets: [
+      {
+        id: "support-1",
+        userId: "user-omar",
+        type: "purchase-dispute",
+        status: "open",
+        subject: "Need help confirming a delayed pickup",
+        details: "The seller asked to postpone twice and I want to know whether I should cancel or wait.",
+        listingId: "listing-chair-1",
+        transactionId: "txn-chair",
+        targetUserId: "user-lina",
+        createdAt: "2026-04-03T13:20:00.000Z",
+        updatedAt: "2026-04-03T13:20:00.000Z"
+      }
+    ],
+    moderationActions: [
+      { id: "mod-1", reportId: "report-1", actorId: "user-admin", action: "Requested refreshed photos from seller.", createdAt: "2026-04-01T19:10:00.000Z" }
+    ],
   sponsoredPlacements: [
     { id: "sponsor-1", name: "Maas Laundry Club", label: "Demo sponsor", location: "Home feed", copy: "Student laundry pickup near Wyck. Demo sponsor card only.", cta: "See offer", href: "/join", active: true },
     { id: "sponsor-2", name: "Cycle Fix Maastricht", label: "Demo sponsor", location: "Bike category", copy: "Affordable same-day puncture fixes. Demo placement.", cta: "Book repair", href: "/trust-safety", active: true }

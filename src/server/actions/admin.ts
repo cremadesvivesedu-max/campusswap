@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
-import type { ListingStatus, ReportStatus } from "@/types/domain";
+import type { ListingStatus, ReportStatus, SupportTicketStatus } from "@/types/domain";
 
 interface AdminActionResult {
   success: boolean;
@@ -106,6 +106,44 @@ export async function updateReportStatusAction(
   revalidatePath("/admin/reports");
   revalidatePath("/admin/listings");
   revalidatePath("/app");
+
+  return;
+}
+
+export async function updateSupportTicketStatusAction(
+  formData: FormData
+): Promise<void> {
+  const ticketId = String(formData.get("ticketId") ?? "").trim();
+  const status = String(formData.get("status") ?? "open").trim() as SupportTicketStatus;
+  const note = String(formData.get("note") ?? "").trim();
+
+  if (!isLiveMode) {
+    return;
+  }
+
+  const { adminUser, supabase } = await requireAdminActionContext();
+  const { error } = await supabase
+    .from("support_tickets")
+    .update({
+      status,
+      admin_note: note || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", ticketId);
+
+  if (error) {
+    return;
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: adminUser.id,
+    entity: "support_ticket",
+    entity_id: ticketId,
+    action: `status:${status}`
+  });
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/app/support");
 
   return;
 }

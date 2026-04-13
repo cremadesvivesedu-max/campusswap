@@ -10,6 +10,7 @@ import type {
   PricingSetting,
   Report,
   SponsoredPlacement,
+  SupportTicket,
   User,
   UniversityVerificationRule
 } from "@/types/domain";
@@ -395,6 +396,59 @@ export async function getAdminReports() {
       status: row.status,
       reason: row.reason,
       createdAt: row.created_at
+    })
+  );
+}
+
+export async function getAdminSupportTickets() {
+  if (!isLiveMode) {
+    return demoData.supportTickets;
+  }
+
+  await requireAdminAccess();
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("support_tickets")
+    .select(
+      "id, user_id, type, status, subject, details, listing_id, conversation_id, transaction_id, target_user_id, admin_note, created_at, updated_at"
+    )
+    .order("updated_at", { ascending: false });
+
+  return (
+    (data as {
+      id: string;
+      user_id: string;
+      type: SupportTicket["type"];
+      status: SupportTicket["status"];
+      subject: string;
+      details: string;
+      listing_id: string | null;
+      conversation_id: string | null;
+      transaction_id: string | null;
+      target_user_id: string | null;
+      admin_note: string | null;
+      created_at: string;
+      updated_at: string;
+    }[] | null) ?? []
+  ).map(
+    (row): SupportTicket => ({
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      status: row.status,
+      subject: row.subject,
+      details: row.details,
+      listingId: row.listing_id ?? undefined,
+      conversationId: row.conversation_id ?? undefined,
+      transactionId: row.transaction_id ?? undefined,
+      targetUserId: row.target_user_id ?? undefined,
+      adminNote: row.admin_note ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     })
   );
 }

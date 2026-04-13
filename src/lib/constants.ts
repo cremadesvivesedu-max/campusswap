@@ -18,6 +18,7 @@ export const appNav = [
   { href: "/app/search", key: "search" },
   { href: "/app/saved", key: "saved" },
   { href: "/app/messages", key: "messages" },
+  { href: "/app/support", key: "support" },
   { href: "/app/settings", key: "settings" }
 ] as const;
 

@@ -192,6 +192,35 @@ export default async function MyPurchasesPage() {
                   </Button>
                 ) : null}
 
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    {dictionary.support.orderHelpTitle}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/app/support?type=purchase-dispute&transactionId=${transaction.id}${listing ? `&listingId=${listing.id}` : ""}${transaction.conversationId ? `&conversationId=${transaction.conversationId}` : ""}${counterpart ? `&targetUserId=${counterpart.id}` : ""}`}
+                      >
+                        {dictionary.support.purchaseDisputeCta}
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/app/support?type=payment-help&transactionId=${transaction.id}${listing ? `&listingId=${listing.id}` : ""}${transaction.conversationId ? `&conversationId=${transaction.conversationId}` : ""}${counterpart ? `&targetUserId=${counterpart.id}` : ""}`}
+                      >
+                        {dictionary.support.paymentHelpCta}
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/app/support?type=shipping-help&transactionId=${transaction.id}${listing ? `&listingId=${listing.id}` : ""}${transaction.conversationId ? `&conversationId=${transaction.conversationId}` : ""}${counterpart ? `&targetUserId=${counterpart.id}` : ""}`}
+                      >
+                        {dictionary.support.shippingHelpCta}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+
                 {transaction.state === "completed" && counterpart ? (
                   hasAuthoredReview ? (
                     <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">

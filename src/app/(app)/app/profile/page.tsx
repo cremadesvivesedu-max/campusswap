@@ -91,7 +91,13 @@ export default async function ProfilePage({
             <Button asChild>
               <Link href="/app/profile/edit">{dictionary.profile.editProfile}</Link>
             </Button>
-          ) : null}
+          ) : (
+            <Button asChild variant="outline">
+              <Link href={`/app/support?type=report-user&targetUserId=${profileUser.id}`}>
+                {dictionary.support.reportUserCta}
+              </Link>
+            </Button>
+          )}
         </div>
       </section>
 

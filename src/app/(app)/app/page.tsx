@@ -12,7 +12,9 @@ import {
   getFeaturedListings,
   getForYouFeed,
   getHomeFeed,
+  getLastChanceFeed,
   getMostPopularInAreaFeed,
+  getOutletListings,
   getNewTodayFeed
 } from "@/server/queries/marketplace";
 
@@ -26,6 +28,8 @@ export default async function AppHomePage() {
     becauseYouViewed,
     popularInArea,
     newToday,
+    outletListings,
+    lastChanceFeed,
     dictionary
   ] = await Promise.all([
     getCurrentUser(),
@@ -36,6 +40,8 @@ export default async function AppHomePage() {
     getBecauseYouViewedFeed(),
     getMostPopularInAreaFeed(),
     getNewTodayFeed(),
+    getOutletListings(),
+    getLastChanceFeed(),
     getDictionaryForRequest()
   ]);
   const sponsor = sponsors[0];
@@ -131,6 +137,7 @@ export default async function AppHomePage() {
               <ListingCard
                 key={entry.listing.id}
                 listing={entry.listing}
+                reason={entry.breakdown.reasons}
                 showMessageAction
               />
             ))}
@@ -150,6 +157,7 @@ export default async function AppHomePage() {
               <ListingCard
                 key={entry.listing.id}
                 listing={entry.listing}
+                reason={entry.reasons}
                 showMessageAction
               />
             ))}
@@ -184,6 +192,36 @@ export default async function AppHomePage() {
           />
           <div className="grid gap-6 lg:grid-cols-3">
             {newToday.slice(0, 3).map((listing) => (
+              <ListingCard key={listing.id} listing={listing} showMessageAction />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {outletListings.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.outletEyebrow}
+            title={dictionary.appHome.outletTitle}
+            description={dictionary.appHome.outletDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {outletListings.slice(0, 3).map((listing) => (
+              <ListingCard key={listing.id} listing={listing} showMessageAction />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {lastChanceFeed.length ? (
+        <section className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.appHome.lastChanceEyebrow}
+            title={dictionary.appHome.lastChanceTitle}
+            description={dictionary.appHome.lastChanceDescription}
+          />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {lastChanceFeed.slice(0, 3).map((listing) => (
               <ListingCard key={listing.id} listing={listing} showMessageAction />
             ))}
           </div>

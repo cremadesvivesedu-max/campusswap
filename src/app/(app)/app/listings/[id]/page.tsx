@@ -24,7 +24,6 @@ import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-button";
-import { ReportListingForm } from "@/components/marketplace/report-listing-form";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { Button } from "@/components/ui/button";
 
@@ -283,7 +282,20 @@ export default async function ListingDetailPage({
                 </div>
               </>
             ) : (
-              <ReportListingForm listingId={listing.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button asChild variant="outline">
+                  <Link href={`/app/support?type=report-listing&listingId=${listing.id}`}>
+                    {dictionary.support.reportListingCta}
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link
+                    href={`/app/support?type=report-user&targetUserId=${listing.sellerId}&listingId=${listing.id}`}
+                  >
+                    {dictionary.support.reportUserCta}
+                  </Link>
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

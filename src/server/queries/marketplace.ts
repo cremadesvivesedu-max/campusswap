@@ -22,11 +22,13 @@ import type {
   Notification,
   Profile,
   RecommendationBreakdown,
+  Report,
   Review,
   SavedSearch,
   SellerListingTransaction,
   SellerTrustMetrics,
   SponsoredPlacement,
+  SupportTicket,
   Transaction,
   User,
   VerificationStatus
@@ -183,6 +185,32 @@ interface DbNotificationRow {
   destination_href?: string | null;
   read: boolean;
   created_at: string;
+}
+
+interface DbReportRow {
+  id: string;
+  reporter_id: string;
+  target_type: Report["targetType"];
+  target_id: string;
+  status: Report["status"];
+  reason: string;
+  created_at: string;
+}
+
+interface DbSupportTicketRow {
+  id: string;
+  user_id: string;
+  type: SupportTicket["type"];
+  status: SupportTicket["status"];
+  subject: string;
+  details: string;
+  listing_id: string | null;
+  conversation_id: string | null;
+  transaction_id: string | null;
+  target_user_id: string | null;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DbSavedSearchRow {
@@ -817,6 +845,36 @@ function mapNotification(row: DbNotificationRow): Notification {
     destinationHref: row.destination_href ?? undefined,
     read: row.read,
     createdAt: row.created_at
+  };
+}
+
+function mapReport(row: DbReportRow): Report {
+  return {
+    id: row.id,
+    reporterId: row.reporter_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    status: row.status,
+    reason: row.reason,
+    createdAt: row.created_at
+  };
+}
+
+function mapSupportTicket(row: DbSupportTicketRow): SupportTicket {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    status: row.status,
+    subject: row.subject,
+    details: row.details,
+    listingId: row.listing_id ?? undefined,
+    conversationId: row.conversation_id ?? undefined,
+    transactionId: row.transaction_id ?? undefined,
+    targetUserId: row.target_user_id ?? undefined,
+    adminNote: row.admin_note ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 
@@ -1897,6 +1955,52 @@ export async function getNotificationsForUser(userId?: string) {
   return ((data as unknown as DbNotificationRow[] | null) ?? []).map(mapNotification);
 }
 
+export async function getReportsForUser(userId?: string) {
+  if (!isLiveMode) {
+    const resolvedUserId = userId ?? demoCurrentUserId;
+    return demoData.reports.filter((report) => report.reporterId === resolvedUserId);
+  }
+
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const supabase = await getSupabaseClient();
+
+  if (!supabase || !currentUser) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("reports")
+    .select("id, reporter_id, target_type, target_id, status, reason, created_at")
+    .eq("reporter_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  return ((data as unknown as DbReportRow[] | null) ?? []).map(mapReport);
+}
+
+export async function getSupportTicketsForUser(userId?: string) {
+  if (!isLiveMode) {
+    const resolvedUserId = userId ?? demoCurrentUserId;
+    return demoData.supportTickets.filter((ticket) => ticket.userId === resolvedUserId);
+  }
+
+  const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const supabase = await getSupabaseClient();
+
+  if (!supabase || !currentUser) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("support_tickets")
+    .select(
+      "id, user_id, type, status, subject, details, listing_id, conversation_id, transaction_id, target_user_id, admin_note, created_at, updated_at"
+    )
+    .eq("user_id", currentUser.id)
+    .order("updated_at", { ascending: false });
+
+  return ((data as unknown as DbSupportTicketRow[] | null) ?? []).map(mapSupportTicket);
+}
+
 export async function getListingsForSeller(userId: string) {
   if (!isLiveMode) {
     return demoData.listings.filter(
@@ -2163,49 +2267,133 @@ export async function getMostPopularInAreaFeed(userId?: string) {
   }
 
   const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const supabase = await getSupabaseClient();
 
-  if (!currentUser) {
+  if (!currentUser || !supabase) {
     return [];
   }
 
   const areaSeed = currentUser.profile.neighborhood || "Maastricht";
-  const listings = await fetchActiveListings({
+  const rows = await fetchListingRows({
     pickupArea: areaSeed,
     distance: "nearby",
-    sort: "recommended"
+    sort: "newest"
   });
 
-  return [...listings]
-    .filter((listing) => listing.sellerId !== currentUser.id)
-    .sort((left, right) => {
-      const leftScore =
-        left.saveCount * 4 +
-        left.viewCount +
-        Math.round(left.sellerRating * 5) +
-        (left.featured ? 10 : 0);
-      const rightScore =
-        right.saveCount * 4 +
-        right.viewCount +
-        Math.round(right.sellerRating * 5) +
-        (right.featured ? 10 : 0);
+  if (!rows.length) {
+    return [];
+  }
 
-      return rightScore - leftScore;
+  const [{ data: favoriteRows }, sellerMetricsByUserId, listingAnalyticsByListingId] =
+    await Promise.all([
+      supabase
+        .from("favorites")
+        .select("listing_id")
+        .eq("user_id", currentUser.id)
+        .in(
+          "listing_id",
+          rows.map((row) => row.id)
+        ),
+      fetchSellerMetricsMap(rows.map((row) => row.seller_id)),
+      fetchListingAnalyticsMap(rows.map((row) => row.id))
+    ]);
+
+  const savedListingIds = new Set(
+    (((favoriteRows as { listing_id: string }[] | null) ?? []).map((row) => row.listing_id))
+  );
+  const listings = rows.map((row) =>
+    mapListing(row, {
+      savedListingIds,
+      sellerMetricsByUserId,
+      listingAnalyticsByListingId
     })
-    .slice(0, 6);
+  );
+
+  return listings
+      .filter((listing) => listing.sellerId !== currentUser.id)
+      .sort((left, right) => {
+        const leftScore =
+          left.saveCount * 4 +
+          left.viewCount +
+          (left.analytics?.messagesReceived ?? 0) * 3 +
+          (left.analytics?.offersReceived ?? 0) * 5 +
+          Math.round(left.sellerRating * 5) +
+          (left.featured ? 10 : 0) +
+          (left.urgent ? 4 : 0);
+        const rightScore =
+          right.saveCount * 4 +
+          right.viewCount +
+          (right.analytics?.messagesReceived ?? 0) * 3 +
+          (right.analytics?.offersReceived ?? 0) * 5 +
+          Math.round(right.sellerRating * 5) +
+          (right.featured ? 10 : 0) +
+          (right.urgent ? 4 : 0);
+
+        return rightScore - leftScore;
+      })
+      .slice(0, 6);
 }
 
 export async function getNewTodayFeed(userId?: string) {
   const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
-  const listings = await fetchActiveListings({ sort: "newest" });
+  const listings = await fetchActiveListings({
+    pickupArea: currentUser?.profile.neighborhood,
+    distance: currentUser?.profile.neighborhood ? "nearby" : undefined,
+    sort: "newest"
+  });
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
+  const fallbackThreshold = Date.now() - 1000 * 60 * 60 * 72;
+
+  const primary = listings.filter(
+    (listing) =>
+      Date.parse(listing.createdAt) >= startOfDay.getTime() &&
+      listing.sellerId !== currentUser?.id
+  );
+
+  if (primary.length >= 3) {
+    return primary.slice(0, 6);
+  }
 
   return listings
     .filter(
       (listing) =>
-        Date.parse(listing.createdAt) >= startOfDay.getTime() &&
+        Date.parse(listing.createdAt) >= fallbackThreshold &&
         listing.sellerId !== currentUser?.id
-    )
+      )
+    .slice(0, 6);
+}
+
+export async function getLastChanceFeed() {
+  if (!isLiveMode) {
+    return demoData.listings
+      .filter((listing) => listing.status === "active" && (listing.urgent || listing.outlet))
+      .sort(
+        (left, right) =>
+          Number(right.urgent) - Number(left.urgent) ||
+          Date.parse(right.createdAt) - Date.parse(left.createdAt)
+      )
+      .slice(0, 6);
+  }
+
+  const listings = await fetchActiveListings({ sort: "newest" });
+
+  return listings
+    .filter((listing) => listing.urgent || listing.outlet)
+    .sort((left, right) => {
+      const leftScore =
+        (left.urgent ? 20 : 0) +
+        (left.outlet ? 10 : 0) +
+        left.saveCount * 2 +
+        Math.max(0, 18 - Math.round((Date.now() - Date.parse(left.createdAt)) / (1000 * 60 * 60 * 12)));
+      const rightScore =
+        (right.urgent ? 20 : 0) +
+        (right.outlet ? 10 : 0) +
+        right.saveCount * 2 +
+        Math.max(0, 18 - Math.round((Date.now() - Date.parse(right.createdAt)) / (1000 * 60 * 60 * 12)));
+
+      return rightScore - leftScore;
+    })
     .slice(0, 6);
 }
 

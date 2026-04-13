@@ -17,6 +17,13 @@ export type ListingDistanceFilter = "same-area" | "nearby" | "citywide";
 export type FulfillmentMethod = "pickup" | "shipping";
 export type ReportTargetType = "listing" | "user" | "conversation";
 export type ReportStatus = "open" | "in-review" | "actioned" | "dismissed";
+export type SupportTicketType =
+  | "report-user"
+  | "report-listing"
+  | "purchase-dispute"
+  | "payment-help"
+  | "shipping-help";
+export type SupportTicketStatus = "open" | "in-review" | "resolved" | "closed";
 export type PromotionType = "featured" | "seller-boost";
 export type PromotionPurchaseStatus =
   | "pending"
@@ -314,6 +321,22 @@ export interface Report {
   createdAt: string;
 }
 
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  type: SupportTicketType;
+  status: SupportTicketStatus;
+  subject: string;
+  details: string;
+  listingId?: string;
+  conversationId?: string;
+  transactionId?: string;
+  targetUserId?: string;
+  adminNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ModerationAction {
   id: string;
   reportId: string;
@@ -409,6 +432,7 @@ export interface DemoDataBundle {
   transactions: Transaction[];
   reviews: Review[];
   reports: Report[];
+  supportTickets: SupportTicket[];
   moderationActions: ModerationAction[];
   sponsoredPlacements: SponsoredPlacement[];
   promotionPurchases: PromotionPurchase[];

@@ -22,6 +22,19 @@ export const offerStatusEnum = pgEnum("offer_status", ["open", "countered", "acc
 export const fulfillmentMethodEnum = pgEnum("fulfillment_method", ["pickup", "shipping"]);
 export const reportTargetTypeEnum = pgEnum("report_target_type", ["listing", "user", "conversation"]);
 export const reportStatusEnum = pgEnum("report_status", ["open", "in-review", "actioned", "dismissed"]);
+export const supportTicketTypeEnum = pgEnum("support_ticket_type", [
+  "report-user",
+  "report-listing",
+  "purchase-dispute",
+  "payment-help",
+  "shipping-help"
+]);
+export const supportTicketStatusEnum = pgEnum("support_ticket_status", [
+  "open",
+  "in-review",
+  "resolved",
+  "closed"
+]);
 export const promotionTypeEnum = pgEnum("promotion_type", ["featured", "seller-boost"]);
 export const promotionPurchaseStatusEnum = pgEnum("promotion_purchase_status", [
   "pending",
@@ -298,6 +311,25 @@ export const reports = pgTable("reports", {
   reason: text("reason").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+export const supportTickets = pgTable("support_tickets", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  type: supportTicketTypeEnum("type").notNull(),
+  status: supportTicketStatusEnum("status").default("open").notNull(),
+  subject: varchar("subject", { length: 200 }).notNull(),
+  details: text("details").notNull(),
+  listingId: uuid("listing_id").references(() => listings.id),
+  conversationId: uuid("conversation_id").references(() => conversations.id),
+  transactionId: uuid("transaction_id").references(() => transactions.id),
+  targetUserId: uuid("target_user_id").references(() => users.id),
+  adminNote: text("admin_note"),
+  ...timestamps
+}, (table) => ({
+  userIdx: index("support_tickets_user_created_idx").on(table.userId, table.createdAt),
+  statusIdx: index("support_tickets_status_updated_idx").on(table.status, table.updatedAt),
+  transactionIdx: index("support_tickets_transaction_idx").on(table.transactionId)
+}));
 
 export const moderationActions = pgTable("moderation_actions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
