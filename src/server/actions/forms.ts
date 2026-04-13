@@ -85,6 +85,7 @@ async function insertNotificationSafely(
     type: "promotion" | "listing";
     title: string;
     body: string;
+    destination_href?: string | null;
   }
 ) {
   const { error } = await supabase.from("notifications").insert(notification);
@@ -330,7 +331,8 @@ async function notifySavedSearchMatchesForListing(input: {
       user_id: row.user_id,
       type: "listing",
       title: "New listing for a saved search",
-      body: `${input.listing.title} matches your saved search "${row.name}".`
+      body: `${input.listing.title} matches your saved search "${row.name}".`,
+      destination_href: `/app/listings/${input.listing.id}`
     });
   }
 }
@@ -408,7 +410,8 @@ async function notifyPriceDropWatchers(input: {
       user_id: userId,
       type: "listing",
       title: "Price dropped on a saved listing",
-      body: `${input.listing.title} dropped from EUR ${input.previousPrice.toFixed(2)} to EUR ${input.newPrice.toFixed(2)}.`
+      body: `${input.listing.title} dropped from EUR ${input.previousPrice.toFixed(2)} to EUR ${input.newPrice.toFixed(2)}.`,
+      destination_href: `/app/listings/${input.listing.id}`
     });
     processedUserIds.add(userId);
   }
@@ -442,7 +445,8 @@ async function notifyPriceDropWatchers(input: {
       user_id: row.user_id,
       type: "listing",
       title: "Price drop for a saved search",
-      body: `${input.listing.title} now matches "${row.name}" at a lower price: EUR ${input.newPrice.toFixed(2)}.`
+      body: `${input.listing.title} now matches "${row.name}" at a lower price: EUR ${input.newPrice.toFixed(2)}.`,
+      destination_href: `/app/listings/${input.listing.id}`
     });
   }
 }
@@ -702,7 +706,8 @@ async function syncFeaturedPromotionRequest({
       user_id: sellerId,
       type: "promotion",
       title: "Promotion request recorded",
-      body: `CampusSwap saved your EUR ${amount} highlight request for ${listingTitle}. The listing stays non-featured until payment is completed.`
+      body: `CampusSwap saved your EUR ${amount} highlight request for ${listingTitle}. The listing stays non-featured until payment is completed.`,
+      destination_href: `/app/sell?listingId=${listingId}`
     });
 
     return {
@@ -1212,7 +1217,8 @@ export async function createListingAction(_: unknown, formData: FormData) {
       ? requiresTrustReview
         ? `${title} is waiting for trust review because your account is not student-verified yet.`
         : `${title} is waiting for moderation before it becomes visible.`
-      : `${title} is now visible on CampusSwap.`
+      : `${title} is now visible on CampusSwap.`,
+    destination_href: `/app/listings/${listing.id}`
   });
 
   if (!needsReview) {
@@ -1497,7 +1503,8 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     body:
       nextStatus === "pending-review"
         ? `${title} was updated and moved back into review before returning to public browse.`
-        : `${title} was updated successfully.`
+        : `${title} was updated successfully.`,
+    destination_href: `/app/listings/${listingId}`
   });
 
   const alertListing = buildAlertListing({

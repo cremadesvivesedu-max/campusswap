@@ -180,6 +180,7 @@ interface DbNotificationRow {
   type: Notification["type"];
   title: string;
   body: string;
+  destination_href?: string | null;
   read: boolean;
   created_at: string;
 }
@@ -813,6 +814,7 @@ function mapNotification(row: DbNotificationRow): Notification {
     type: row.type,
     title: row.title,
     body: row.body,
+    destinationHref: row.destination_href ?? undefined,
     read: row.read,
     createdAt: row.created_at
   };
@@ -1874,11 +1876,23 @@ export async function getNotificationsForUser(userId?: string) {
     return [];
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notifications")
-    .select("id, user_id, type, title, body, read, created_at")
+    .select("id, user_id, type, title, body, destination_href, read, created_at")
     .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false });
+
+  if (error?.code === "42703" || error?.message.includes("destination_href")) {
+    const fallback = await supabase
+      .from("notifications")
+      .select("id, user_id, type, title, body, read, created_at")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false });
+
+    return ((fallback.data as unknown as DbNotificationRow[] | null) ?? []).map(
+      mapNotification
+    );
+  }
 
   return ((data as unknown as DbNotificationRow[] | null) ?? []).map(mapNotification);
 }

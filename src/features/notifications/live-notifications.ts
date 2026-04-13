@@ -12,6 +12,7 @@ interface DbNotificationRow {
   type: Notification["type"];
   title: string;
   body: string;
+  destination_href?: string | null;
   read: boolean;
   created_at: string;
 }
@@ -30,6 +31,7 @@ function mapNotification(row: DbNotificationRow): Notification {
     type: row.type,
     title: row.title,
     body: row.body,
+    destinationHref: row.destination_href ?? undefined,
     read: row.read,
     createdAt: row.created_at
   };
@@ -44,10 +46,25 @@ async function fetchNotifications(currentUserId: string) {
 
   const { data, error } = await supabase
     .from("notifications")
-    .select("id, user_id, type, title, body, read, created_at")
+    .select("id, user_id, type, title, body, destination_href, read, created_at")
     .eq("user_id", currentUserId)
     .order("created_at", { ascending: false })
     .limit(24);
+
+  if (error?.code === "42703" || error?.message.includes("destination_href")) {
+    const fallback = await supabase
+      .from("notifications")
+      .select("id, user_id, type, title, body, read, created_at")
+      .eq("user_id", currentUserId)
+      .order("created_at", { ascending: false })
+      .limit(24);
+
+    if (fallback.error) {
+      throw new Error(fallback.error.message);
+    }
+
+    return ((fallback.data as DbNotificationRow[] | null) ?? []).map(mapNotification);
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -60,6 +77,10 @@ export function useLiveNotifications(currentUserId: string) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+  const unreadCount = useMemo(
+    () => notifications.reduce((count, notification) => count + (notification.read ? 0 : 1), 0),
+    [notifications]
+  );
 
   const markNotificationReadLocally = (notificationId: string) => {
     setNotifications((current) =>
@@ -158,7 +179,7 @@ export function useLiveNotifications(currentUserId: string) {
 
   return {
     notifications,
-    unreadCount: notifications.filter((notification) => !notification.read).length,
+    unreadCount,
     error,
     markNotificationReadLocally,
     markAllNotificationsReadLocally

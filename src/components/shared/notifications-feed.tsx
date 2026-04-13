@@ -1,11 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowUpRight, Bell, CheckCheck } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { resolveNotificationDestination } from "@/features/notifications/destinations";
 import {
   getNotificationTypeLabel
 } from "@/lib/i18n-shared";
@@ -48,6 +50,7 @@ export function NotificationsFeed({
 }: {
   currentUserId: string;
 }) {
+  const router = useRouter();
   const { dictionary } = useLocale();
   const {
     notifications,
@@ -57,6 +60,14 @@ export function NotificationsFeed({
     markAllNotificationsReadLocally
   } = useLiveNotifications(currentUserId);
   const [isPending, startTransition] = useTransition();
+  const notificationItems = useMemo(
+    () =>
+      notifications.map((notification) => ({
+        notification,
+        destination: resolveNotificationDestination(notification)
+      })),
+    [notifications]
+  );
 
   if (!notifications.length && !error) {
     return (
@@ -111,7 +122,7 @@ export function NotificationsFeed({
       ) : null}
 
       <div className="space-y-4">
-        {notifications.map((notification) => (
+        {notificationItems.map(({ notification, destination }) => (
           <article
             key={notification.id}
             className={cn(
@@ -121,8 +132,12 @@ export function NotificationsFeed({
                 : "border-emerald-200 bg-emerald-50/60"
             )}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <button
+                type="button"
+                onClick={() => router.push(destination.href)}
+                className="group flex-1 space-y-3 rounded-[20px] text-left transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={notificationTone(notification.type)}>
                     {getNotificationTypeLabel(dictionary, notification.type)}
@@ -138,6 +153,10 @@ export function NotificationsFeed({
                       ? dictionary.notifications.readLabel
                       : dictionary.notifications.unreadLabel}
                   </Badge>
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-slate-950">
+                    {dictionary.notifications.openContext}
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </span>
                 </div>
                 <div className="space-y-2">
                   <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -147,7 +166,7 @@ export function NotificationsFeed({
                     {notification.body}
                   </p>
                 </div>
-              </div>
+              </button>
               <div className="flex flex-col items-start gap-3 sm:items-end">
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
                   {formatNotificationDate(notification.createdAt)}
@@ -157,15 +176,16 @@ export function NotificationsFeed({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() =>
+                    onClick={(event) => {
+                      event.stopPropagation();
                       startTransition(async () => {
                         const result = await markNotificationReadAction(notification.id);
 
                         if (result.success) {
                           markNotificationReadLocally(notification.id);
                         }
-                      })
-                    }
+                      });
+                    }}
                     disabled={isPending}
                   >
                     {dictionary.notifications.markRead}

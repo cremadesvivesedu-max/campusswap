@@ -316,6 +316,7 @@ async function notifyUser(
     type?: "message" | "promotion" | "review" | "listing" | "safety" | "system";
     preference?: NotificationPreferenceKey;
     dedupeKey?: string;
+    href?: string;
   }
 ) {
   const admin = createAdminSupabaseClient();
@@ -353,7 +354,8 @@ async function notifyUser(
     user_id: userId,
     type: options?.type ?? "system",
     title,
-    body
+    body,
+    destination_href: options?.href ?? null
   });
 }
 
@@ -858,7 +860,9 @@ async function cancelCompetingTransactions(
 
   await Promise.all(
     rows.map((row) =>
-      notifyUser(row.buyer_id, "Purchase request closed", buyerMessage)
+      notifyUser(row.buyer_id, "Purchase request closed", buyerMessage, {
+        href: "/app/my-purchases"
+      })
     )
   );
 }
@@ -932,7 +936,8 @@ export async function toggleFavoriteAction(listingId: string): Promise<ToggleFav
 
   await syncListingSaveCount(listingId);
   await notifyUser(user.id, "Saved to your shortlist", "CampusSwap will keep this listing close in your saved feed.", {
-    type: "listing"
+    type: "listing",
+    href: "/app/saved"
   });
 
   const admin = createAdminSupabaseClient();
@@ -952,7 +957,8 @@ export async function toggleFavoriteAction(listingId: string): Promise<ToggleFav
         {
           type: "listing",
           preference: "listing_updates",
-          dedupeKey: `favorite:${listingId}:${user.id}`
+          dedupeKey: `favorite:${listingId}:${user.id}`,
+          href: `/app/listings/${listingId}`
         }
       );
     }
@@ -1031,7 +1037,8 @@ export async function updateListingStatusAction(
     user_id: user.id,
     type: "listing",
     title: "Listing status updated",
-    body: `${listing.title} is now marked as ${nextStatus}.`
+    body: `${listing.title} is now marked as ${nextStatus}.`,
+    destination_href: `/app/listings/${listingId}`
   });
 
   revalidatePath("/app");
@@ -1173,7 +1180,8 @@ export async function startPurchaseIntentAction(
       {
         type: "listing",
         preference: "listing_updates",
-        dedupeKey: `purchase-request:${transactionId}`
+        dedupeKey: `purchase-request:${transactionId}`,
+        href: `/app/messages/${conversationId}`
       }
     );
 
@@ -1783,7 +1791,8 @@ export async function reserveConversationBuyerAction(
       `${listing.title} is now reserved while you arrange the meetup.`,
       {
         type: "listing",
-        preference: "listing_updates"
+        preference: "listing_updates",
+        href: `/app/messages/${conversation.id}`
       }
     );
 
@@ -1869,7 +1878,10 @@ export async function releaseReservationAction(
     "The seller reopened the listing for new buyers.",
     {
       type: "listing",
-      preference: "listing_updates"
+      preference: "listing_updates",
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -1965,7 +1977,10 @@ export async function markTransactionPaidAction(
     {
       type: "listing",
       preference: "listing_updates",
-      dedupeKey: `order-paid:${transaction.id}`
+      dedupeKey: `order-paid:${transaction.id}`,
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -2066,7 +2081,10 @@ export async function markTransactionReadyForPickupAction(
     {
       type: "listing",
       preference: "listing_updates",
-      dedupeKey: `ready-for-pickup:${transaction.id}`
+      dedupeKey: `ready-for-pickup:${transaction.id}`,
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -2164,7 +2182,10 @@ export async function markTransactionShippedAction(
     {
       type: "listing",
       preference: "listing_updates",
-      dedupeKey: `order-shipped:${transaction.id}`
+      dedupeKey: `order-shipped:${transaction.id}`,
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -2257,7 +2278,10 @@ export async function markTransactionDeliveredAction(
     {
       type: "listing",
       preference: "listing_updates",
-      dedupeKey: `order-delivered:${transaction.id}`
+      dedupeKey: `order-delivered:${transaction.id}`,
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -2362,7 +2386,10 @@ export async function cancelTransactionAction(
     "The purchase request was cancelled and the listing was updated.",
     {
       type: "listing",
-      preference: "listing_updates"
+      preference: "listing_updates",
+      href: transaction.conversation_id
+        ? `/app/messages/${transaction.conversation_id}`
+        : `/app/my-purchases`
     }
   );
 
@@ -2464,7 +2491,8 @@ export async function completeTransactionAction(
       "Your exchange is complete. You can now leave a review for the seller.",
       {
         type: "review",
-        dedupeKey: `review-eligible:${transaction.id}:${transaction.buyer_id}`
+        dedupeKey: `review-eligible:${transaction.id}:${transaction.buyer_id}`,
+        href: "/app/my-purchases"
       }
     ),
     notifyUser(
@@ -2473,7 +2501,8 @@ export async function completeTransactionAction(
       "Your exchange is complete. You can now leave a review for the buyer.",
       {
         type: "review",
-        dedupeKey: `review-eligible:${transaction.id}:${transaction.seller_id}`
+        dedupeKey: `review-eligible:${transaction.id}:${transaction.seller_id}`,
+        href: "/app/my-purchases"
       }
     )
   ]);
@@ -2543,13 +2572,19 @@ export async function removeListingAction(listingId: string): Promise<ActionResu
     await notifyUser(
       listing.seller_id,
       "Listing removed from your marketplace surfaces",
-      `${listing.title} is hidden from your profile and all buyer feeds, while payment, chat, and transaction history stay intact.`
+      `${listing.title} is hidden from your profile and all buyer feeds, while payment, chat, and transaction history stay intact.`,
+      {
+        href: "/app/my-listings"
+      }
     );
   } else {
     await notifyUser(
       listing.seller_id,
       "Listing deleted",
-      `${listing.title} was permanently deleted because it had no linked payment, chat, or transaction history to preserve.`
+      `${listing.title} was permanently deleted because it had no linked payment, chat, or transaction history to preserve.`,
+      {
+        href: "/app/my-listings"
+      }
     );
   }
 
@@ -2936,7 +2971,8 @@ export async function submitTransactionReviewAction(
       user_id: targetUserId,
       type: "review",
       title: "New CampusSwap review",
-      body: "A completed exchange review just landed on your profile."
+      body: "A completed exchange review just landed on your profile.",
+      destination_href: `/app/profile?userId=${targetUserId}`
     });
   }
 

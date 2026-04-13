@@ -11,12 +11,14 @@ async function notifyPromotionEvent(
     userId,
     dedupeKey,
     title,
-    body
+    body,
+    href
   }: {
     userId: string;
     dedupeKey: string;
     title: string;
     body: string;
+    href?: string;
   }
 ) {
   const { data: profile } = await admin
@@ -51,7 +53,8 @@ async function notifyPromotionEvent(
     user_id: userId,
     type: "promotion",
     title,
-    body
+    body,
+    destination_href: href ?? null
   });
 
   if (error) {
@@ -139,13 +142,15 @@ async function handleCompletedCheckout(session: Stripe.Checkout.Session) {
       userId: metadata.sellerId,
       dedupeKey: `promotion-payment-complete:${purchase.id}`,
       title: "Payment completed",
-      body: "Your EUR 2 featured listing payment was processed successfully."
+      body: "Your EUR 2 featured listing payment was processed successfully.",
+      href: `/app/sell?listingId=${metadata.listingId}`
     }),
     notifyPromotionEvent(admin, {
       userId: metadata.sellerId,
       dedupeKey: `promotion-featured-active:${purchase.id}`,
       title: "Featured listing is active",
-      body: "Your listing is now boosted across CampusSwap featured discovery surfaces."
+      body: "Your listing is now boosted across CampusSwap featured discovery surfaces.",
+      href: `/app/listings/${metadata.listingId}`
     })
   ]);
 }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useTransition, type ReactNode } from "rea
 import { Bell, CheckCheck, MessageSquare } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useLocale } from "@/components/providers/locale-provider";
+import { resolveNotificationDestination } from "@/features/notifications/destinations";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,15 @@ export function AppHeaderActivity() {
     () => previews.reduce((sum, preview) => sum + preview.unreadCount, 0),
     [previews]
   );
+  const recentPreviews = useMemo(() => previews.slice(0, 4), [previews]);
+  const recentNotifications = useMemo(
+    () =>
+      notifications.slice(0, 4).map((notification) => ({
+        notification,
+        destination: resolveNotificationDestination(notification)
+      })),
+    [notifications]
+  );
 
   useEffect(() => {
     setOpenPanel(null);
@@ -78,58 +88,15 @@ export function AppHeaderActivity() {
     }
   };
 
-  const resolveNotificationHref = (notification: Notification) => {
-    const searchableText = `${notification.title} ${notification.body}`.toLowerCase();
-
-    if (notification.type === "message") {
-      return "/app/messages";
-    }
-
-    if (notification.type === "review") {
-      return "/app/my-purchases";
-    }
-
-    if (notification.type === "promotion") {
-      return "/app/my-listings";
-    }
-
-    if (notification.type === "listing") {
-      if (searchableText.includes("shortlist")) {
-        return "/app/saved";
-      }
-
-      if (
-        searchableText.includes("saved search") ||
-        searchableText.includes("price drop")
-      ) {
-        return "/app/search";
-      }
-
-      if (
-        searchableText.includes("reserved") ||
-        searchableText.includes("order") ||
-        searchableText.includes("exchange") ||
-        searchableText.includes("purchase")
-      ) {
-        return "/app/my-purchases";
-      }
-
-      if (
-        searchableText.includes("saved your listing") ||
-        searchableText.includes("featured") ||
-        searchableText.includes("promotion") ||
-        searchableText.includes("listing removed") ||
-        searchableText.includes("listing deleted")
-      ) {
-        return "/app/my-listings";
-      }
-    }
-
-    return "/app/notifications";
-  };
-
-  const openNotificationDestination = (notification?: Notification) => {
-    const href = notification ? resolveNotificationHref(notification) : "/app/notifications";
+  const openNotificationDestination = (
+    notification?: Notification,
+    hrefOverride?: string
+  ) => {
+    const href = hrefOverride ?? (
+      notification
+        ? resolveNotificationDestination(notification).href
+        : "/app/notifications"
+    );
 
     if (notification) {
       if (!notification.read) {
@@ -229,7 +196,7 @@ export function AppHeaderActivity() {
               </p>
             ) : previews.length ? (
               <div className="space-y-3">
-                {previews.slice(0, 4).map((preview) => {
+                {recentPreviews.map((preview) => {
                   const latestSummary = preview.latestMessage?.text
                     ? preview.latestMessage.text
                     : preview.latestMessage?.attachment
@@ -334,7 +301,7 @@ export function AppHeaderActivity() {
               </p>
             ) : notifications.length ? (
               <div className="space-y-3">
-                {notifications.slice(0, 4).map((notification) => (
+                {recentNotifications.map(({ notification, destination }) => (
                   <div
                     key={notification.id}
                     className={cn(
@@ -346,7 +313,9 @@ export function AppHeaderActivity() {
                   >
                     <button
                       type="button"
-                      onClick={() => openNotificationDestination(notification)}
+                      onClick={() =>
+                        openNotificationDestination(notification, destination.href)
+                      }
                       className="w-full text-left"
                     >
                       <div className="flex items-center justify-between gap-3">

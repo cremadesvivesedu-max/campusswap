@@ -355,6 +355,7 @@ export interface Notification {
   type: NotificationType;
   title: string;
   body: string;
+  destinationHref?: string;
   read: boolean;
   createdAt: string;
 }

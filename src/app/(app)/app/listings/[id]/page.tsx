@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Eye, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -124,6 +125,35 @@ export default async function ListingDetailPage({
                     ? dictionary.map.privacyBody
                     : dictionary.map.description}
                 </p>
+              </div>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {dictionary.myListings.analyticsTitle}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Eye className="h-4 w-4" />
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                      {dictionary.myListings.views}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">
+                    {listing.viewCount}
+                  </p>
+                </div>
+                <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Heart className="h-4 w-4" />
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                      {dictionary.myListings.saves}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">
+                    {listing.saveCount}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
