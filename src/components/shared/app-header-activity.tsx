@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
-import { Bell, CheckCheck, MessageSquare } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageSquare } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useLocale } from "@/components/providers/locale-provider";
 import { resolveNotificationDestination } from "@/features/notifications/destinations";
@@ -148,6 +148,12 @@ export function AppHeaderActivity() {
       ) : null}
 
       <div className="relative z-30 flex items-center gap-2">
+        <HeaderIconButton
+          count={0}
+          icon={<Heart className="h-4 w-4" />}
+          label={dictionary.nav.app.saved}
+          onClick={() => navigateFromPanel("/app/saved")}
+        />
         <HeaderIconButton
           count={unreadMessages}
           icon={<MessageSquare className="h-4 w-4" />}
