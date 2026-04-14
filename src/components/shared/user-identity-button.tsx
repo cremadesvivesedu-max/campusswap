@@ -14,7 +14,7 @@ export function UserIdentityButton({ user }: UserIdentityButtonProps) {
   return (
     <Link
       href="/app/profile"
-      className="inline-flex items-center gap-3 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 transition hover:border-emerald-300 hover:bg-emerald-100"
+      className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
       aria-label="Open your profile"
     >
       <ProfileAvatar
@@ -24,12 +24,12 @@ export function UserIdentityButton({ user }: UserIdentityButtonProps) {
         className="h-10 w-10"
       />
       <span className="hidden text-left sm:block">
-        <span className="block text-sm font-semibold text-emerald-950">{user.profile.fullName}</span>
+        <span className="block text-sm font-semibold text-slate-950">{user.profile.fullName}</span>
         <span className="block pt-1">
           <VerificationStatusBadge status={user.verificationStatus} className="align-middle" />
         </span>
       </span>
-      <ChevronDown className="hidden h-4 w-4 text-emerald-900 sm:block" />
+      <ChevronDown className="hidden h-4 w-4 text-slate-500 sm:block" />
     </Link>
   );
 }

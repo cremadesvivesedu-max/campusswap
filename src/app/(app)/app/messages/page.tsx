@@ -11,11 +11,13 @@ export default async function MessagesPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeading
-        eyebrow={dictionary.messages.eyebrow}
-        title={dictionary.messages.title}
-        description={dictionary.messages.description}
-      />
+      <div className="rounded-[32px] border border-slate-200/80 bg-white/75 p-6 shadow-sm">
+        <SectionHeading
+          eyebrow={dictionary.messages.eyebrow}
+          title={dictionary.messages.title}
+          description={dictionary.messages.description}
+        />
+      </div>
       <MessagesInbox currentUserId={user.id} />
     </div>
   );

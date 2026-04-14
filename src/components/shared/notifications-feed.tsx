@@ -80,9 +80,9 @@ export function NotificationsFeed({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[28px] border border-slate-200/80 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="rounded-full bg-slate-950 p-2 text-white">
+          <div className="rounded-full bg-slate-950 p-2.5 text-white shadow-sm">
             <Bell className="h-4 w-4" />
           </div>
           <div>
@@ -126,9 +126,9 @@ export function NotificationsFeed({
           <article
             key={notification.id}
             className={cn(
-              "rounded-[28px] border px-5 py-5 transition",
+              "rounded-[30px] border px-5 py-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.09)]",
               notification.read
-                ? "border-slate-200 bg-white"
+                ? "border-slate-200/80 bg-white"
                 : "border-emerald-200 bg-emerald-50/60"
             )}
           >
@@ -136,7 +136,7 @@ export function NotificationsFeed({
               <button
                 type="button"
                 onClick={() => router.push(destination.href)}
-                className="group flex-1 space-y-3 rounded-[20px] text-left transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                className="group flex-1 space-y-3 rounded-[22px] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={notificationTone(notification.type)}>
@@ -153,7 +153,7 @@ export function NotificationsFeed({
                       ? dictionary.notifications.readLabel
                       : dictionary.notifications.unreadLabel}
                   </Badge>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-slate-950">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-500 transition group-hover:border-slate-300 group-hover:text-slate-950">
                     {dictionary.notifications.openContext}
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>

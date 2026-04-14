@@ -12,11 +12,13 @@ export default async function SavedPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeading
-        eyebrow={dictionary.saved.eyebrow}
-        title={dictionary.saved.title}
-        description={dictionary.saved.description}
-      />
+      <div className="rounded-[32px] border border-slate-200/80 bg-white/75 p-6 shadow-sm">
+        <SectionHeading
+          eyebrow={dictionary.saved.eyebrow}
+          title={dictionary.saved.title}
+          description={dictionary.saved.description}
+        />
+      </div>
       {listings.length ? (
         <SavedListingsWorkspace listings={listings} />
       ) : (

@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import {
   getActiveSponsoredPlacements,
   getBecauseYouViewedFeed,
@@ -47,15 +48,15 @@ export default async function AppHomePage() {
   const sponsor = sponsors[0];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="bg-slate-950 text-white">
-          <CardContent className="space-y-6 p-8">
+        <Card className="overflow-hidden border-slate-900 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.28),_transparent_38%),linear-gradient(135deg,_#020617,_#0f172a_62%,_#1e293b)] text-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
+          <CardContent className="space-y-7 p-8 sm:p-10">
             <div className="space-y-3">
-              <p className="font-display text-4xl font-semibold">
+              <p className="font-display text-4xl font-semibold tracking-tight sm:text-[2.8rem]">
                 {dictionary.appHome.welcomeBack}, {user.profile.fullName.split(" ")[0]}.
               </p>
-              <p className="max-w-2xl text-sm leading-7 text-slate-300">
+              <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
                 {dictionary.appHome.feedDescription}
               </p>
             </div>
@@ -69,9 +70,9 @@ export default async function AppHomePage() {
             </div>
           </CardContent>
         </Card>
-        <div className="grid gap-6">
+        <div className="grid auto-rows-fr gap-6">
           {sponsor ? (
-            <Card className="bg-white">
+            <Card className="border-slate-200/80 bg-white/90 shadow-sm">
               <CardHeader>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                   {sponsor.label}
@@ -88,7 +89,7 @@ export default async function AppHomePage() {
               </CardContent>
             </Card>
           ) : null}
-          <Card className="bg-white">
+          <Card className="border-slate-200/80 bg-white/90 shadow-sm">
             <CardContent className="flex items-center justify-between gap-4 p-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
@@ -112,7 +113,7 @@ export default async function AppHomePage() {
         </div>
       </div>
 
-      <section className="space-y-6">
+      <HomeSection tone="featured">
         <SectionHeading
           eyebrow={dictionary.appHome.featuredEyebrow}
           title={dictionary.appHome.featuredTitle}
@@ -123,10 +124,10 @@ export default async function AppHomePage() {
             <ListingCard key={listing.id} listing={listing} showMessageAction />
           ))}
         </div>
-      </section>
+      </HomeSection>
 
       {forYouFeed.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.forYouEyebrow}
             title={dictionary.appHome.forYouTitle}
@@ -142,11 +143,11 @@ export default async function AppHomePage() {
               />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
       {becauseYouViewed.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.becauseViewedEyebrow}
             title={dictionary.appHome.becauseViewedTitle}
@@ -162,11 +163,11 @@ export default async function AppHomePage() {
               />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
       {popularInArea.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.popularAreaEyebrow}
             title={dictionary.appHome.popularAreaTitle.replace(
@@ -180,11 +181,11 @@ export default async function AppHomePage() {
               <ListingCard key={listing.id} listing={listing} showMessageAction />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
       {newToday.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.newTodayEyebrow}
             title={dictionary.appHome.newTodayTitle}
@@ -195,11 +196,11 @@ export default async function AppHomePage() {
               <ListingCard key={listing.id} listing={listing} showMessageAction />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
       {outletListings.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.outletEyebrow}
             title={dictionary.appHome.outletTitle}
@@ -210,11 +211,11 @@ export default async function AppHomePage() {
               <ListingCard key={listing.id} listing={listing} showMessageAction />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
       {lastChanceFeed.length ? (
-        <section className="space-y-6">
+        <HomeSection>
           <SectionHeading
             eyebrow={dictionary.appHome.lastChanceEyebrow}
             title={dictionary.appHome.lastChanceTitle}
@@ -225,10 +226,10 @@ export default async function AppHomePage() {
               <ListingCard key={listing.id} listing={listing} showMessageAction />
             ))}
           </div>
-        </section>
+        </HomeSection>
       ) : null}
 
-      <section className="space-y-6">
+      <HomeSection>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <SectionHeading
             eyebrow={dictionary.appHome.homeFeedEyebrow}
@@ -247,7 +248,28 @@ export default async function AppHomePage() {
             <ListingCard key={listing.id} listing={listing} showMessageAction />
           ))}
         </div>
-      </section>
+      </HomeSection>
     </div>
+  );
+}
+
+function HomeSection({
+  children,
+  tone = "default"
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "featured";
+}) {
+  return (
+    <section
+      className={cn(
+        "space-y-6 rounded-[32px] border p-6 shadow-sm backdrop-blur-sm sm:p-7",
+        tone === "featured"
+          ? "border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]"
+          : "border-slate-200/80 bg-white/72"
+      )}
+    >
+      {children}
+    </section>
   );
 }

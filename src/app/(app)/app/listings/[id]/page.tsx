@@ -55,11 +55,11 @@ export default async function ListingDetailPage({
     : null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_0.42fr]">
-      <div className="space-y-6">
+    <div className="grid gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="space-y-7">
         <ListingGallery images={listing.images} title={listing.title} />
-        <Card className="bg-white">
-          <CardContent className="space-y-4 p-8">
+        <Card className="border-slate-200/80 bg-white shadow-sm">
+          <CardContent className="space-y-6 p-6 sm:p-8">
             <div className="flex flex-wrap gap-2">
               {listing.featured ? (
                 <Badge className="bg-amber-200 text-slate-900">
@@ -81,15 +81,26 @@ export default async function ListingDetailPage({
                 <Badge>{getListingStatusLabel(dictionary, listing.status)}</Badge>
               ) : null}
             </div>
-            <h1 className="font-display text-4xl font-semibold text-slate-950">
-              {listing.title}
-            </h1>
-            <p className="text-lg font-semibold text-slate-950">
-              {formatCurrency(listing.price)}
-            </p>
-            <p className="text-sm leading-7 text-slate-600">{listing.description}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-3">
+                <h1 className="font-display text-4xl font-semibold tracking-tight text-slate-950 sm:text-[2.9rem]">
+                  {listing.title}
+                </h1>
+                <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                  {listing.description}
+                </p>
+              </div>
+              <div className="min-w-[12rem] rounded-[26px] border border-slate-200/80 bg-slate-50/80 px-5 py-4 lg:text-right">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  {listing.freshnessLabel}
+                </p>
+                <p className="mt-2 font-display text-3xl font-semibold text-slate-950">
+                  {formatCurrency(listing.price)}
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.listing.fulfillmentTitle}
                 </p>
@@ -112,7 +123,7 @@ export default async function ListingDetailPage({
                   </p>
                 </div>
               </div>
-              <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.listing.pickupArea}
                 </p>
@@ -125,33 +136,33 @@ export default async function ListingDetailPage({
                     : dictionary.map.description}
                 </p>
               </div>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                {dictionary.myListings.analyticsTitle}
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Eye className="h-4 w-4" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                      {dictionary.myListings.views}
+              <div className="rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {dictionary.myListings.analyticsTitle}
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Eye className="h-4 w-4" />
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                        {dictionary.myListings.views}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-lg font-semibold text-slate-950">
+                      {listing.viewCount}
                     </p>
                   </div>
-                  <p className="mt-2 text-lg font-semibold text-slate-950">
-                    {listing.viewCount}
-                  </p>
-                </div>
-                <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Heart className="h-4 w-4" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                      {dictionary.myListings.saves}
+                  <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Heart className="h-4 w-4" />
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                        {dictionary.myListings.saves}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-lg font-semibold text-slate-950">
+                      {listing.saveCount}
                     </p>
                   </div>
-                  <p className="mt-2 text-lg font-semibold text-slate-950">
-                    {listing.saveCount}
-                  </p>
                 </div>
               </div>
             </div>
@@ -160,17 +171,35 @@ export default async function ListingDetailPage({
                 <Badge key={tag}>{tag}</Badge>
               ))}
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FavoriteToggleButton
-                listingId={listing.id}
-                initialSaved={listing.isSaved}
-              />
-              {!isOwnListing ? (
-                <MessageSellerButton
+            <div className="space-y-3 rounded-[26px] border border-slate-200/80 bg-slate-50/70 p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <FavoriteToggleButton
                   listingId={listing.id}
-                  sellerId={listing.sellerId}
-                  listingStatus={listing.status}
+                  initialSaved={listing.isSaved}
                 />
+                {!isOwnListing ? (
+                  <MessageSellerButton
+                    listingId={listing.id}
+                    sellerId={listing.sellerId}
+                    listingStatus={listing.status}
+                  />
+                ) : null}
+              </div>
+              {!isOwnListing ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button asChild variant="outline">
+                    <Link href={`/app/support?type=report-listing&listingId=${listing.id}`}>
+                      {dictionary.support.reportListingCta}
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link
+                      href={`/app/support?type=report-user&targetUserId=${listing.sellerId}&listingId=${listing.id}`}
+                    >
+                      {dictionary.support.reportUserCta}
+                    </Link>
+                  </Button>
+                </div>
               ) : null}
             </div>
             {!isOwnListing && listing.status === "reserved" && transactionContext.reservedForOtherBuyer ? (
@@ -193,7 +222,7 @@ export default async function ListingDetailPage({
         />
       </div>
       <div className="space-y-6">
-        <Card className="bg-white">
+        <Card className="border-slate-200/80 bg-white shadow-sm">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
               {dictionary.listing.seller}
@@ -281,22 +310,7 @@ export default async function ListingDetailPage({
                   />
                 </div>
               </>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Button asChild variant="outline">
-                  <Link href={`/app/support?type=report-listing&listingId=${listing.id}`}>
-                    {dictionary.support.reportListingCta}
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link
-                    href={`/app/support?type=report-user&targetUserId=${listing.sellerId}&listingId=${listing.id}`}
-                  >
-                    {dictionary.support.reportUserCta}
-                  </Link>
-                </Button>
-              </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
         {seller ? (
@@ -314,7 +328,7 @@ export default async function ListingDetailPage({
             isOwnListing={isOwnListing}
           />
         ) : null}
-        <Card className="bg-slate-950 text-white">
+        <Card className="overflow-hidden border-slate-900 bg-[linear-gradient(180deg,#0f172a,#111827)] text-white shadow-sm">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold">
               {dictionary.listing.safeMeetup}

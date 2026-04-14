@@ -29,14 +29,14 @@ export function SavedListingsWorkspace({
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-3">
         {listings.map((listing) => {
           const selected = selectedIds.includes(listing.id);
           const maxed = !selected && selectedIds.length >= maxComparedListings;
 
           return (
             <div key={listing.id} className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between gap-3 rounded-[26px] border border-slate-200/80 bg-white/90 px-4 py-4 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-slate-950">
                     {dictionary.saved.compareLabel}
@@ -73,7 +73,7 @@ export function SavedListingsWorkspace({
       </div>
 
       {selectedListings.length ? (
-        <Card className="bg-white">
+        <Card className="border-slate-200/80 bg-white shadow-sm">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -158,7 +158,7 @@ export function SavedListingsWorkspace({
               {selectedListings.map((listing) => (
                 <div
                   key={listing.id}
-                  className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
+                  className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4"
                 >
                   <p className="font-semibold text-slate-950">{listing.title}</p>
                   <p className="mt-1 text-sm text-slate-600">
@@ -190,13 +190,13 @@ function CompareRow({
 }) {
   return (
     <tr>
-      <th className="min-w-44 rounded-[20px] bg-slate-100 px-4 py-3 text-left text-sm font-semibold text-slate-700">
+      <th className="min-w-44 rounded-[22px] bg-slate-100 px-4 py-3 text-left text-sm font-semibold text-slate-700">
         {label}
       </th>
       {values.map((value, index) => (
         <td
           key={`${label}-${index}`}
-          className="min-w-52 rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+          className="min-w-52 rounded-[22px] border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm"
         >
           {value}
         </td>

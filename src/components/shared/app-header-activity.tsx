@@ -147,7 +147,7 @@ export function AppHeaderActivity() {
         />
       ) : null}
 
-      <div className="relative z-30 flex items-center gap-2">
+      <div className="relative z-30 flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 p-1 shadow-sm">
         <HeaderIconButton
           count={0}
           icon={<Heart className="h-4 w-4" />}
@@ -174,7 +174,7 @@ export function AppHeaderActivity() {
         />
 
         {openPanel === "messages" ? (
-          <div className="absolute right-12 top-14 z-30 w-[min(24rem,calc(100vw-2rem))] rounded-[28px] border border-slate-200 bg-white p-4 shadow-2xl">
+          <div className="absolute right-12 top-[calc(100%+0.85rem)] z-30 w-[min(24rem,calc(100vw-2rem))] rounded-[30px] border border-slate-200/80 bg-white/95 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="font-display text-xl font-semibold text-slate-950">
@@ -214,7 +214,7 @@ export function AppHeaderActivity() {
                       type="button"
                       key={preview.conversation.id}
                       onClick={() => openConversation(preview.conversation.id)}
-                      className="block w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
+                      className="block w-full rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-3.5 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
@@ -255,7 +255,7 @@ export function AppHeaderActivity() {
         ) : null}
 
         {openPanel === "notifications" ? (
-          <div className="absolute right-0 top-14 z-30 w-[min(24rem,calc(100vw-2rem))] rounded-[28px] border border-slate-200 bg-white p-4 shadow-2xl">
+          <div className="absolute right-0 top-[calc(100%+0.85rem)] z-30 w-[min(24rem,calc(100vw-2rem))] rounded-[30px] border border-slate-200/80 bg-white/95 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="font-display text-xl font-semibold text-slate-950">
@@ -311,9 +311,9 @@ export function AppHeaderActivity() {
                   <div
                     key={notification.id}
                     className={cn(
-                      "rounded-[22px] border px-4 py-3 transition",
+                      "rounded-[24px] border px-4 py-3.5 shadow-sm transition",
                       notification.read
-                        ? "border-slate-200 bg-slate-50 hover:bg-white"
+                        ? "border-slate-200/80 bg-slate-50/80 hover:bg-white"
                         : "border-emerald-200 bg-emerald-50/70 hover:bg-emerald-50"
                     )}
                   >
@@ -387,7 +387,7 @@ function HeaderIconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-white text-slate-700 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
     >
       {icon}
       {count > 0 ? (

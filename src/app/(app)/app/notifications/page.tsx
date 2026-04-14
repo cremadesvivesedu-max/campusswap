@@ -11,11 +11,13 @@ export default async function NotificationsPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeading
-        eyebrow={dictionary.notifications.eyebrow}
-        title={dictionary.notifications.title}
-        description={dictionary.notifications.description}
-      />
+      <div className="rounded-[32px] border border-slate-200/80 bg-white/75 p-6 shadow-sm">
+        <SectionHeading
+          eyebrow={dictionary.notifications.eyebrow}
+          title={dictionary.notifications.title}
+          description={dictionary.notifications.description}
+        />
+      </div>
       <NotificationsFeed currentUserId={user.id} />
     </div>
   );

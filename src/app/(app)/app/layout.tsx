@@ -25,33 +25,33 @@ export default async function AppLayout({
   return (
     <CurrentUserProvider user={user}>
       <div className="min-h-screen bg-[#f7f4ee]">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+        <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
               <BrandLogo href="/app" tone="dark" imageClassName="h-9 sm:h-10" />
               <p className="text-sm text-slate-500">
                 {dictionary.site.publicTagline}
               </p>
             </div>
-            <nav className="flex flex-wrap gap-4 text-sm text-slate-600">
+            <nav className="flex flex-wrap items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50/80 p-1 text-sm text-slate-600 shadow-sm">
               {appNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="transition hover:text-slate-950"
+                  className="rounded-full px-3 py-2 font-medium transition hover:bg-white hover:text-slate-950"
                 >
                   {dictionary.nav.app[item.key]}
                 </Link>
               ))}
             </nav>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 p-1.5 shadow-sm">
               <LanguageSwitcher tone="dark" />
               <AppHeaderActivity />
               <UserIdentityButton user={user} />
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl space-y-6 px-6 py-10">
+        <main className="mx-auto max-w-7xl space-y-6 px-6 py-8 sm:py-10">
           <VerificationPromptCard user={user} />
           {children}
         </main>

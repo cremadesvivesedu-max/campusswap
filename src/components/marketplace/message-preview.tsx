@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ArrowUpRight } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
@@ -48,10 +49,10 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
     <button
       type="button"
       onClick={() => router.push(`/app/messages/${preview.conversation.id}`)}
-      className="block rounded-[28px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+      className="group block rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
     >
-      <Card className="bg-white transition hover:-translate-y-0.5 hover:shadow-glow">
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
+      <Card className="border-slate-200/80 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.14)]">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={preview.counterpart.id}
@@ -64,17 +65,20 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
                 {listingTitle}
               </p>
               <p className="text-sm text-slate-500">
-                {counterpartName} - {latestLabel}
+                {counterpartName}
+              </p>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                {latestLabel}
               </p>
             </div>
           </div>
           {preview.unreadCount ? (
-            <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-slate-950">
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
               {preview.unreadCount} {dictionary.messages.actions.unread}
             </span>
           ) : null}
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-0">
           <div className="flex flex-wrap gap-2">
             {preview.listing.status !== "active" ? (
               <Badge className="bg-slate-950 text-white">
@@ -88,7 +92,7 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
               <Badge className="bg-amber-200 text-slate-900">{dictionary.listing.featured}</Badge>
             ) : null}
           </div>
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 rounded-[22px] border border-slate-200/80 bg-slate-50/80 px-4 py-3">
             {latest?.attachment?.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -101,8 +105,9 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
               {latestSummary}
             </p>
           </div>
-          <p className="text-sm font-semibold text-slate-950">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
             {dictionary.messages.actions.openConversation}
+            <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </p>
         </CardContent>
       </Card>

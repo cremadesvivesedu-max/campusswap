@@ -131,7 +131,7 @@ function OrderSummary({
   ].filter((entry) => entry.value);
 
   return (
-    <div className="space-y-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+    <div className="space-y-4 rounded-[26px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(241,245,249,0.92))] p-5 shadow-sm">
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
           {dictionary.messages.exchange.orderBreakdownTitle}
@@ -297,7 +297,7 @@ export function ListingTransactionPanel({
         : false);
 
     return (
-      <Card className="bg-white">
+      <Card className="border-slate-200/80 bg-white shadow-sm">
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -312,7 +312,7 @@ export function ListingTransactionPanel({
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
           {buyer ? (
-            <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+            <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-4">
               <div className="flex items-center gap-3">
                 <ProfileAvatar
                   userId={buyer.id}
@@ -344,7 +344,7 @@ export function ListingTransactionPanel({
             pickupArea={listingPickupArea}
           />
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3">
             {transaction?.conversationId ? (
               <Button asChild type="button" variant="secondary">
                 <Link href={`/app/messages/${transaction.conversationId}`}>
@@ -454,7 +454,7 @@ export function ListingTransactionPanel({
             ) : null}
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="rounded-[20px] bg-slate-50/70 px-4 py-3 text-xs text-slate-500">
             {dictionary.messages.thread.meetupSafelyBody}
           </p>
           <OfferNegotiationPanel
@@ -466,8 +466,16 @@ export function ListingTransactionPanel({
             transaction={transaction}
             conversationId={transaction?.conversationId}
           />
-          {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
-          {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+          {feedback ? (
+            <p className="rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              {feedback}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {error}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     );
@@ -495,7 +503,7 @@ export function ListingTransactionPanel({
     viewerTransaction?.state === "delivered";
 
   return (
-    <Card className="bg-white">
+    <Card className="border-slate-200/80 bg-white shadow-sm">
       <CardHeader className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -511,7 +519,7 @@ export function ListingTransactionPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+        <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={seller.id}
@@ -557,7 +565,7 @@ export function ListingTransactionPanel({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3">
           {canStartPurchase && listingPickupAvailable && listingShippingAvailable ? (
             <>
               <Button
@@ -569,7 +577,7 @@ export function ListingTransactionPanel({
               >
                 {isPending
                   ? dictionary.messages.exchange.startingPurchase
-                  : `${dictionary.messages.exchange.startPurchase} · ${dictionary.messages.exchange.pickupOption}`}
+                  : `${dictionary.messages.exchange.startPurchase} - ${dictionary.messages.exchange.pickupOption}`}
               </Button>
               <Button
                 type="button"
@@ -581,7 +589,7 @@ export function ListingTransactionPanel({
               >
                 {isPending
                   ? dictionary.messages.exchange.startingPurchase
-                  : `${dictionary.messages.exchange.startPurchase} · ${dictionary.messages.exchange.shippingOption}`}
+                  : `${dictionary.messages.exchange.startPurchase} - ${dictionary.messages.exchange.shippingOption}`}
               </Button>
             </>
           ) : null}
@@ -657,7 +665,7 @@ export function ListingTransactionPanel({
           ) : null}
         </div>
 
-        <p className="text-xs text-slate-500">
+        <p className="rounded-[20px] bg-slate-50/70 px-4 py-3 text-xs text-slate-500">
           {dictionary.messages.exchange.noOnlinePayment}
         </p>
         <OfferNegotiationPanel
@@ -665,12 +673,20 @@ export function ListingTransactionPanel({
           listingPrice={listingPrice}
           sellerId={seller.id}
           currentUserId={currentUserId}
-            latestOffer={context.latestOffer}
-            transaction={viewerTransaction ?? context.activeTransaction}
-            conversationId={viewerTransaction?.conversationId}
-          />
-        {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
-        {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+          latestOffer={context.latestOffer}
+          transaction={viewerTransaction ?? context.activeTransaction}
+          conversationId={viewerTransaction?.conversationId}
+        />
+        {feedback ? (
+          <p className="rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {feedback}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {error}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
