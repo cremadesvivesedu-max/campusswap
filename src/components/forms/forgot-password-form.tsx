@@ -64,7 +64,7 @@ export function ForgotPasswordForm() {
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       <Link
         href="/login"
-        className="block rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-950"
+        className="block rounded-[22px] border border-slate-200/80 bg-slate-100/80 px-4 py-3 text-sm font-medium text-slate-700 hover:text-slate-950"
       >
         {dictionary.auth.forgotPassword.backToLogin}
       </Link>

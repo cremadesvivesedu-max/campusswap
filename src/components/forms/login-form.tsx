@@ -68,7 +68,7 @@ export function LoginForm() {
         />
       </div>
       <div className="flex justify-end">
-        <Link href="/forgot-password" className="text-sm font-medium text-slate-600 hover:text-slate-950">
+        <Link href="/forgot-password" className="text-sm font-medium text-slate-700 hover:text-slate-950">
           {dictionary.auth.login.forgotPassword}
         </Link>
       </div>
@@ -79,7 +79,7 @@ export function LoginForm() {
         <p className="text-sm text-emerald-700">{dictionary.auth.resetPassword.success}</p>
       ) : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-      <p className="rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm text-slate-500">
+      <p className="rounded-[22px] border border-slate-200/80 bg-slate-100/80 px-4 py-3 text-sm text-slate-600">
         {dictionary.auth.login.noAccount}{" "}
         <Link href="/signup" className="font-semibold text-slate-950">
           {dictionary.auth.login.createOne}

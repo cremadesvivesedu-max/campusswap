@@ -48,10 +48,10 @@ export function ResetPasswordForm() {
   if (!isRecoveryReady) {
     return (
       <div className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7">
-        <p className="text-sm text-slate-600">{dictionary.auth.resetPassword.invalidLink}</p>
+        <p className="text-sm text-slate-700">{dictionary.auth.resetPassword.invalidLink}</p>
         <Link
           href="/forgot-password"
-          className="block rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-950"
+          className="block rounded-[22px] border border-slate-200/80 bg-slate-100/80 px-4 py-3 text-sm font-medium text-slate-700 hover:text-slate-950"
         >
           {dictionary.auth.forgotPassword.eyebrow}
         </Link>
@@ -114,7 +114,7 @@ export function ResetPasswordForm() {
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       <Link
         href="/login"
-        className="block rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-950"
+        className="block rounded-[22px] border border-slate-200/80 bg-slate-100/80 px-4 py-3 text-sm font-medium text-slate-700 hover:text-slate-950"
       >
         {dictionary.auth.resetPassword.backToLogin}
       </Link>

@@ -48,7 +48,7 @@ export default async function AuthLayout({
           </div>
         </aside>
         <div className="flex items-center">
-          <div className="w-full rounded-[40px] border border-white/70 bg-white/75 p-2 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-3">
+          <div className="w-full rounded-[40px] border border-white/85 bg-white/82 p-2 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-3">
             {children}
           </div>
         </div>

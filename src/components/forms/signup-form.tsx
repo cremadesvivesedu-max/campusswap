@@ -107,7 +107,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
           ? dictionary.auth.signup.submitting
           : dictionary.auth.signup.submit}
       </Button>
-      <p className="rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-xs leading-6 text-slate-500">
+      <p className="rounded-[22px] border border-slate-200/80 bg-slate-100/80 px-4 py-3 text-xs leading-6 text-slate-600">
         {dictionary.auth.signup.domainHint}{" "}
         {allowedDomains.join(", ")}
       </p>
