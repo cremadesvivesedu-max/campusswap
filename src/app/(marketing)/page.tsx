@@ -18,9 +18,9 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="space-y-24 pb-20">
-      <section className="bg-hero-grid text-white">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.2fr_0.8fr] lg:py-28">
+    <div className="space-y-28 pb-24">
+      <section className="mx-auto max-w-7xl px-6 pt-8">
+        <div className="grid gap-12 overflow-hidden rounded-[44px] bg-hero-grid px-8 py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
           <div className="space-y-8">
             <Badge className="border-white/20 bg-white/10 text-white">
               {dictionary.marketing.home.heroBadge}
@@ -43,7 +43,10 @@ export default async function HomePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               {dictionary.marketing.home.valueCards.map((card) => (
-                <Card key={card.title} className="border-white/10 bg-white/10 text-white">
+                <Card
+                  key={card.title}
+                  className="border-white/10 bg-white/10 text-white shadow-none"
+                >
                   <CardContent className="pt-6">
                     <p className="text-sm text-slate-200">{card.eyebrow}</p>
                     <p className="mt-2 font-display text-2xl font-semibold">
@@ -66,7 +69,7 @@ export default async function HomePage() {
         />
         <div className="grid gap-4 sm:grid-cols-2">
           {dictionary.marketing.home.audiences.map((item) => (
-            <Card key={item.title} className="bg-white">
+            <Card key={item.title} className="bg-white/96">
               <CardHeader>
                 <h3 className="font-display text-xl font-semibold text-slate-950">
                   {item.title}
@@ -92,7 +95,7 @@ export default async function HomePage() {
             { icon: Sparkles, ...dictionary.marketing.home.steps[1] },
             { icon: Leaf, ...dictionary.marketing.home.steps[2] }
           ].map((step) => (
-            <Card key={step.title} className="bg-white">
+            <Card key={step.title} className="bg-white/96">
               <CardHeader className="space-y-4">
                 <step.icon className="h-9 w-9 text-slate-950" />
                 <h3 className="font-display text-2xl font-semibold text-slate-950">
@@ -148,12 +151,12 @@ export default async function HomePage() {
         />
         <div className="grid gap-4">
           {dictionary.marketing.home.trustSignals.map((signal) => (
-            <Card key={signal} className="bg-white">
+            <Card key={signal} className="bg-white/96">
               <CardContent className="pt-6">
-              <p className="text-sm leading-6 text-slate-700">{signal}</p>
-            </CardContent>
-          </Card>
-        ))}
+                <p className="text-sm leading-6 text-slate-700">{signal}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
 
@@ -163,7 +166,7 @@ export default async function HomePage() {
           title={dictionary.marketing.home.outletTitle}
           description={dictionary.marketing.home.outletDescription}
         />
-        <Card className="overflow-hidden bg-slate-950 text-white">
+        <Card className="overflow-hidden border-slate-900 bg-slate-950 text-white">
           <CardContent className="grid gap-6 p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-3">
               <p className="font-display text-3xl font-semibold">
@@ -188,7 +191,7 @@ export default async function HomePage() {
         />
         <div className="grid gap-4 lg:grid-cols-3">
           {dictionary.marketing.home.testimonials.map((testimonial) => (
-            <Card key={testimonial} className="bg-white">
+            <Card key={testimonial} className="bg-white/96">
               <CardContent className="pt-6">
                 <p className="text-sm leading-7 text-slate-700">{testimonial}</p>
               </CardContent>
@@ -205,7 +208,7 @@ export default async function HomePage() {
         />
         <div className="space-y-4">
           {dictionary.marketing.faq.items.map((faq) => (
-            <Card key={faq.question} className="bg-white">
+            <Card key={faq.question} className="bg-white/96">
               <CardHeader>
                 <h3 className="font-display text-xl font-semibold text-slate-950">
                   {faq.question}

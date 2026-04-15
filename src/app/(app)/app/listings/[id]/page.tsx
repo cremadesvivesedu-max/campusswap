@@ -55,11 +55,11 @@ export default async function ListingDetailPage({
     : null;
 
   return (
-    <div className="grid gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_23rem]">
-      <div className="space-y-7">
+    <div className="grid gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="space-y-8">
         <ListingGallery images={listing.images} title={listing.title} />
-        <Card className="border-slate-200/80 bg-white shadow-sm">
-          <CardContent className="space-y-6 p-6 sm:p-8">
+        <Card className="border-slate-200/80 bg-white/96 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <CardContent className="space-y-7 p-6 sm:p-8">
             <div className="flex flex-wrap gap-2">
               {listing.featured ? (
                 <Badge className="bg-amber-200 text-slate-900">
@@ -81,7 +81,7 @@ export default async function ListingDetailPage({
                 <Badge>{getListingStatusLabel(dictionary, listing.status)}</Badge>
               ) : null}
             </div>
-            <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
                 <h1 className="font-display text-4xl font-semibold tracking-tight text-slate-950 sm:text-[2.9rem]">
                   {listing.title}
@@ -90,7 +90,7 @@ export default async function ListingDetailPage({
                   {listing.description}
                 </p>
               </div>
-              <div className="min-w-[12rem] rounded-[26px] border border-slate-200/80 bg-slate-50/80 px-5 py-4 lg:text-right">
+              <div className="min-w-[12rem] rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.9))] px-5 py-4 shadow-sm lg:text-right">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                   {listing.freshnessLabel}
                 </p>
@@ -100,7 +100,7 @@ export default async function ListingDetailPage({
               </div>
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
-              <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+              <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.listing.fulfillmentTitle}
                 </p>
@@ -123,7 +123,7 @@ export default async function ListingDetailPage({
                   </p>
                 </div>
               </div>
-              <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+              <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.listing.pickupArea}
                 </p>
@@ -136,7 +136,7 @@ export default async function ListingDetailPage({
                     : dictionary.map.description}
                 </p>
               </div>
-              <div className="rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
+              <div className="rounded-[26px] border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.myListings.analyticsTitle}
                 </p>
@@ -171,7 +171,7 @@ export default async function ListingDetailPage({
                 <Badge key={tag}>{tag}</Badge>
               ))}
             </div>
-            <div className="space-y-3 rounded-[26px] border border-slate-200/80 bg-slate-50/70 p-4">
+            <div className="space-y-3 rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(241,245,249,0.88))] p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <FavoriteToggleButton
                   listingId={listing.id}
@@ -222,7 +222,7 @@ export default async function ListingDetailPage({
         />
       </div>
       <div className="space-y-6">
-        <Card className="border-slate-200/80 bg-white shadow-sm">
+        <Card className="border-slate-200/80 bg-white/96 shadow-[0_18px_56px_rgba(15,23,42,0.08)]">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
               {dictionary.listing.seller}
@@ -232,7 +232,7 @@ export default async function ListingDetailPage({
             {seller ? (
               <Link
                 href={`/app/profile?userId=${seller.id}`}
-                className="flex items-center gap-3 rounded-[24px] border border-slate-200 p-3 transition hover:border-slate-300 hover:bg-slate-50"
+                className="flex items-center gap-3 rounded-[26px] border border-slate-200 p-3.5 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 <ProfileAvatar
                   userId={seller.id}

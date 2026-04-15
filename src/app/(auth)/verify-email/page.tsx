@@ -24,7 +24,7 @@ export default async function VerifyEmailPage({
   const isVerified = currentUser?.verificationStatus === "verified";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-6 py-16">
+    <div className="mx-auto max-w-3xl space-y-8 px-5 py-6 sm:px-8 sm:py-8">
       <SectionHeading
         eyebrow={dictionary.auth.verifyEmail.eyebrow}
         title={dictionary.auth.verifyEmail.title}

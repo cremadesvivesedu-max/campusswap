@@ -10,18 +10,20 @@ const footerLinks = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+    <footer className="border-t border-slate-800 bg-slate-950 text-slate-300">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-12 text-sm md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <BrandLogo href="/" tone="dark" imageClassName="h-9" />
-          <p>Student-first resale, built for Maastricht.</p>
+          <BrandLogo href="/" tone="light" imageClassName="h-9" />
+          <p className="max-w-md leading-6 text-slate-400">
+            Student-first resale, built for Maastricht.
+          </p>
         </div>
         <div className="flex flex-wrap gap-4">
           {footerLinks.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="transition hover:text-slate-950"
+              className="transition hover:text-white"
             >
               {item.label}
             </Link>

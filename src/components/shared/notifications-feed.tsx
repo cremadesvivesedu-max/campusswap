@@ -79,8 +79,8 @@ export function NotificationsFeed({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[28px] border border-slate-200/80 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 rounded-[30px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.84))] px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-slate-950 p-2.5 text-white shadow-sm">
             <Bell className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function NotificationsFeed({
           <article
             key={notification.id}
             className={cn(
-              "rounded-[30px] border px-5 py-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.09)]",
+              "rounded-[32px] border px-5 py-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.09)]",
               notification.read
                 ? "border-slate-200/80 bg-white"
                 : "border-emerald-200 bg-emerald-50/60"

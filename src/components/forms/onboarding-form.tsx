@@ -39,9 +39,9 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
   return (
     <form
       action={action}
-      className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
+      className="space-y-6 rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
     >
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+      <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm leading-6 text-slate-600">
         {dictionary.auth.onboarding.notice}
       </div>
       <Input
@@ -71,7 +71,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
         placeholder={dictionary.auth.onboarding.bio}
         defaultValue={user.profile.bio}
       />
-      <div className="space-y-3">
+      <div className="space-y-3 rounded-[24px] border border-slate-200/80 bg-slate-50/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
           {dictionary.auth.onboarding.preferredCategories}
         </p>
@@ -94,7 +94,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+        <label className="rounded-[24px] border border-border bg-slate-50/70 p-4 text-sm">
           <input
             className="mr-2"
             type="checkbox"
@@ -103,7 +103,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
           />
           {dictionary.auth.onboarding.buyerIntent}
         </label>
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+        <label className="rounded-[24px] border border-border bg-slate-50/70 p-4 text-sm">
           <input
             className="mr-2"
             type="checkbox"
@@ -113,7 +113,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
           {dictionary.auth.onboarding.sellerIntent}
         </label>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-3 rounded-[24px] border border-slate-200/80 bg-slate-50/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
           {dictionary.auth.onboarding.notifications}
         </p>

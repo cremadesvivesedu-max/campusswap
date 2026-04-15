@@ -28,7 +28,7 @@ export function SavedListingsWorkspace({
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-9">
       <div className="grid gap-6 xl:grid-cols-3">
         {listings.map((listing) => {
           const selected = selectedIds.includes(listing.id);
@@ -36,7 +36,7 @@ export function SavedListingsWorkspace({
 
           return (
             <div key={listing.id} className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-[26px] border border-slate-200/80 bg-white/90 px-4 py-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3 rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.86))] px-4 py-4 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-slate-950">
                     {dictionary.saved.compareLabel}
@@ -73,7 +73,7 @@ export function SavedListingsWorkspace({
       </div>
 
       {selectedListings.length ? (
-        <Card className="border-slate-200/80 bg-white shadow-sm">
+        <Card className="border-slate-200/80 bg-white/96 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -158,7 +158,7 @@ export function SavedListingsWorkspace({
               {selectedListings.map((listing) => (
                 <div
                   key={listing.id}
-                  className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4"
+                  className="rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.85))] p-4"
                 >
                   <p className="font-semibold text-slate-950">{listing.title}</p>
                   <p className="mt-1 text-sm text-slate-600">

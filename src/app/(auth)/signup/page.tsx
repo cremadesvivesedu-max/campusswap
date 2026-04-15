@@ -12,7 +12,7 @@ export default async function SignupPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-8 px-6 py-16">
+    <div className="mx-auto max-w-xl space-y-8 px-5 py-6 sm:px-8 sm:py-8">
       <SectionHeading
         eyebrow={dictionary.auth.signup.eyebrow}
         title={dictionary.auth.signup.title}

@@ -162,13 +162,15 @@ export default async function SupportPage({
 
   return (
     <div className="space-y-8">
-      <SectionHeading
-        eyebrow={dictionary.support.eyebrow}
-        title={dictionary.support.title}
-        description={dictionary.support.description}
-      />
+      <div className="rounded-[36px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] p-6 shadow-sm sm:p-7">
+        <SectionHeading
+          eyebrow={dictionary.support.eyebrow}
+          title={dictionary.support.title}
+          description={dictionary.support.description}
+        />
+      </div>
 
-      <Card className="bg-white">
+      <Card className="bg-white/96">
         <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-950">{dictionary.support.chooseCategory}</p>
@@ -197,7 +199,10 @@ export default async function SupportPage({
                 : `/app/support?type=${type}${params.transactionId ? `&transactionId=${params.transactionId}` : ""}${params.listingId ? `&listingId=${params.listingId}` : ""}${params.conversationId ? `&conversationId=${params.conversationId}` : ""}${params.targetUserId ? `&targetUserId=${params.targetUserId}` : ""}`;
 
           return (
-            <Card key={type} className={`bg-white ${selectedType === type ? "border-slate-900" : ""}`}>
+            <Card
+              key={type}
+              className={`bg-white/96 ${selectedType === type ? "border-slate-900 shadow-[0_18px_44px_rgba(15,23,42,0.08)]" : ""}`}
+            >
               <CardContent className="space-y-4 p-5">
                 <div className="space-y-2">
                   <p className="font-semibold text-slate-950">{card.title}</p>
@@ -253,7 +258,7 @@ export default async function SupportPage({
         {tickets.length ? (
           <div className="space-y-4">
             {tickets.map((ticket) => (
-              <Card key={ticket.id} className="bg-white">
+              <Card key={ticket.id} className="bg-white/96">
                 <CardContent className="space-y-3 p-5 text-sm text-slate-600">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">
@@ -312,7 +317,7 @@ export default async function SupportPage({
         {reports.length ? (
           <div className="space-y-4">
             {reports.map((report) => (
-              <Card key={report.id} className="bg-white">
+              <Card key={report.id} className="bg-white/96">
                 <CardContent className="space-y-3 p-5 text-sm text-slate-600">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">

@@ -15,9 +15,9 @@ export default async function AdminReportsPage() {
   ]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {supportTickets.length ? (
-        <div className="space-y-4">
+        <div className="rounded-[32px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.84))] p-6 shadow-sm">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
               Support queue
@@ -29,7 +29,7 @@ export default async function AdminReportsPage() {
         </div>
       ) : null}
       {supportTickets.map((ticket) => (
-        <Card key={ticket.id} className="bg-white">
+        <Card key={ticket.id} className="bg-white/96">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
               {ticket.type}
@@ -62,7 +62,7 @@ export default async function AdminReportsPage() {
                 </Link>
               ) : null}
             </div>
-            <form action={updateSupportTicketStatusAction} className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <form action={updateSupportTicketStatusAction} className="space-y-3 rounded-[26px] border border-slate-200 bg-slate-50/80 p-4">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -92,17 +92,19 @@ export default async function AdminReportsPage() {
       ))}
 
       {reports.length ? (
-        <div className="space-y-1 pt-4">
+        <div className="rounded-[32px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.84))] p-6 shadow-sm">
+          <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             Moderation queue
           </p>
           <h2 className="font-display text-3xl font-semibold text-slate-950">
             Reports
           </h2>
+          </div>
         </div>
       ) : null}
       {reports.map((report) => (
-        <Card key={report.id} className="bg-white">
+        <Card key={report.id} className="bg-white/96">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
               {report.targetType} report
@@ -127,7 +129,7 @@ export default async function AdminReportsPage() {
                 </Link>
               ) : null}
             </div>
-            <form action={updateReportStatusAction} className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <form action={updateReportStatusAction} className="space-y-3 rounded-[26px] border border-slate-200 bg-slate-50/80 p-4">
               <input type="hidden" name="reportId" value={report.id} />
               <input type="hidden" name="targetType" value={report.targetType} />
               <input type="hidden" name="targetId" value={report.targetId} />

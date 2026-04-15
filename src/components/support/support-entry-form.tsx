@@ -54,7 +54,10 @@ export function SupportEntryForm({
   const needsSubject = !type.startsWith("report-");
 
   return (
-    <form action={formAction} className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+    <form
+      action={formAction}
+      className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/96 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
+    >
       <input type="hidden" name="type" value={type} />
       {listingId ? <input type="hidden" name="listingId" value={listingId} /> : null}
       {conversationId ? <input type="hidden" name="conversationId" value={conversationId} /> : null}
@@ -67,7 +70,7 @@ export function SupportEntryForm({
       </div>
 
       {contextSummary ? (
-        <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             {contextLabel}
           </p>
@@ -95,7 +98,7 @@ export function SupportEntryForm({
         />
       </label>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-2">
         <Button type="submit" disabled={pending}>
           {pending ? submittingLabel : submitLabel}
         </Button>

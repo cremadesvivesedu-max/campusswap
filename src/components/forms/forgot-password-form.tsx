@@ -18,7 +18,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form
-      className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
+      className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
       onSubmit={(event) => {
         event.preventDefault();
 
@@ -62,7 +62,10 @@ export function ForgotPasswordForm() {
       </Button>
       {status ? <p className="text-sm text-emerald-700">{status}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-      <Link href="/login" className="block text-sm font-medium text-slate-600 hover:text-slate-950">
+      <Link
+        href="/login"
+        className="block rounded-[22px] border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-950"
+      >
         {dictionary.auth.forgotPassword.backToLogin}
       </Link>
     </form>

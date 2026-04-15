@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-6 py-16">
+    <div className="mx-auto max-w-3xl space-y-8 px-5 py-6 sm:px-8 sm:py-8">
       <SectionHeading
         eyebrow={dictionary.auth.onboarding.eyebrow}
         title={dictionary.auth.onboarding.title}

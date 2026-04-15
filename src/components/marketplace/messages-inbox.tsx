@@ -66,7 +66,7 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-2">
       {previews.map((preview) =>
         preview ? <MessagePreview key={preview.conversation.id} preview={preview} /> : null
       )}
@@ -98,7 +98,7 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-2">
       {safePreviews.map((preview) => (
         <MessagePreview key={preview.conversation.id} preview={preview} />
       ))}

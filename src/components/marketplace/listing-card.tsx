@@ -33,7 +33,7 @@ export function ListingCard({
   const listingHref = `/app/listings/${listing.id}`;
 
   return (
-    <Card className="group relative overflow-hidden rounded-[30px] border border-slate-200/80 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+    <Card className="group relative overflow-hidden rounded-[32px] border border-slate-200/80 bg-white/96 shadow-[0_18px_54px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_26px_70px_rgba(15,23,42,0.14)]">
       <Link
         href={listingHref}
         aria-label={`Open listing: ${listing.title}`}
@@ -78,12 +78,12 @@ export function ListingCard({
         ) : null}
       </div>
       <div className="space-y-5 p-5 sm:p-6">
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           <div className="flex items-start justify-between gap-4">
             <p className="line-clamp-2 font-display text-xl font-semibold leading-7 text-slate-950">
               {listing.title}
             </p>
-            <p className="shrink-0 rounded-full bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white">
+            <p className="shrink-0 rounded-full border border-slate-200/80 bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white shadow-sm">
               {formatCurrency(listing.price)}
             </p>
           </div>
@@ -91,13 +91,15 @@ export function ListingCard({
             {listing.description}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 rounded-[22px] border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1 font-medium">
+        <div className="flex flex-wrap items-center gap-3 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(241,245,249,0.85))] px-4 py-3 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1 font-medium text-slate-600">
             <MapPin className="h-3.5 w-3.5" />
             {listing.pickupArea}
           </span>
           <StarRating rating={listing.sellerRating} className="gap-1.5" showValue />
-          <span className="font-medium">{listing.freshnessLabel}</span>
+          <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-600 shadow-sm">
+            {listing.freshnessLabel}
+          </span>
         </div>
         {!compact && listing.tags.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -107,7 +109,7 @@ export function ListingCard({
           </div>
         ) : null}
         {reason?.length ? (
-          <p className="rounded-[18px] border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 text-xs font-medium text-emerald-800">
+          <p className="rounded-[20px] border border-emerald-200 bg-emerald-50/80 px-3.5 py-2.5 text-xs font-medium leading-5 text-emerald-800">
             {dictionary.search.recommendationPrefix}: {reason.join(", ")}
           </p>
         ) : null}

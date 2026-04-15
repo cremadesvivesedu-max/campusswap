@@ -51,7 +51,7 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
       onClick={() => router.push(`/app/messages/${preview.conversation.id}`)}
       className="group block rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
     >
-      <Card className="border-slate-200/80 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.14)]">
+      <Card className="border-slate-200/80 bg-white/96 shadow-[0_18px_48px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_24px_56px_rgba(15,23,42,0.14)]">
         <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar
@@ -61,7 +61,7 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
               className="h-12 w-12"
             />
             <div>
-              <p className="font-display text-lg font-semibold text-slate-950">
+              <p className="font-display text-xl font-semibold text-slate-950">
                 {listingTitle}
               </p>
               <p className="text-sm text-slate-500">
@@ -92,7 +92,7 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
               <Badge className="bg-amber-200 text-slate-900">{dictionary.listing.featured}</Badge>
             ) : null}
           </div>
-          <div className="flex items-start gap-3 rounded-[22px] border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+          <div className="flex items-start gap-3 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.85))] px-4 py-3">
             {latest?.attachment?.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
