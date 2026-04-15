@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,7 +29,7 @@ function formatPreviewTimestamp(value: string | undefined, fallback: string) {
   });
 }
 
-export function MessagePreview({ preview }: { preview: ConversationPreview }) {
+function MessagePreviewComponent({ preview }: { preview: ConversationPreview }) {
   const router = useRouter();
   const { dictionary } = useLocale();
   const latest = preview.latestMessage;
@@ -114,3 +115,5 @@ export function MessagePreview({ preview }: { preview: ConversationPreview }) {
     </button>
   );
 }
+
+export const MessagePreview = memo(MessagePreviewComponent);

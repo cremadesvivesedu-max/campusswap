@@ -1,7 +1,7 @@
 "use client";
 
+import { memo, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { Bell, CheckCheck, Heart, MessageSquare } from "lucide-react";
 import { useCurrentUser } from "@/components/providers/current-user-provider";
 import { useLocale } from "@/components/providers/locale-provider";
@@ -9,8 +9,14 @@ import { resolveNotificationDestination } from "@/features/notifications/destina
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useLiveNotifications } from "@/features/notifications/live-notifications";
-import { useLiveConversationPreviews } from "@/features/messaging/live-messaging";
+import {
+  useLiveNotifications,
+  useLiveUnreadNotificationCount
+} from "@/features/notifications/live-notifications";
+import {
+  useLiveConversationPreviews,
+  useLiveUnreadConversationCount
+} from "@/features/messaging/live-messaging";
 import { getNotificationTypeLabel } from "@/lib/i18n-shared";
 import { cn } from "@/lib/utils";
 import {
@@ -49,25 +55,32 @@ export function AppHeaderActivity() {
   const user = useCurrentUser();
   const { dictionary } = useLocale();
   const pathname = usePathname();
-  const {
-    notifications,
-    unreadCount,
-    error: notificationsError,
-    markNotificationReadLocally,
-    markAllNotificationsReadLocally
-  } = useLiveNotifications(user.id);
-  const { previews, error: messagesError } = useLiveConversationPreviews(user.id);
   const [isPending, startTransition] = useTransition();
   const [openPanel, setOpenPanel] = useState<"notifications" | "messages" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const unreadMessages = useMemo(
-    () => previews.reduce((sum, preview) => sum + preview.unreadCount, 0),
-    [previews]
-  );
+  const {
+    unreadCount,
+    markOneNotificationReadLocally,
+    markAllNotificationsReadLocally: markAllNotificationCountsReadLocally
+  } = useLiveUnreadNotificationCount(user.id);
+  const {
+    notifications,
+    error: notificationsError,
+    markNotificationReadLocally,
+    markAllNotificationsReadLocally
+  } = useLiveNotifications(user.id, {
+    enabled: openPanel === "notifications",
+    limit: 4
+  });
+  const { unreadCount: unreadMessages } = useLiveUnreadConversationCount(user.id);
+  const { previews, error: messagesError } = useLiveConversationPreviews(user.id, {
+    enabled: openPanel === "messages",
+    limit: 4
+  });
   const recentPreviews = useMemo(() => previews.slice(0, 4), [previews]);
   const recentNotifications = useMemo(
     () =>
-      notifications.slice(0, 4).map((notification) => ({
+      notifications.map((notification) => ({
         notification,
         destination: resolveNotificationDestination(notification)
       })),
@@ -101,6 +114,7 @@ export function AppHeaderActivity() {
     if (notification) {
       if (!notification.read) {
         markNotificationReadLocally(notification.id);
+        markOneNotificationReadLocally();
 
         startTransition(async () => {
           const result = await markNotificationReadAction(notification.id);
@@ -134,6 +148,7 @@ export function AppHeaderActivity() {
       }
 
       markNotificationReadLocally(notificationId);
+      markOneNotificationReadLocally();
     });
   };
 
@@ -283,6 +298,7 @@ export function AppHeaderActivity() {
                       }
 
                       markAllNotificationsReadLocally();
+                      markAllNotificationCountsReadLocally();
                     })
                   }
                   disabled={isPending || !unreadCount}
@@ -371,7 +387,7 @@ export function AppHeaderActivity() {
   );
 }
 
-function HeaderIconButton({
+const HeaderIconButton = memo(function HeaderIconButton({
   icon,
   count,
   label,
@@ -397,4 +413,4 @@ function HeaderIconButton({
       ) : null}
     </button>
   );
-}
+});

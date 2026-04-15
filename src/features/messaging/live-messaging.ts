@@ -17,6 +17,11 @@ import type {
   User
 } from "@/types/domain";
 
+interface LiveConversationPreviewsOptions {
+  enabled?: boolean;
+  limit?: number;
+}
+
 const defaultQuickActions = [
   "Is this available?",
   "Can you reserve it?",
@@ -541,18 +546,24 @@ const conversationSelect = `
   )
 `;
 
-async function fetchUserConversations(currentUserId: string) {
+async function fetchUserConversations(currentUserId: string, limit?: number) {
   const supabase = createClient();
 
   if (!supabase) {
     return [];
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("conversations")
     .select(conversationSelect)
     .or(`buyer_id.eq.${currentUserId},seller_id.eq.${currentUserId}`)
     .order("updated_at", { ascending: false });
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(error.message);
@@ -593,6 +604,34 @@ async function fetchUserConversations(currentUserId: string) {
   }
 
   return previews;
+}
+
+async function fetchConversationUnreadCount(currentUserId: string) {
+  const supabase = createClient();
+
+  if (!supabase) {
+    return 0;
+  }
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id, unread_count, buyer_unread_count, seller_unread_count")
+    .or(`buyer_id.eq.${currentUserId},seller_id.eq.${currentUserId}`);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (((data as Partial<DbConversationWithRelations>[] | null) ?? []).reduce(
+    (total, row) => {
+      if (row.buyer_id === currentUserId) {
+        return total + Number(row.buyer_unread_count ?? row.unread_count ?? 0);
+      }
+
+      return total + Number(row.seller_unread_count ?? row.unread_count ?? 0);
+    },
+    0
+  ));
 }
 
 async function fetchConversationThread(conversationId: string, currentUserId: string) {
@@ -797,17 +836,22 @@ async function markConversationRead(conversationId: string, currentUserId: strin
   ]);
 }
 
-export function useLiveConversationPreviews(currentUserId: string) {
+export function useLiveConversationPreviews(
+  currentUserId: string,
+  options: LiveConversationPreviewsOptions = {}
+) {
+  const { enabled = true, limit } = options;
   const [previews, setPreviews] = useState<ConversationPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     let active = true;
+    let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const sync = async () => {
       try {
-        const nextPreviews = await fetchUserConversations(currentUserId);
+        const nextPreviews = await fetchUserConversations(currentUserId, limit);
 
         if (active) {
           setPreviews(nextPreviews);
@@ -824,41 +868,131 @@ export function useLiveConversationPreviews(currentUserId: string) {
       }
     };
 
+    const scheduleSync = () => {
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      syncTimeout = setTimeout(() => {
+        syncTimeout = null;
+        void sync();
+      }, 120);
+    };
+
+    if (!enabled) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
     void sync();
 
     if (!supabase) {
       return () => {
         active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
       };
     }
 
     const channel = supabase
       .channel(createRealtimeChannelName(`conversation-previews-${currentUserId}`))
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
-        void sync();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        void sync();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        void sync();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "listing_offers" }, () => {
-        void sync();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "listings" }, () => {
-        void sync();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, scheduleSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, scheduleSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "listings" }, scheduleSync)
       .subscribe();
 
     return () => {
       active = false;
+
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      void channel.unsubscribe();
+      void supabase.removeChannel(channel);
+    };
+  }, [currentUserId, enabled, limit, supabase]);
+
+  return { previews, error };
+}
+
+export function useLiveUnreadConversationCount(currentUserId: string) {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    let active = true;
+    let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const sync = async () => {
+      try {
+        const nextUnreadCount = await fetchConversationUnreadCount(currentUserId);
+
+        if (active) {
+          setUnreadCount(nextUnreadCount);
+          setError(null);
+        }
+      } catch (syncError) {
+        if (active) {
+          setError(
+            syncError instanceof Error
+              ? syncError.message
+              : "Unable to load conversations."
+          );
+        }
+      }
+    };
+
+    const scheduleSync = () => {
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      syncTimeout = setTimeout(() => {
+        syncTimeout = null;
+        void sync();
+      }, 120);
+    };
+
+    void sync();
+
+    if (!supabase) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
+    const channel = supabase
+      .channel(createRealtimeChannelName(`conversation-count-${currentUserId}`))
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, scheduleSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, scheduleSync)
+      .subscribe();
+
+    return () => {
+      active = false;
+
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
       void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
   }, [currentUserId, supabase]);
 
-  return { previews, error };
+  return { unreadCount, error };
 }
 
 export function useLiveConversationThread(

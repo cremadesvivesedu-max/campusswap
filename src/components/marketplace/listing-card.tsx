@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { Images, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ interface ListingCardProps {
   messageActionMode?: "chat" | "signup";
 }
 
-export function ListingCard({
+function ListingCardComponent({
   listing,
   compact = false,
   reason,
@@ -131,3 +132,5 @@ export function ListingCard({
     </Card>
   );
 }
+
+export const ListingCard = memo(ListingCardComponent);

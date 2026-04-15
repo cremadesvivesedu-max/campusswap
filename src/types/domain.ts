@@ -456,6 +456,7 @@ export interface ListingSearchInput {
   pickupArea?: string;
   distance?: ListingDistanceFilter;
   sort?: "newest" | "price-low-high" | "price-high-low" | "recommended" | "relevance";
+  limit?: number;
 }
 
 export interface RecommendationBreakdown {

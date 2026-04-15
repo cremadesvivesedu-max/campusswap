@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { MessagePreview } from "@/components/marketplace/message-preview";
 import { useLocale } from "@/components/providers/locale-provider";
@@ -77,7 +78,10 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
 function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   const { dictionary } = useLocale();
   const { previews, error } = useLiveConversationPreviews(currentUserId);
-  const safePreviews = previews.filter(isRenderablePreview);
+  const safePreviews = useMemo(
+    () => previews.filter(isRenderablePreview),
+    [previews]
+  );
 
   if (error) {
     return (

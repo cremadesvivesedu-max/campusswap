@@ -1048,7 +1048,8 @@ async function fetchListingRows(
     query = query.order("created_at", { ascending: false });
   }
 
-  const { data } = await query.limit(input.pickupArea ? 120 : 60);
+  const queryLimit = input.limit ?? (input.pickupArea ? 120 : 60);
+  const { data } = await query.limit(queryLimit);
   return (data as unknown as DbListingWithRelations[] | null) ?? [];
 }
 
@@ -1253,7 +1254,11 @@ export async function getFeaturedListings() {
     );
   }
 
-  const listings = await fetchActiveListings({ featured: true, sort: "newest" });
+  const listings = await fetchActiveListings({
+    featured: true,
+    sort: "newest",
+    limit: 8
+  });
   return sortFeaturedOnlyByRecency(listings);
 }
 
@@ -1264,7 +1269,7 @@ export async function getOutletListings() {
     );
   }
 
-  return fetchActiveListings({ outlet: true, sort: "recommended" });
+  return fetchActiveListings({ outlet: true, sort: "recommended", limit: 18 });
 }
 
 export async function getTrendingSearches() {
@@ -2028,7 +2033,7 @@ export async function getListingsForSeller(userId: string) {
 }
 
 export async function getHomeFeed() {
-  const listings = await fetchActiveListings({ sort: "recommended" });
+  const listings = await fetchActiveListings({ sort: "recommended", limit: 24 });
   return sortFeaturedListingsFirst(listings);
 }
 
@@ -2046,7 +2051,7 @@ export async function getForYouFeed(userId?: string) {
   }
 
   const [candidateRows, favoriteRows, searchRows, viewRows] = await Promise.all([
-    fetchListingRows({ sort: "recommended" }),
+    fetchListingRows({ sort: "recommended", limit: 36 }),
     supabase
       .from("favorites")
       .select("listing_id")
@@ -2178,7 +2183,7 @@ export async function getBecauseYouViewedFeed(userId?: string) {
   }
 
   const [candidateListings, viewRows] = await Promise.all([
-    fetchActiveListings({ sort: "recommended" }),
+    fetchActiveListings({ sort: "recommended", limit: 36 }),
     supabase
       .from("view_events")
       .select("listing_id")
@@ -2277,7 +2282,8 @@ export async function getMostPopularInAreaFeed(userId?: string) {
   const rows = await fetchListingRows({
     pickupArea: areaSeed,
     distance: "nearby",
-    sort: "newest"
+    sort: "newest",
+    limit: 24
   });
 
   if (!rows.length) {
@@ -2339,7 +2345,8 @@ export async function getNewTodayFeed(userId?: string) {
   const listings = await fetchActiveListings({
     pickupArea: currentUser?.profile.neighborhood,
     distance: currentUser?.profile.neighborhood ? "nearby" : undefined,
-    sort: "newest"
+    sort: "newest",
+    limit: 18
   });
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -2376,7 +2383,7 @@ export async function getLastChanceFeed() {
       .slice(0, 6);
   }
 
-  const listings = await fetchActiveListings({ sort: "newest" });
+  const listings = await fetchActiveListings({ sort: "newest", limit: 18 });
 
   return listings
     .filter((listing) => listing.urgent || listing.outlet)

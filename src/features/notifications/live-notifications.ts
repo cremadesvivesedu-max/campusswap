@@ -6,6 +6,11 @@ import { isLiveClientMode } from "@/lib/public-env";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/types/domain";
 
+interface LiveNotificationsOptions {
+  enabled?: boolean;
+  limit?: number;
+}
+
 interface DbNotificationRow {
   id: string;
   user_id: string;
@@ -37,7 +42,7 @@ function mapNotification(row: DbNotificationRow): Notification {
   };
 }
 
-async function fetchNotifications(currentUserId: string) {
+async function fetchNotifications(currentUserId: string, limit = 24) {
   const supabase = createClient();
 
   if (!supabase) {
@@ -49,7 +54,7 @@ async function fetchNotifications(currentUserId: string) {
     .select("id, user_id, type, title, body, destination_href, read, created_at")
     .eq("user_id", currentUserId)
     .order("created_at", { ascending: false })
-    .limit(24);
+    .limit(limit);
 
   if (error?.code === "42703" || error?.message.includes("destination_href")) {
     const fallback = await supabase
@@ -57,7 +62,7 @@ async function fetchNotifications(currentUserId: string) {
       .select("id, user_id, type, title, body, read, created_at")
       .eq("user_id", currentUserId)
       .order("created_at", { ascending: false })
-      .limit(24);
+      .limit(limit);
 
     if (fallback.error) {
       throw new Error(fallback.error.message);
@@ -73,7 +78,31 @@ async function fetchNotifications(currentUserId: string) {
   return ((data as DbNotificationRow[] | null) ?? []).map(mapNotification);
 }
 
-export function useLiveNotifications(currentUserId: string) {
+async function fetchUnreadNotificationCount(currentUserId: string) {
+  const supabase = createClient();
+
+  if (!supabase) {
+    return 0;
+  }
+
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", currentUserId)
+    .eq("read", false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return count ?? 0;
+}
+
+export function useLiveNotifications(
+  currentUserId: string,
+  options: LiveNotificationsOptions = {}
+) {
+  const { enabled = true, limit = 24 } = options;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
@@ -110,6 +139,7 @@ export function useLiveNotifications(currentUserId: string) {
 
   useEffect(() => {
     let active = true;
+    let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const sync = async () => {
       try {
@@ -129,7 +159,7 @@ export function useLiveNotifications(currentUserId: string) {
           return;
         }
 
-        const nextNotifications = await fetchNotifications(currentUserId);
+        const nextNotifications = await fetchNotifications(currentUserId, limit);
 
         if (active) {
           setNotifications(nextNotifications);
@@ -146,11 +176,36 @@ export function useLiveNotifications(currentUserId: string) {
       }
     };
 
+    const scheduleSync = () => {
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      syncTimeout = setTimeout(() => {
+        syncTimeout = null;
+        void sync();
+      }, 120);
+    };
+
+    if (!enabled) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
     void sync();
 
     if (!isLiveClientMode || !supabase) {
       return () => {
         active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
       };
     }
 
@@ -164,24 +219,133 @@ export function useLiveNotifications(currentUserId: string) {
           table: "notifications",
           filter: `user_id=eq.${currentUserId}`
         },
-        () => {
-          void sync();
-        }
+        scheduleSync
       )
       .subscribe();
 
     return () => {
       active = false;
+
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
       void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
-  }, [currentUserId, supabase]);
+  }, [currentUserId, enabled, limit, supabase]);
 
   return {
     notifications,
     unreadCount,
     error,
     markNotificationReadLocally,
+    markAllNotificationsReadLocally
+  };
+}
+
+export function useLiveUnreadNotificationCount(currentUserId: string) {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  const markOneNotificationReadLocally = () => {
+    setUnreadCount((current) => Math.max(0, current - 1));
+  };
+
+  const markAllNotificationsReadLocally = () => {
+    setUnreadCount(0);
+  };
+
+  useEffect(() => {
+    let active = true;
+    let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const sync = async () => {
+      try {
+        if (!isLiveClientMode || !supabase) {
+          const nextUnreadCount = demoData.notifications.filter(
+            (notification) => notification.userId === currentUserId && !notification.read
+          ).length;
+
+          if (active) {
+            setUnreadCount(nextUnreadCount);
+            setError(null);
+          }
+
+          return;
+        }
+
+        const nextUnreadCount = await fetchUnreadNotificationCount(currentUserId);
+
+        if (active) {
+          setUnreadCount(nextUnreadCount);
+          setError(null);
+        }
+      } catch (syncError) {
+        if (active) {
+          setError(
+            syncError instanceof Error
+              ? syncError.message
+              : "Unable to load notifications."
+          );
+        }
+      }
+    };
+
+    const scheduleSync = () => {
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      syncTimeout = setTimeout(() => {
+        syncTimeout = null;
+        void sync();
+      }, 120);
+    };
+
+    void sync();
+
+    if (!isLiveClientMode || !supabase) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
+    const channel = supabase
+      .channel(createRealtimeChannelName(`notification-count-${currentUserId}`))
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${currentUserId}`
+        },
+        scheduleSync
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+      }
+
+      void channel.unsubscribe();
+      void supabase.removeChannel(channel);
+    };
+  }, [currentUserId, supabase]);
+
+  return {
+    unreadCount,
+    error,
+    markOneNotificationReadLocally,
     markAllNotificationsReadLocally
   };
 }
