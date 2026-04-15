@@ -16,6 +16,18 @@ interface FeaturedCheckoutSessionInput {
   amount: number;
 }
 
+interface BuyerCheckoutSessionInput {
+  transactionId: string;
+  listingId: string;
+  buyerId: string;
+  buyerEmail?: string;
+  sellerId: string;
+  listingTitle: string;
+  fulfillmentMethod: "pickup" | "shipping";
+  itemAmount: number;
+  shippingAmount: number;
+}
+
 function toMinorUnit(amount: number) {
   return Math.round(amount * 100);
 }
@@ -59,6 +71,71 @@ export async function createFeaturedCheckoutSession({
           }
         }
       }
+    ]
+  });
+}
+
+export async function createBuyerCheckoutSession({
+  transactionId,
+  listingId,
+  buyerId,
+  buyerEmail,
+  sellerId,
+  listingTitle,
+  fulfillmentMethod,
+  itemAmount,
+  shippingAmount
+}: BuyerCheckoutSessionInput) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  return stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    client_reference_id: transactionId,
+    customer_email: buyerEmail,
+    success_url: buildSiteUrl(
+      `/purchase/checkout/success?listingId=${encodeURIComponent(listingId)}&transactionId=${encodeURIComponent(transactionId)}&session_id={CHECKOUT_SESSION_ID}`
+    ),
+    cancel_url: buildSiteUrl(
+      `/purchase/checkout/cancel?listingId=${encodeURIComponent(listingId)}&transactionId=${encodeURIComponent(transactionId)}`
+    ),
+    metadata: {
+      checkout_type: "listing_purchase",
+      transaction_id: transactionId,
+      listing_id: listingId,
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      fulfillment_method: fulfillmentMethod
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "eur",
+          unit_amount: toMinorUnit(itemAmount),
+          product_data: {
+            name: listingTitle,
+            description: "CampusSwap listing purchase"
+          }
+        }
+      },
+      ...(shippingAmount > 0
+        ? [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "eur",
+                unit_amount: toMinorUnit(shippingAmount),
+                product_data: {
+                  name: "Shipping",
+                  description: "CampusSwap shipping surcharge"
+                }
+              }
+            }
+          ]
+        : [])
     ]
   });
 }

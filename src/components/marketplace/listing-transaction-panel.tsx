@@ -18,6 +18,7 @@ import {
   markTransactionReadyForPickupAction,
   markTransactionShippedAction,
   releaseReservationAction,
+  resumeTransactionCheckoutAction,
   reserveConversationBuyerAction,
   startPurchaseIntentAction
 } from "@/server/actions/marketplace";
@@ -78,6 +79,18 @@ function getFulfillmentLabel(
   return pickupAvailable
     ? dictionary.messages.exchange.pickupOnly
     : dictionary.messages.exchange.shippingOnly;
+}
+
+function isStripeCheckoutOrder(transaction?: Transaction) {
+  return Boolean(
+    transaction?.checkoutStatus ||
+      transaction?.stripeCheckoutSessionId ||
+      transaction?.stripePaymentIntentId
+  );
+}
+
+function hasStripePaymentRecorded(transaction?: Transaction) {
+  return transaction?.checkoutStatus === "paid" || Boolean(transaction?.paidAt);
 }
 
 function OrderSummary({
@@ -239,7 +252,12 @@ export function ListingTransactionPanel({
     getDefaultFulfillmentMethod(listingPickupAvailable, listingShippingAvailable);
 
   const runAction = (
-    action: () => Promise<{ success: boolean; message: string; conversationId?: string }>
+    action: () => Promise<{
+      success: boolean;
+      message: string;
+      conversationId?: string;
+      checkoutUrl?: string;
+    }>
   ) => {
     startTransition(async () => {
       try {
@@ -249,6 +267,11 @@ export function ListingTransactionPanel({
 
         if (!result.success) {
           setError(result.message);
+          return;
+        }
+
+        if (result.checkoutUrl) {
+          window.location.assign(result.checkoutUrl);
           return;
         }
 
@@ -273,18 +296,24 @@ export function ListingTransactionPanel({
   if (isOwnListing) {
     const transactionState = transaction?.state;
     const transactionId = transaction?.id;
+    const stripeCheckoutOrder = isStripeCheckoutOrder(transaction);
+    const stripePaymentRecorded = hasStripePaymentRecorded(transaction);
     const canReserve =
       Boolean(transaction?.conversationId) && transactionState === "pending";
     const canRelease = transactionState === "reserved";
     const canMarkPaid =
-      transactionState ? ["pending", "reserved"].includes(transactionState) : false;
+      transactionState
+        ? ["pending", "reserved"].includes(transactionState) && !stripeCheckoutOrder
+        : false;
     const canMarkReadyForPickup =
       Boolean(transactionState) &&
       currentFulfillment === "pickup" &&
+      (!stripeCheckoutOrder || stripePaymentRecorded) &&
       (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
     const canMarkShipped =
       Boolean(transactionState) &&
       currentFulfillment === "shipping" &&
+      (!stripeCheckoutOrder || stripePaymentRecorded) &&
       (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
     const canMarkDelivered =
       Boolean(transactionState) &&
@@ -343,6 +372,12 @@ export function ListingTransactionPanel({
             listingShippingCost={listingShippingCost}
             pickupArea={listingPickupArea}
           />
+
+          {stripeCheckoutOrder && !stripePaymentRecorded ? (
+            <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {dictionary.messages.exchange.paymentPendingSeller}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3">
             {transaction?.conversationId ? (
@@ -484,8 +519,16 @@ export function ListingTransactionPanel({
   const canStartPurchase =
     listingStatus === "active" && !viewerTransaction && !context.reservedForOtherBuyer;
   const viewerTransactionState = viewerTransaction?.state;
+  const viewerStripeCheckoutOrder = isStripeCheckoutOrder(viewerTransaction);
+  const viewerStripePaymentRecorded = hasStripePaymentRecorded(viewerTransaction);
+  const canRetryCheckout =
+    Boolean(viewerTransaction) &&
+    viewerStripeCheckoutOrder &&
+    !viewerStripePaymentRecorded &&
+    viewerTransactionState !== "cancelled";
   const canCancelOwnExchange =
     Boolean(viewerTransactionState) &&
+    !viewerStripePaymentRecorded &&
     !(viewerTransactionState
       ? ["completed", "cancelled"].includes(viewerTransactionState)
       : false);
@@ -562,6 +605,41 @@ export function ListingTransactionPanel({
                 </Link>
               </Button>
             </div>
+          </div>
+        ) : null}
+
+        {viewerTransaction && viewerStripeCheckoutOrder && !viewerStripePaymentRecorded ? (
+          <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+            <p>
+              {viewerTransaction.checkoutStatus === "cancelled"
+                ? dictionary.messages.exchange.paymentCancelledBuyer
+                : dictionary.messages.exchange.paymentPendingBuyer}
+            </p>
+            {canRetryCheckout ? (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  onClick={() =>
+                    runAction(() =>
+                      resumeTransactionCheckoutAction(viewerTransaction.id)
+                    )
+                  }
+                  disabled={isPending}
+                >
+                  {isPending
+                    ? dictionary.messages.exchange.stripeRedirecting
+                    : viewerTransaction.checkoutStatus === "cancelled"
+                      ? dictionary.messages.exchange.retryPayment
+                      : dictionary.messages.exchange.continueToStripe}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {viewerTransaction && viewerStripePaymentRecorded ? (
+          <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {dictionary.messages.exchange.paymentPaidBuyer}
           </div>
         ) : null}
 
@@ -664,10 +742,6 @@ export function ListingTransactionPanel({
             </Button>
           ) : null}
         </div>
-
-        <p className="rounded-[20px] bg-slate-50/70 px-4 py-3 text-xs text-slate-500">
-          {dictionary.messages.exchange.noOnlinePayment}
-        </p>
         <OfferNegotiationPanel
           listingId={listingId}
           listingPrice={listingPrice}

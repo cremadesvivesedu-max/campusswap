@@ -119,6 +119,9 @@ interface DbTransactionRow {
   buyer_id: string;
   seller_id: string;
   state: Transaction["state"];
+  checkout_status: Transaction["checkoutStatus"] | null;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
   amount: number | string;
   fulfillment_method: Transaction["fulfillmentMethod"] | null;
   shipping_amount: number | string;
@@ -326,6 +329,9 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
     state: row.state,
+    checkoutStatus: row.checkout_status ?? undefined,
+    stripeCheckoutSessionId: row.stripe_checkout_session_id ?? undefined,
+    stripePaymentIntentId: row.stripe_payment_intent_id ?? undefined,
     amount: numberValue(row.amount),
     fulfillmentMethod: row.fulfillment_method ?? undefined,
     shippingAmount: numberValue(row.shipping_amount),
@@ -515,6 +521,9 @@ const conversationSelect = `
     buyer_id,
     seller_id,
     state,
+    checkout_status,
+    stripe_checkout_session_id,
+    stripe_payment_intent_id,
     amount,
     fulfillment_method,
     shipping_amount,

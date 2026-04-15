@@ -271,8 +271,8 @@ export const dictionaries = {
       },
       exchange: {
         title: "Exchange status",
-        sellerBody: "Reserve this item for the buyer in this thread, then mark it sold after the meetup.",
-        buyerBody: "Use this thread to confirm the meetup. Online payment is not taken in this MVP.",
+        sellerBody: "Use this thread to coordinate the handoff. Only move the order forward after CampusSwap records payment.",
+        buyerBody: "Use this thread to confirm details. The order only counts as paid after Stripe Checkout succeeds.",
         buyerLabel: "Buyer",
         sellerLabel: "Seller",
         listingStatus: "Listing status",
@@ -316,6 +316,17 @@ export const dictionaries = {
         cancelRequest: "Cancel request",
         startPurchase: "Buy now / request reservation",
         startingPurchase: "Starting...",
+        stripeRedirecting: "Opening Stripe...",
+        continueToStripe: "Continue to Stripe",
+        retryPayment: "Retry payment",
+        paymentPendingBuyer:
+          "Your order is ready, but payment is still pending. Complete Stripe Checkout to secure it.",
+        paymentCancelledBuyer:
+          "Stripe Checkout was cancelled before payment finished. Retry when you are ready.",
+        paymentPaidBuyer:
+          "Payment confirmed. The seller can now move this order forward.",
+        paymentPendingSeller:
+          "The buyer has not completed Stripe payment yet. Wait for payment before preparing pickup or shipping.",
         openListing: "Open listing",
         confirmCancel: "Cancel this exchange and reopen the listing if needed?",
         confirmBuyerCancel: "Cancel your purchase request for this listing?",
@@ -912,8 +923,8 @@ mutableDictionaries.es = {
     exchange: {
       ...mutableDictionaries.en.messages.exchange,
       title: "Estado del intercambio",
-      sellerBody: "Reserva este articulo para el comprador de este chat y marcalo como vendido tras la entrega.",
-      buyerBody: "Usa este chat para confirmar la entrega. El pago online no se cobra en este MVP.",
+      sellerBody: "Usa este chat para coordinar la entrega. Solo avances el pedido cuando CampusSwap registre el pago.",
+      buyerBody: "Usa este chat para confirmar los detalles. El pedido solo cuenta como pagado cuando Stripe Checkout se completa.",
       buyerLabel: "Comprador",
       sellerLabel: "Vendedor",
       listingStatus: "Estado del anuncio",
@@ -937,6 +948,17 @@ mutableDictionaries.es = {
       cancelRequest: "Cancelar solicitud",
       startPurchase: "Comprar ahora / pedir reserva",
       startingPurchase: "Iniciando...",
+      stripeRedirecting: "Abriendo Stripe...",
+      continueToStripe: "Continuar en Stripe",
+      retryPayment: "Reintentar pago",
+      paymentPendingBuyer:
+        "Tu pedido esta listo, pero el pago sigue pendiente. Completa Stripe Checkout para asegurarlo.",
+      paymentCancelledBuyer:
+        "Stripe Checkout se cancelo antes de terminar el pago. Reintentalo cuando quieras.",
+      paymentPaidBuyer:
+        "Pago confirmado. Ahora el vendedor puede avanzar con el pedido.",
+      paymentPendingSeller:
+        "El comprador todavia no ha completado el pago en Stripe. Espera al pago antes de preparar la recogida o el envio.",
       openListing: "Abrir anuncio",
       confirmCancel: "Cancelar este intercambio y reabrir el anuncio si hace falta?",
       confirmBuyerCancel: "Cancelar tu solicitud de compra de este anuncio?",
@@ -1350,8 +1372,8 @@ mutableDictionaries.nl = {
     exchange: {
       ...mutableDictionaries.en.messages.exchange,
       title: "Uitwisselingsstatus",
-      sellerBody: "Reserveer dit item voor de koper in deze chat en markeer het daarna als verkocht.",
-      buyerBody: "Gebruik deze chat om de overdracht te bevestigen. Online betaling wordt in deze MVP niet verwerkt.",
+      sellerBody: "Gebruik deze chat om de overdracht af te stemmen. Werk de bestelling pas verder af zodra CampusSwap de betaling heeft geregistreerd.",
+      buyerBody: "Gebruik deze chat om de details te bevestigen. De bestelling telt pas als betaald zodra Stripe Checkout is afgerond.",
       buyerLabel: "Koper",
       sellerLabel: "Verkoper",
       listingStatus: "Advertentiestatus",
@@ -1375,6 +1397,17 @@ mutableDictionaries.nl = {
       cancelRequest: "Verzoek annuleren",
       startPurchase: "Nu kopen / reservering aanvragen",
       startingPurchase: "Bezig met starten...",
+      stripeRedirecting: "Stripe wordt geopend...",
+      continueToStripe: "Verder naar Stripe",
+      retryPayment: "Betaling opnieuw proberen",
+      paymentPendingBuyer:
+        "Je bestelling staat klaar, maar de betaling is nog niet afgerond. Rond Stripe Checkout af om het item vast te zetten.",
+      paymentCancelledBuyer:
+        "Stripe Checkout is geannuleerd voordat de betaling klaar was. Probeer het opnieuw wanneer het uitkomt.",
+      paymentPaidBuyer:
+        "Betaling bevestigd. De verkoper kan deze bestelling nu verder afhandelen.",
+      paymentPendingSeller:
+        "De koper heeft de Stripe-betaling nog niet afgerond. Wacht met voorbereiden totdat de betaling bevestigd is.",
       openListing: "Advertentie openen",
       confirmCancel: "Deze uitwisseling annuleren en de advertentie indien nodig heropenen?",
       confirmBuyerCancel: "Je koopverzoek voor deze advertentie annuleren?",

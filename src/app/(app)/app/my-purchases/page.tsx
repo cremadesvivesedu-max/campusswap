@@ -3,6 +3,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { TransactionCheckoutButton } from "@/components/marketplace/transaction-checkout-button";
 import { TransactionReviewForm } from "@/components/marketplace/transaction-review-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,25 @@ import {
   getTransactionsForUser,
   getUserById
 } from "@/server/queries/marketplace";
+
+function isStripeCheckoutTransaction(transaction: {
+  checkoutStatus?: string;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+}) {
+  return Boolean(
+    transaction.checkoutStatus ||
+      transaction.stripeCheckoutSessionId ||
+      transaction.stripePaymentIntentId
+  );
+}
+
+function hasStripePaymentRecorded(transaction: {
+  checkoutStatus?: string;
+  paidAt?: string;
+}) {
+  return transaction.checkoutStatus === "paid" || Boolean(transaction.paidAt);
+}
 
 export default async function MyPurchasesPage() {
   const user = await getCurrentUser();
@@ -87,6 +107,37 @@ export default async function MyPurchasesPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
+                {transaction.buyerId === user.id &&
+                isStripeCheckoutTransaction(transaction) &&
+                !hasStripePaymentRecorded(transaction) ? (
+                  <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+                    <p>
+                      {transaction.checkoutStatus === "cancelled"
+                        ? dictionary.messages.exchange.paymentCancelledBuyer
+                        : dictionary.messages.exchange.paymentPendingBuyer}
+                    </p>
+                    <div className="mt-3">
+                      <TransactionCheckoutButton
+                        transactionId={transaction.id}
+                        label={
+                          transaction.checkoutStatus === "cancelled"
+                            ? dictionary.messages.exchange.retryPayment
+                            : dictionary.messages.exchange.continueToStripe
+                        }
+                        pendingLabel={dictionary.messages.exchange.stripeRedirecting}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {transaction.buyerId === user.id &&
+                isStripeCheckoutTransaction(transaction) &&
+                hasStripePaymentRecorded(transaction) ? (
+                  <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    {dictionary.messages.exchange.paymentPaidBuyer}
+                  </div>
+                ) : null}
+
                 <div className="grid gap-3 md:grid-cols-2">
                   <p>
                     {dictionary.myPurchases.recordedValue}:{" "}

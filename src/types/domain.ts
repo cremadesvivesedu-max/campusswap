@@ -30,6 +30,11 @@ export type PromotionPurchaseStatus =
   | "checkout_opened"
   | "paid"
   | "cancelled";
+export type TransactionPaymentStatus =
+  | "pending"
+  | "checkout_opened"
+  | "paid"
+  | "cancelled";
 export type NotificationType = "message" | "promotion" | "review" | "listing" | "safety" | "system";
 export type ContentBlockType = "hero" | "faq" | "trust" | "testimonial" | "footer" | "seo";
 export type MonetizationModule = "promoted-listings" | "seller-boost" | "sponsor-cards" | "commission-ready";
@@ -250,6 +255,9 @@ export interface Transaction {
   buyerId: string;
   sellerId: string;
   state: ExchangeStatus;
+  checkoutStatus?: TransactionPaymentStatus;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
   amount: number;
   fulfillmentMethod?: FulfillmentMethod;
   shippingAmount: number;

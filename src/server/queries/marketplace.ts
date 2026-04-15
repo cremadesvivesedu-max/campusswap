@@ -125,6 +125,9 @@ interface DbTransactionRow {
   buyer_id: string;
   seller_id: string;
   state: Transaction["state"];
+  checkout_status: Transaction["checkoutStatus"] | null;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
   amount: number | string;
   fulfillment_method: FulfillmentMethod | null;
   shipping_amount: number | string;
@@ -781,6 +784,9 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
     state: normalizeExchangeStatus(row.state),
+    checkoutStatus: row.checkout_status ?? undefined,
+    stripeCheckoutSessionId: row.stripe_checkout_session_id ?? undefined,
+    stripePaymentIntentId: row.stripe_payment_intent_id ?? undefined,
     amount: numberValue(row.amount),
     fulfillmentMethod: row.fulfillment_method ?? undefined,
     shippingAmount: numberValue(row.shipping_amount),
@@ -1571,7 +1577,7 @@ export async function getTransactionsForUser(userId?: string) {
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
     .order("updated_at", { ascending: false });
@@ -1603,7 +1609,7 @@ export async function getTransactionForConversation(
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .eq("conversation_id", conversationId)
     .maybeSingle();
@@ -1678,6 +1684,9 @@ export async function getListingTransactionContext(
         buyer_id,
         seller_id,
         state,
+        checkout_status,
+        stripe_checkout_session_id,
+        stripe_payment_intent_id,
         amount,
         fulfillment_method,
         shipping_amount,
@@ -1835,6 +1844,9 @@ export async function getSellerListingTransactions(
         buyer_id,
         seller_id,
         state,
+        checkout_status,
+        stripe_checkout_session_id,
+        stripe_payment_intent_id,
         amount,
         fulfillment_method,
         shipping_amount,

@@ -8,6 +8,7 @@ import {
   listingImagesBucket
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
+import { createBuyerCheckoutSession } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type {
   ExchangeStatus,
@@ -18,7 +19,8 @@ import type {
   ListingStatus,
   OfferStatus,
   ReportTargetType,
-  SupportTicketType
+  SupportTicketType,
+  TransactionPaymentStatus
 } from "@/types/domain";
 
 interface ActionResult {
@@ -33,6 +35,12 @@ interface ToggleFavoriteResult extends ActionResult {
 interface OfferActionResult extends ActionResult {
   conversationId?: string;
   offerId?: string;
+}
+
+interface PurchaseActionResult extends ActionResult {
+  conversationId?: string;
+  transactionId?: string;
+  checkoutUrl?: string;
 }
 
 interface ListingDeletionHistoryFlags {
@@ -261,6 +269,123 @@ function resolveRequestedFulfillment(input: {
   }
 
   return null;
+}
+
+function isStripeBackedTransaction(input: {
+  checkout_status?: TransactionPaymentStatus | null;
+  stripe_checkout_session_id?: string | null;
+  stripe_payment_intent_id?: string | null;
+}) {
+  return Boolean(
+    input.checkout_status ||
+      input.stripe_checkout_session_id ||
+      input.stripe_payment_intent_id
+  );
+}
+
+function hasRecordedStripePayment(input: {
+  checkout_status?: TransactionPaymentStatus | null;
+  paid_at?: string | null;
+}) {
+  return input.checkout_status === "paid" || Boolean(input.paid_at);
+}
+
+async function syncListingReservationState(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  listingId: string
+) {
+  const { data: heldTransactions } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("listing_id", listingId)
+    .in("state", ["reserved", "paid", "ready-for-pickup", "shipped", "delivered"])
+    .limit(1);
+
+  await supabase
+    .from("listings")
+    .update({
+      status: heldTransactions?.length ? "reserved" : "active",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", listingId)
+    .neq("status", "sold");
+}
+
+async function createStripeCheckoutForTransaction(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  input: {
+    transactionId: string;
+    listingId: string;
+    listingTitle: string;
+    buyerId: string;
+    buyerEmail?: string;
+    sellerId: string;
+    fulfillmentMethod: FulfillmentMethod;
+    itemAmount: number;
+    shippingAmount: number;
+  }
+) {
+  try {
+    const session = await createBuyerCheckoutSession({
+      transactionId: input.transactionId,
+      listingId: input.listingId,
+      buyerId: input.buyerId,
+      buyerEmail: input.buyerEmail,
+      sellerId: input.sellerId,
+      listingTitle: input.listingTitle,
+      fulfillmentMethod: input.fulfillmentMethod,
+      itemAmount: input.itemAmount,
+      shippingAmount: input.shippingAmount
+    });
+
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("transactions")
+      .update({
+        state: "reserved",
+        checkout_status: "checkout_opened",
+        stripe_checkout_session_id: session.id,
+        reserved_at: now,
+        updated_at: now
+      })
+      .eq("id", input.transactionId);
+
+    await supabase
+      .from("listings")
+      .update({
+        status: "reserved",
+        updated_at: now
+      })
+      .eq("id", input.listingId)
+      .neq("status", "sold");
+
+    return {
+      success: true as const,
+      checkoutUrl: session.url ?? undefined
+    };
+  } catch (error) {
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("transactions")
+      .update({
+        state: "pending",
+        checkout_status: "pending",
+        updated_at: now
+      })
+      .eq("id", input.transactionId);
+
+    await syncListingReservationState(supabase, input.listingId);
+
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to open Stripe Checkout right now."
+    };
+  }
 }
 
 async function requireMarketplaceContext() {
@@ -702,6 +827,9 @@ async function ensureTransactionRecord(
     itemAmount: amount,
     shippingAmount
   });
+  const fulfillmentContext = createFulfillmentContext({
+    fulfillmentMethod
+  });
 
   if (existing?.id) {
     await supabase
@@ -709,19 +837,16 @@ async function ensureTransactionRecord(
       .update({
         conversation_id: existing.conversation_id ?? conversationId,
         amount,
-        fulfillment_method: existing.fulfillment_method ?? fulfillmentMethod,
+        fulfillment_method: fulfillmentMethod,
         shipping_amount: shippingAmount,
         total_amount: breakdown.total_amount,
+        ...fulfillmentContext,
         updated_at: new Date().toISOString()
       })
       .eq("id", existing.id);
 
     return existing.id;
   }
-
-  const fulfillmentContext = createFulfillmentContext({
-    fulfillmentMethod
-  });
 
   const { data, error } = await supabase
     .from("transactions")
@@ -1057,7 +1182,7 @@ export async function updateListingStatusAction(
 export async function startPurchaseIntentAction(
   listingId: string,
   requestedFulfillmentMethod?: FulfillmentMethod
-): Promise<ActionResult & { conversationId?: string; transactionId?: string }> {
+): Promise<PurchaseActionResult> {
   if (!isLiveMode) {
     return {
       success: false,
@@ -1156,6 +1281,7 @@ export async function startPurchaseIntentAction(
       .from("transactions")
       .update({
         state: "pending",
+        checkout_status: "pending",
         fulfillment_method: fulfillmentMethod,
         ...createOrderBreakdown({
           itemAmount: Number(listing.price),
@@ -1171,8 +1297,8 @@ export async function startPurchaseIntentAction(
       sender_id: user.id,
       text:
         fulfillmentMethod === "shipping"
-          ? `I want to buy this item with shipping. Total shown now is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)}.`
-          : "I want to buy this item with pickup. Can you reserve it for me?"
+          ? `I want to buy this item with shipping and continue in Stripe Checkout. Total shown now is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)}.`
+          : "I want to buy this item with pickup and continue in Stripe Checkout."
     });
 
     await notifyUser(
@@ -1192,13 +1318,36 @@ export async function startPurchaseIntentAction(
     revalidatePath(`/app/messages/${conversationId}`);
     revalidatePath("/app/my-purchases");
 
+    const checkoutResult = await createStripeCheckoutForTransaction(supabase, {
+      transactionId,
+      listingId,
+      listingTitle: listing.title,
+      buyerId: user.id,
+      buyerEmail: user.email,
+      sellerId: listing.seller_id,
+      fulfillmentMethod,
+      itemAmount: Number(listing.price),
+      shippingAmount
+    });
+
+    if (checkoutResult.success && checkoutResult.checkoutUrl) {
+      revalidatePath(`/app/listings/${listingId}`);
+      revalidatePath("/app/my-purchases");
+
+      return {
+        success: true,
+        message: "Redirecting you to Stripe Checkout.",
+        conversationId,
+        transactionId,
+        checkoutUrl: checkoutResult.checkoutUrl
+      };
+    }
+
     return {
       success: true,
       message:
-        fulfillmentMethod === "shipping"
-          ? `Purchase request created with shipping. Current total is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)} and no online payment has been taken yet.`
-          : "Purchase request created for pickup. No online payment has been taken yet.",
-      conversationId,
+        checkoutResult.message ??
+        "Order created, but Stripe Checkout could not be opened yet. Retry payment from this order panel or from My Purchases.",
       transactionId
     };
   } catch (error) {
@@ -1210,6 +1359,150 @@ export async function startPurchaseIntentAction(
           : "Unable to start the purchase flow right now."
     };
   }
+}
+
+export async function resumeTransactionCheckoutAction(
+  transactionId: string
+): Promise<PurchaseActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to continue checkout."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: transaction, error: transactionError } = await supabase
+    .from("transactions")
+    .select(
+      `id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, conversation_id, paid_at,
+       listing:listings!transactions_listing_id_fkey (id, title, status)`
+    )
+    .eq("id", transactionId)
+    .maybeSingle();
+
+  const row = (transaction as
+    | {
+        id: string;
+        listing_id: string;
+        buyer_id: string;
+        seller_id: string;
+        state: ExchangeStatus;
+        checkout_status: TransactionPaymentStatus | null;
+        stripe_checkout_session_id: string | null;
+        stripe_payment_intent_id: string | null;
+        amount: number | string;
+        fulfillment_method: FulfillmentMethod | null;
+        shipping_amount: number | string;
+        conversation_id: string | null;
+        paid_at: string | null;
+        listing:
+          | {
+              id: string;
+              title: string;
+              status: ListingStatus;
+            }
+          | {
+              id: string;
+              title: string;
+              status: ListingStatus;
+            }[]
+          | null;
+      }
+    | null) ?? null;
+
+  if (transactionError || !row) {
+    return {
+      success: false,
+      message: transactionError?.message ?? "That order could not be found."
+    };
+  }
+
+  if (row.buyer_id !== user.id) {
+    return {
+      success: false,
+      message: "Only the buyer can continue Stripe Checkout for this order."
+    };
+  }
+
+  const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing;
+
+  if (!listing) {
+    return {
+      success: false,
+      message: "That listing could not be found anymore."
+    };
+  }
+
+  if (hasRecordedStripePayment(row)) {
+    return {
+      success: false,
+      message: "This order is already paid."
+    };
+  }
+
+  if (row.state === "cancelled" || row.state === "completed") {
+    return {
+      success: false,
+      message: "This order can no longer continue to checkout."
+    };
+  }
+
+  if (["hidden", "archived", "pending-review"].includes(listing.status)) {
+    return {
+      success: false,
+      message: "This listing is no longer available for checkout."
+    };
+  }
+
+  if (listing.status === "sold") {
+    return {
+      success: false,
+      message: "This listing has already been sold."
+    };
+  }
+
+  if (listing.status === "reserved" && row.state !== "reserved") {
+    return {
+      success: false,
+      message: "This listing is currently held for another buyer."
+    };
+  }
+
+  const fulfillmentMethod = row.fulfillment_method ?? "pickup";
+  const itemAmount = numberValue(row.amount);
+  const shippingAmount = numberValue(row.shipping_amount);
+  const checkoutResult = await createStripeCheckoutForTransaction(supabase, {
+    transactionId: row.id,
+    listingId: row.listing_id,
+    listingTitle: listing.title,
+    buyerId: row.buyer_id,
+    buyerEmail: user.email,
+    sellerId: row.seller_id,
+    fulfillmentMethod,
+    itemAmount,
+    shippingAmount
+  });
+
+  if (!checkoutResult.success || !checkoutResult.checkoutUrl) {
+    return {
+      success: false,
+      message:
+        checkoutResult.message ??
+        "Unable to reopen Stripe Checkout right now."
+    };
+  }
+
+  revalidatePath(`/app/listings/${row.listing_id}`);
+  revalidatePath("/app/my-purchases");
+
+  return {
+    success: true,
+    message: "Redirecting you to Stripe Checkout.",
+    conversationId: row.conversation_id ?? undefined,
+    transactionId: row.id,
+    checkoutUrl: checkoutResult.checkoutUrl
+  };
 }
 
 export async function submitOfferAction(
@@ -1831,7 +2124,9 @@ export async function releaseReservationAction(
   const { user, supabase } = await requireMarketplaceContext();
   const { data: transaction, error } = await supabase
     .from("transactions")
-    .select("id, listing_id, buyer_id, seller_id, state, conversation_id")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
+    )
     .eq("id", transactionId)
     .maybeSingle();
 
@@ -1853,18 +2148,16 @@ export async function releaseReservationAction(
     .from("transactions")
     .update({
       state: "pending",
+      checkout_status:
+        isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)
+          ? "cancelled"
+          : transaction.checkout_status,
       reserved_at: null,
       updated_at: new Date().toISOString()
     })
     .eq("id", transaction.id);
 
-  await supabase
-    .from("listings")
-    .update({
-      status: "active",
-      updated_at: new Date().toISOString()
-    })
-    .eq("id", transaction.listing_id);
+  await syncListingReservationState(supabase, transaction.listing_id);
 
   if (transaction.conversation_id) {
     await supabase.from("messages").insert({
@@ -1912,7 +2205,7 @@ export async function markTransactionPaidAction(
   const { data: transaction, error } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
     )
     .eq("id", transactionId)
     .maybeSingle();
@@ -1932,6 +2225,14 @@ export async function markTransactionPaidAction(
   }
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)) {
+    return {
+      success: false,
+      message:
+        "This order uses Stripe Checkout. Payment status will update automatically after the buyer completes checkout."
+    };
+  }
 
   if (!["reserved", "pending"].includes(normalizedState)) {
     return {
@@ -2014,7 +2315,7 @@ export async function markTransactionReadyForPickupAction(
   const { data: transaction, error } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
     )
     .eq("id", transactionId)
     .maybeSingle();
@@ -2041,6 +2342,13 @@ export async function markTransactionReadyForPickupAction(
   }
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)) {
+    return {
+      success: false,
+      message: "Wait for Stripe payment confirmation before preparing this pickup order."
+    };
+  }
 
   if (!["paid", "reserved"].includes(normalizedState)) {
     return {
@@ -2115,7 +2423,7 @@ export async function markTransactionShippedAction(
   const { data: transaction, error } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
     )
     .eq("id", transactionId)
     .maybeSingle();
@@ -2142,6 +2450,13 @@ export async function markTransactionShippedAction(
   }
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)) {
+    return {
+      success: false,
+      message: "Wait for Stripe payment confirmation before shipping this order."
+    };
+  }
 
   if (!["paid", "reserved"].includes(normalizedState)) {
     return {
@@ -2311,7 +2626,9 @@ export async function cancelTransactionAction(
   const { user, supabase } = await requireMarketplaceContext();
   const { data: transaction, error } = await supabase
     .from("transactions")
-    .select("id, listing_id, buyer_id, seller_id, state, conversation_id")
+    .select(
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
+    )
     .eq("id", transactionId)
     .maybeSingle();
 
@@ -2341,6 +2658,14 @@ export async function cancelTransactionAction(
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
 
+  if (hasRecordedStripePayment(transaction)) {
+    return {
+      success: false,
+      message:
+        "Paid Stripe orders cannot be cancelled from this flow yet. Use CampusSwap support if a refund or dispute is needed."
+    };
+  }
+
   if (
     !cancellableTransactionStates.includes(
       normalizedState as (typeof cancellableTransactionStates)[number]
@@ -2356,19 +2681,14 @@ export async function cancelTransactionAction(
     .from("transactions")
     .update({
       state: "cancelled",
+      checkout_status: isStripeBackedTransaction(transaction) ? "cancelled" : null,
       cancelled_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
     .eq("id", transaction.id);
 
   if (isHeldTransactionState(normalizedState)) {
-    await supabase
-      .from("listings")
-      .update({
-        status: "active",
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", transaction.listing_id);
+    await syncListingReservationState(supabase, transaction.listing_id);
   }
 
   if (transaction.conversation_id) {
@@ -2420,7 +2740,7 @@ export async function completeTransactionAction(
   const { data: transaction, error } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method"
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
     )
     .eq("id", transactionId)
     .maybeSingle();
@@ -2440,6 +2760,14 @@ export async function completeTransactionAction(
   }
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
+
+  if (isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)) {
+    return {
+      success: false,
+      message:
+        "This Stripe order is not paid yet. Complete payment before marking the order as finished."
+    };
+  }
 
   if (
     !["ready-for-pickup", "delivered", "paid", "reserved", "pending"].includes(

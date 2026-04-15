@@ -42,6 +42,12 @@ export const promotionPurchaseStatusEnum = pgEnum("promotion_purchase_status", [
   "paid",
   "cancelled"
 ]);
+export const transactionPaymentStatusEnum = pgEnum("transaction_payment_status", [
+  "pending",
+  "checkout_opened",
+  "paid",
+  "cancelled"
+]);
 export const notificationTypeEnum = pgEnum("notification_type", ["message", "promotion", "review", "listing", "safety", "system"]);
 export const contentBlockTypeEnum = pgEnum("content_block_type", ["hero", "faq", "trust", "testimonial", "footer", "seo"]);
 export const monetizationModuleEnum = pgEnum("monetization_module", ["promoted-listings", "seller-boost", "sponsor-cards", "commission-ready"]);
@@ -255,6 +261,9 @@ export const transactions = pgTable("transactions", {
   buyerId: uuid("buyer_id").references(() => users.id).notNull(),
   sellerId: uuid("seller_id").references(() => users.id).notNull(),
   state: exchangeStatusEnum("state").default("pending").notNull(),
+  checkoutStatus: transactionPaymentStatusEnum("checkout_status"),
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
   conversationId: uuid("conversation_id").references(() => conversations.id),
   amount: numeric("amount", { precision: 10, scale: 2 }).default("0").notNull(),
   fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method"),
