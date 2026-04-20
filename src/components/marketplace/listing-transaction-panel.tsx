@@ -26,6 +26,7 @@ import {
   getExchangeStatusLabel,
   getListingStatusLabel
 } from "@/lib/i18n-shared";
+import { calculatePlatformFee } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
 import type {
   FulfillmentMethod,
@@ -108,9 +109,14 @@ function OrderSummary({
 }) {
   const itemAmount = transaction?.amount ?? listingPrice;
   const shippingAmount = transaction?.shippingAmount ?? 0;
-  const platformFee = transaction?.platformFee ?? 0;
+  const platformFee =
+    transaction && transaction.platformFee > 0
+      ? transaction.platformFee
+      : calculatePlatformFee(itemAmount);
   const totalAmount =
-    transaction?.totalAmount ?? itemAmount + shippingAmount + platformFee;
+    transaction && transaction.totalAmount > 0
+      ? transaction.totalAmount
+      : itemAmount + shippingAmount + platformFee;
 
   const timelineRows = [
     {

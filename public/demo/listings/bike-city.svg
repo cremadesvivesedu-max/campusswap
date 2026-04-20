@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
-  <rect width="1200" height="900" rx="56" fill="#07111F"/>
-  <rect x="70" y="70" width="1060" height="760" rx="42" fill="#102A42"/>
-  <circle cx="372" cy="576" r="116" stroke="#70F0CB" stroke-width="26"/>
-  <circle cx="820" cy="576" r="116" stroke="#70F0CB" stroke-width="26"/>
-  <path d="M372 576L528 360h138l154 216M528 360l86 216M614 576l206-216M528 360l-92-82" stroke="#F8FAFC" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="100" y="154" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="54" font-weight="700">Gazelle City Bike</text>
-  <text x="100" y="220" fill="#B6C2CF" font-family="Arial, sans-serif" font-size="30">Lock included • station pickup • ready for Maastricht streets</text>
-</svg>

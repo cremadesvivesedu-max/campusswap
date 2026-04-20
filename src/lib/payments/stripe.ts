@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { env } from "@/lib/env";
+import { roundCurrencyAmount } from "@/lib/payments/order-pricing";
 import { buildSiteUrl } from "@/lib/site-url";
 
 export const stripe = env.STRIPE_SECRET_KEY
@@ -26,10 +27,11 @@ interface BuyerCheckoutSessionInput {
   fulfillmentMethod: "pickup" | "shipping";
   itemAmount: number;
   shippingAmount: number;
+  platformFee: number;
 }
 
 function toMinorUnit(amount: number) {
-  return Math.round(amount * 100);
+  return Math.round(roundCurrencyAmount(amount) * 100);
 }
 
 export async function createFeaturedCheckoutSession({
@@ -84,7 +86,8 @@ export async function createBuyerCheckoutSession({
   listingTitle,
   fulfillmentMethod,
   itemAmount,
-  shippingAmount
+  shippingAmount,
+  platformFee
 }: BuyerCheckoutSessionInput) {
   if (!stripe) {
     throw new Error("Stripe is not configured.");
@@ -107,7 +110,11 @@ export async function createBuyerCheckoutSession({
       listing_id: listingId,
       buyer_id: buyerId,
       seller_id: sellerId,
-      fulfillment_method: fulfillmentMethod
+      fulfillment_method: fulfillmentMethod,
+      item_amount: itemAmount.toFixed(2),
+      shipping_amount: shippingAmount.toFixed(2),
+      platform_fee: platformFee.toFixed(2),
+      total_amount: (itemAmount + shippingAmount + platformFee).toFixed(2)
     },
     line_items: [
       {
@@ -131,6 +138,21 @@ export async function createBuyerCheckoutSession({
                 product_data: {
                   name: "Shipping",
                   description: "CampusSwap shipping surcharge"
+                }
+              }
+            }
+          ]
+        : []),
+      ...(platformFee > 0
+        ? [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "eur",
+                unit_amount: toMinorUnit(platformFee),
+                product_data: {
+                  name: "CampusSwap platform fee",
+                  description: "Marketplace service fee applied to the item price"
                 }
               }
             }

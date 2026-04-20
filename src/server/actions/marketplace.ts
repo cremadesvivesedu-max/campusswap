@@ -8,6 +8,7 @@ import {
   listingImagesBucket
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
+import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import { createBuyerCheckoutSession } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type {
@@ -215,22 +216,6 @@ function resolveListingStatusForTransaction(state: ExchangeStatus): ListingStatu
   return isHeldTransactionState(state) ? "reserved" : "active";
 }
 
-function createOrderBreakdown(input: {
-  itemAmount: number;
-  shippingAmount: number;
-  platformFee?: number;
-}) {
-  const platformFee = input.platformFee ?? 0;
-  const totalAmount = input.itemAmount + input.shippingAmount + platformFee;
-
-  return {
-    amount: input.itemAmount,
-    shipping_amount: input.shippingAmount,
-    platform_fee: platformFee,
-    total_amount: totalAmount
-  };
-}
-
 function createFulfillmentContext(input: {
   fulfillmentMethod: FulfillmentMethod;
 }) {
@@ -325,6 +310,11 @@ async function createStripeCheckoutForTransaction(
     shippingAmount: number;
   }
 ) {
+  const breakdown = createOrderBreakdown({
+    itemAmount: input.itemAmount,
+    shippingAmount: input.shippingAmount
+  });
+
   try {
     const session = await createBuyerCheckoutSession({
       transactionId: input.transactionId,
@@ -334,8 +324,9 @@ async function createStripeCheckoutForTransaction(
       sellerId: input.sellerId,
       listingTitle: input.listingTitle,
       fulfillmentMethod: input.fulfillmentMethod,
-      itemAmount: input.itemAmount,
-      shippingAmount: input.shippingAmount
+      itemAmount: breakdown.amount,
+      shippingAmount: breakdown.shipping_amount,
+      platformFee: breakdown.platform_fee
     });
 
     const now = new Date().toISOString();
@@ -343,6 +334,8 @@ async function createStripeCheckoutForTransaction(
     await supabase
       .from("transactions")
       .update({
+        ...breakdown,
+        fulfillment_method: input.fulfillmentMethod,
         state: "reserved",
         checkout_status: "checkout_opened",
         stripe_checkout_session_id: session.id,
@@ -839,6 +832,7 @@ async function ensureTransactionRecord(
         amount,
         fulfillment_method: fulfillmentMethod,
         shipping_amount: shippingAmount,
+        platform_fee: breakdown.platform_fee,
         total_amount: breakdown.total_amount,
         ...fulfillmentContext,
         updated_at: new Date().toISOString()
@@ -1295,10 +1289,16 @@ export async function startPurchaseIntentAction(
     await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      text:
-        fulfillmentMethod === "shipping"
-          ? `I want to buy this item with shipping and continue in Stripe Checkout. Total shown now is EUR ${(Number(listing.price) + shippingAmount).toFixed(2)}.`
-          : "I want to buy this item with pickup and continue in Stripe Checkout."
+      text: (() => {
+        const breakdown = createOrderBreakdown({
+          itemAmount: Number(listing.price),
+          shippingAmount
+        });
+
+        return fulfillmentMethod === "shipping"
+          ? `I want to buy this item with shipping and continue in Stripe Checkout. Total shown now is EUR ${breakdown.total_amount.toFixed(2)}.`
+          : `I want to buy this item with pickup and continue in Stripe Checkout. Total shown now is EUR ${breakdown.total_amount.toFixed(2)}.`;
+      })()
     });
 
     await notifyUser(
@@ -1802,18 +1802,19 @@ export async function acceptOfferAction(offerId: string): Promise<OfferActionRes
 
     const { data: transactionPricing } = await supabase
       .from("transactions")
-      .select("shipping_amount, platform_fee")
+      .select("shipping_amount")
       .eq("id", offer.transactionId)
       .maybeSingle();
+
+    const updatedBreakdown = createOrderBreakdown({
+      itemAmount: offer.amount,
+      shippingAmount: numberValue(transactionPricing?.shipping_amount)
+    });
 
     await supabase
       .from("transactions")
       .update({
-        amount: offer.amount,
-        total_amount:
-          offer.amount +
-          numberValue(transactionPricing?.shipping_amount) +
-          numberValue(transactionPricing?.platform_fee),
+        ...updatedBreakdown,
         state: "pending",
         updated_at: now
       })

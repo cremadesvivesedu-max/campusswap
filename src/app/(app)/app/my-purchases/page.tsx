@@ -10,6 +10,7 @@ import {
   getDictionaryForRequest,
   getExchangeStatusLabel
 } from "@/lib/i18n";
+import { calculatePlatformFee } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
@@ -60,12 +61,22 @@ export default async function MyPurchasesPage() {
         getListingById(transaction.listingId, { includeRemoved: true }),
         getUserById(counterpartId)
       ]);
+      const platformFee =
+        transaction.platformFee > 0
+          ? transaction.platformFee
+          : calculatePlatformFee(transaction.amount);
+      const totalAmount =
+        transaction.totalAmount > 0
+          ? transaction.totalAmount
+          : transaction.amount + transaction.shippingAmount + platformFee;
 
       return {
         transaction,
         listing,
         counterpart,
-        hasAuthoredReview: authoredReviewIds.has(transaction.id)
+        hasAuthoredReview: authoredReviewIds.has(transaction.id),
+        platformFee,
+        totalAmount
       };
     })
   );
@@ -80,7 +91,15 @@ export default async function MyPurchasesPage() {
 
       {detailedTransactions.length ? (
         <div className="space-y-4">
-          {detailedTransactions.map(({ transaction, listing, counterpart, hasAuthoredReview }) => (
+          {detailedTransactions.map(
+            ({
+              transaction,
+              listing,
+              counterpart,
+              hasAuthoredReview,
+              platformFee,
+              totalAmount
+            }) => (
             <Card key={transaction.id} className="bg-white">
               <CardHeader className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -161,7 +180,7 @@ export default async function MyPurchasesPage() {
                   </p>
                   <p>
                     {dictionary.myPurchases.totalAmount}:{" "}
-                    {formatCurrency(transaction.totalAmount)}
+                    {formatCurrency(totalAmount)}
                   </p>
                   {transaction.reservedAt ? (
                     <p>
@@ -221,7 +240,7 @@ export default async function MyPurchasesPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span>{dictionary.myPurchases.platformFee}</span>
                       <span className="font-medium text-slate-950">
-                        {formatCurrency(transaction.platformFee)}
+                        {formatCurrency(platformFee)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
@@ -229,7 +248,7 @@ export default async function MyPurchasesPage() {
                         {dictionary.myPurchases.totalAmount}
                       </span>
                       <span className="font-semibold text-slate-950">
-                        {formatCurrency(transaction.totalAmount)}
+                        {formatCurrency(totalAmount)}
                       </span>
                     </div>
                   </div>

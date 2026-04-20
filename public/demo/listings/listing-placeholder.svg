@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none">
-  <rect width="1200" height="900" rx="56" fill="#F8FAFC"/>
-  <rect x="60" y="60" width="1080" height="780" rx="40" fill="#E2E8F0"/>
-  <circle cx="364" cy="330" r="118" fill="#CBD5E1"/>
-  <path d="M204 664L414 454l144 144 110-110 206 176H204Z" fill="#94A3B8"/>
-  <text x="100" y="144" fill="#0F172A" font-family="Arial, sans-serif" font-size="54" font-weight="700">CampusSwap Demo</text>
-  <text x="100" y="214" fill="#475569" font-family="Arial, sans-serif" font-size="32">Reliable local placeholder for listing images</text>
-</svg>
