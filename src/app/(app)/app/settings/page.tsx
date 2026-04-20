@@ -1,14 +1,29 @@
+import { SettingsStripeConnectCard } from "@/components/forms/settings-stripe-connect-card";
 import { SettingsNotificationPreferencesForm } from "@/components/forms/settings-notification-preferences-form";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
-import { getCurrentUser } from "@/server/queries/marketplace";
+import {
+  getCurrentUser,
+  getSellerStripeConnectStatusForUser
+} from "@/server/queries/marketplace";
 
-export default async function SettingsPage() {
-  const [user, dictionary] = await Promise.all([
+export default async function SettingsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ stripe?: string | string[] }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const stripeState =
+    typeof resolvedSearchParams?.stripe === "string"
+      ? resolvedSearchParams.stripe
+      : undefined;
+
+  const [user, dictionary, sellerStripeStatus] = await Promise.all([
     getCurrentUser(),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getSellerStripeConnectStatusForUser()
   ]);
 
   return (
@@ -18,7 +33,7 @@ export default async function SettingsPage() {
         title={dictionary.settings.title}
         description={dictionary.settings.description}
       />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-3">
         <Card className="bg-white">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -42,6 +57,19 @@ export default async function SettingsPage() {
             <p>{dictionary.settings.requestAccountDeletion}</p>
             <p>{dictionary.settings.reviewVerification}</p>
             <LogoutButton />
+          </CardContent>
+        </Card>
+        <Card className="bg-white">
+          <CardHeader>
+            <h2 className="font-display text-2xl font-semibold text-slate-950">
+              {dictionary.settings.payoutsTitle}
+            </h2>
+          </CardHeader>
+          <CardContent className="text-sm leading-7 text-slate-600">
+            <SettingsStripeConnectCard
+              status={sellerStripeStatus}
+              stripeState={stripeState}
+            />
           </CardContent>
         </Card>
       </div>

@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
   getListingById,
+  getSellerStripeConnectStatusForUser,
   getListingTransactionContext,
   getUserById
 } from "@/server/queries/marketplace";
@@ -39,11 +40,12 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  const [seller, currentUser, dictionary, locale] = await Promise.all([
+  const [seller, currentUser, dictionary, locale, sellerStripeStatus] = await Promise.all([
     getUserById(listing.sellerId),
     getCurrentUser(),
     getDictionaryForRequest(),
-    getRequestLocale()
+    getRequestLocale(),
+    getSellerStripeConnectStatusForUser(listing.sellerId)
   ]);
   const isOwnListing = currentUser.id === listing.sellerId;
   const transactionContext = await getListingTransactionContext(listing.id, currentUser.id);
@@ -324,6 +326,7 @@ export default async function ListingDetailPage({
             listingShippingCost={listing.shippingCost}
             currentUserId={currentUser.id}
             seller={seller}
+            sellerStripeStatus={sellerStripeStatus}
             context={transactionContext}
             isOwnListing={isOwnListing}
           />

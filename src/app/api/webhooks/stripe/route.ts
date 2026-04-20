@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { env } from "@/lib/env";
+import { getSellerStripeConnectStatusFromAccount } from "@/lib/payments/stripe-connect";
 import { stripe } from "@/lib/payments/stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
@@ -21,6 +22,10 @@ type MarketplaceNotificationType =
   | "system";
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabaseClient>>;
+
+function resolvePendingSellerPayoutStatus(sellerStripeAccountId?: string | null) {
+  return sellerStripeAccountId ? "ready" : "blocked";
+}
 
 async function getNotificationPreferences(
   admin: AdminClient,
@@ -109,6 +114,8 @@ function getBuyerCheckoutMetadata(session: Stripe.Checkout.Session) {
     listingId: session.metadata?.listing_id ?? "",
     buyerId: session.metadata?.buyer_id ?? "",
     sellerId: session.metadata?.seller_id ?? "",
+    sellerConnectedAccountId:
+      session.metadata?.seller_connected_account_id ?? "",
     fulfillmentMethod: session.metadata?.fulfillment_method ?? "pickup"
   };
 }
@@ -196,6 +203,48 @@ async function cancelCompetingTransactions(
       })
     )
   );
+}
+
+async function syncConnectedAccountState(
+  admin: AdminClient,
+  account: Stripe.Account
+) {
+  const { data: user } = await admin
+    .from("users")
+    .select("id")
+    .eq("stripe_connected_account_id", account.id)
+    .maybeSingle();
+
+  if (!user?.id) {
+    return;
+  }
+
+  const status = getSellerStripeConnectStatusFromAccount(account);
+  const now = new Date().toISOString();
+  const nextPayoutStatus = status.onboardingComplete ? "ready" : "blocked";
+
+  await admin
+    .from("users")
+    .update({
+      stripe_connected_account_id: account.id,
+      stripe_details_submitted: status.detailsSubmitted,
+      stripe_charges_enabled: status.chargesEnabled,
+      stripe_transfers_enabled: status.transfersEnabled,
+      stripe_payouts_enabled: status.payoutsEnabled,
+      stripe_onboarding_completed_at: status.onboardingComplete ? now : null,
+      updated_at: now
+    })
+    .eq("id", user.id);
+
+  await admin
+    .from("transactions")
+    .update({
+      seller_stripe_account_id: account.id,
+      seller_payout_status: nextPayoutStatus,
+      updated_at: now
+    })
+    .eq("seller_id", user.id)
+    .neq("seller_payout_status", "paid_to_connected_account");
 }
 
 async function handleCompletedPromotionCheckout(
@@ -293,7 +342,7 @@ async function handleCompletedBuyerCheckout(
   const { data: transaction } = await admin
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, checkout_status, conversation_id, fulfillment_method, paid_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, conversation_id, fulfillment_method, seller_stripe_account_id, paid_at"
     )
     .eq("id", metadata.transactionId)
     .eq("listing_id", metadata.listingId)
@@ -311,6 +360,8 @@ async function handleCompletedBuyerCheckout(
   }
 
   const now = new Date().toISOString();
+  const sellerStripeAccountId =
+    metadata.sellerConnectedAccountId || transaction.seller_stripe_account_id || null;
 
   await admin
     .from("transactions")
@@ -319,6 +370,8 @@ async function handleCompletedBuyerCheckout(
       checkout_status: "paid",
       stripe_checkout_session_id: session.id,
       stripe_payment_intent_id: getPaymentIntentId(session) ?? null,
+      seller_stripe_account_id: sellerStripeAccountId,
+      seller_payout_status: "paid_to_connected_account",
       paid_at: now,
       updated_at: now
     })
@@ -418,7 +471,7 @@ async function handleExpiredBuyerCheckout(
 
   const { data: transaction } = await admin
     .from("transactions")
-    .select("id, listing_id, state, checkout_status, paid_at")
+    .select("id, listing_id, state, checkout_status, seller_stripe_account_id, paid_at")
     .eq("id", metadata.transactionId)
     .maybeSingle();
 
@@ -431,6 +484,9 @@ async function handleExpiredBuyerCheckout(
     .update({
       state: "pending",
       checkout_status: "cancelled",
+      seller_payout_status: resolvePendingSellerPayoutStatus(
+        transaction.seller_stripe_account_id
+      ),
       reserved_at: null,
       updated_at: new Date().toISOString()
     })
@@ -513,6 +569,17 @@ export async function POST(request: Request) {
       break;
     case "checkout.session.expired":
       await handleExpiredCheckout(event.data.object as Stripe.Checkout.Session);
+      break;
+    case "account.updated":
+      {
+        const admin = createAdminSupabaseClient();
+
+        if (!admin) {
+          throw new Error("Supabase admin client is not configured.");
+        }
+
+        await syncConnectedAccountState(admin, event.data.object as Stripe.Account);
+      }
       break;
     default:
       break;

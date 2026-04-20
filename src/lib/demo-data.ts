@@ -138,8 +138,8 @@ export const demoData: DemoDataBundle = {
     }
   ],
   transactions: [
-    { id: "txn-bookcase", listingId: "listing-bookcase-1", buyerId: "user-omar", sellerId: "user-sanne", state: "completed", amount: 30, fulfillmentMethod: "pickup", shippingAmount: 0, platformFee: 0, totalAmount: 30, meetupSpot: "University Library front steps", meetupWindow: "March 30, 18:00", createdAt: "2026-03-29T15:00:00.000Z", updatedAt: "2026-03-30T18:30:00.000Z", completedAt: "2026-03-30T18:30:00.000Z" },
-    { id: "txn-chair", listingId: "listing-chair-1", buyerId: "user-omar", sellerId: "user-lina", state: "reserved", amount: 18, fulfillmentMethod: "pickup", shippingAmount: 0, platformFee: 0, totalAmount: 18, meetupSpot: "UM Sports entrance", meetupWindow: "April 3, 14:00", createdAt: "2026-04-02T10:15:00.000Z", updatedAt: "2026-04-03T12:00:00.000Z", reservedAt: "2026-04-03T12:00:00.000Z" }
+    { id: "txn-bookcase", listingId: "listing-bookcase-1", buyerId: "user-omar", sellerId: "user-sanne", state: "completed", amount: 30, fulfillmentMethod: "pickup", shippingAmount: 0, platformFee: 0, sellerNetAmount: 30, sellerPayoutStatus: "paid_to_connected_account", totalAmount: 30, meetupSpot: "University Library front steps", meetupWindow: "March 30, 18:00", createdAt: "2026-03-29T15:00:00.000Z", updatedAt: "2026-03-30T18:30:00.000Z", completedAt: "2026-03-30T18:30:00.000Z" },
+    { id: "txn-chair", listingId: "listing-chair-1", buyerId: "user-omar", sellerId: "user-lina", state: "reserved", amount: 18, fulfillmentMethod: "pickup", shippingAmount: 0, platformFee: 0, sellerNetAmount: 18, sellerPayoutStatus: "ready", totalAmount: 18, meetupSpot: "UM Sports entrance", meetupWindow: "April 3, 14:00", createdAt: "2026-04-02T10:15:00.000Z", updatedAt: "2026-04-03T12:00:00.000Z", reservedAt: "2026-04-03T12:00:00.000Z" }
   ],
   reviews: [
     { id: "review-1", transactionId: "txn-bookcase", authorId: "user-omar", targetUserId: "user-sanne", rating: 5, text: "Fast replies, clear photos, and exactly as described.", createdAt: "2026-03-30T19:00:00.000Z" },

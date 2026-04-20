@@ -37,21 +37,32 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (user?.id) {
-      await admin
+      const { data: transaction } = await admin
+        .from("transactions")
+        .select("id, listing_id, seller_stripe_account_id")
+        .eq("id", transactionId)
+        .eq("buyer_id", user.id)
+        .is("paid_at", null)
+        .maybeSingle();
+
+      if (transaction?.id) {
+        await admin
         .from("transactions")
         .update({
           state: "pending",
           checkout_status: "cancelled",
+          seller_payout_status: transaction.seller_stripe_account_id ? "ready" : "blocked",
           reserved_at: null,
           updated_at: new Date().toISOString()
         })
-        .eq("id", transactionId)
-        .eq("buyer_id", user.id)
-        .is("paid_at", null)
+        .eq("id", transaction.id)
         .in("state", ["pending", "reserved"]);
 
-      if (listingId) {
-        await syncListingReservationState(listingId, admin);
+        const resolvedListingId = listingId || transaction.listing_id;
+
+        if (resolvedListingId) {
+          await syncListingReservationState(resolvedListingId, admin);
+        }
       }
     }
   }

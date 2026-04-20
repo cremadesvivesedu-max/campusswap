@@ -289,6 +289,11 @@ export const dictionaries = {
         itemPrice: "Item price",
         shippingCost: "Shipping",
         platformFee: "Platform fee",
+        sellerNetAmount: "Seller receives",
+        payoutStatus: "Payout status",
+        payoutBlocked: "Blocked until seller completes Stripe onboarding",
+        payoutReady: "Ready for connected payout",
+        payoutTransferred: "Funds routed to seller Stripe account",
         totalAmount: "Total",
         reservedAt: "Reserved at",
         paidAt: "Paid at",
@@ -327,6 +332,11 @@ export const dictionaries = {
           "Payment confirmed. The seller can now move this order forward.",
         paymentPendingSeller:
           "The buyer has not completed Stripe payment yet. Wait for payment before preparing pickup or shipping.",
+        sellerPayoutsUnavailable:
+          "Checkout is temporarily unavailable because this seller has not completed Stripe payout onboarding yet.",
+        completeSellerPayoutSetup:
+          "Complete Stripe payouts in Settings before buyers can pay you through CampusSwap Checkout.",
+        completeSellerPayoutSetupCta: "Finish payout setup",
         openListing: "Open listing",
         confirmCancel: "Cancel this exchange and reopen the listing if needed?",
         confirmBuyerCancel: "Cancel your purchase request for this listing?",
@@ -374,6 +384,7 @@ export const dictionaries = {
       orderBreakdown: "Order breakdown",
       shippingAmount: "Shipping",
       platformFee: "Platform fee",
+      sellerNetAmount: "Seller receives",
       totalAmount: "Total",
       reservedAt: "Reserved at",
       paidAt: "Paid at",
@@ -474,6 +485,29 @@ export const dictionaries = {
       savePreferences: "Save notification preferences",
       savingPreferences: "Saving preferences...",
       accountTitle: "Account",
+      payoutsTitle: "Stripe payouts",
+      payoutsDescription:
+        "Connect Stripe so CampusSwap can route buyer Checkout payments to your seller account and keep the platform fee automatically.",
+      payoutsNotConnected:
+        "You have not connected Stripe yet. Buyers will not be able to complete secure checkout for your listings until you do.",
+      payoutsIncomplete:
+        "Stripe onboarding started, but more seller payout details are still required before CampusSwap can route buyer payments.",
+      payoutsReady:
+        "Stripe payouts are ready. Buyer Checkout payments can now route funds to your connected seller account.",
+      startPayoutSetup: "Connect Stripe payouts",
+      continuePayoutSetup: "Continue Stripe onboarding",
+      openStripeDashboard: "Open Stripe dashboard",
+      payoutsBadgeReady: "Ready",
+      payoutsBadgeActionNeeded: "Action needed",
+      payoutsBadgeNotConnected: "Not connected",
+      stripeReturnReady:
+        "Stripe onboarding is complete. Buyer Checkout can now pay out to your connected seller account.",
+      stripeReturnIncomplete:
+        "Stripe still needs a few payout details before buyer Checkout can go live for your listings.",
+      stripeReturnMissing:
+        "No connected Stripe account was found for this seller profile yet. Start onboarding again from Settings.",
+      stripeReturnError:
+        "CampusSwap could not refresh your Stripe payout status right now. Please try again.",
       noPreferences: "No notification preferences selected yet.",
       requestDataExport: "Request data export",
       requestAccountDeletion: "Request account deletion",
@@ -2905,6 +2939,106 @@ mutableDictionaries.es = {
       }
     }
   };
+
+mutableDictionaries.es = {
+  ...mutableDictionaries.es,
+  settings: {
+    ...mutableDictionaries.es.settings,
+    payoutsTitle: "Pagos con Stripe",
+    payoutsDescription:
+      "Conecta Stripe para que CampusSwap pueda enviar los pagos de Checkout a tu cuenta de vendedor y retener la comisión automáticamente.",
+    payoutsNotConnected:
+      "Todavía no has conectado Stripe. Los compradores no podrán completar el checkout seguro de tus anuncios hasta que lo hagas.",
+    payoutsIncomplete:
+      "El onboarding de Stripe ya empezó, pero todavía faltan algunos datos de pago antes de poder cobrar a compradores en CampusSwap.",
+    payoutsReady:
+      "Los pagos con Stripe ya están listos. CampusSwap puede enrutar el dinero de Checkout a tu cuenta conectada.",
+    startPayoutSetup: "Conectar pagos con Stripe",
+    continuePayoutSetup: "Continuar onboarding de Stripe",
+    openStripeDashboard: "Abrir panel de Stripe",
+    payoutsBadgeReady: "Listo",
+    payoutsBadgeActionNeeded: "Acción pendiente",
+    payoutsBadgeNotConnected: "Sin conectar",
+    stripeReturnReady:
+      "El onboarding de Stripe está completo. Checkout ya puede pagar a tu cuenta conectada.",
+    stripeReturnIncomplete:
+      "Stripe todavía necesita algunos datos de pagos antes de activar Checkout para tus anuncios.",
+    stripeReturnMissing:
+      "Todavía no existe una cuenta conectada de Stripe para este perfil. Vuelve a iniciar el onboarding desde Ajustes.",
+    stripeReturnError:
+      "CampusSwap no pudo actualizar tu estado de pagos de Stripe ahora mismo. Inténtalo de nuevo."
+  },
+  messages: {
+    ...mutableDictionaries.es.messages,
+    exchange: {
+      ...mutableDictionaries.es.messages.exchange,
+      sellerNetAmount: "El vendedor recibe",
+      payoutStatus: "Estado del pago al vendedor",
+      payoutBlocked: "Bloqueado hasta que el vendedor complete el onboarding de Stripe",
+      payoutReady: "Listo para pago a cuenta conectada",
+      payoutTransferred: "Fondos enviados a la cuenta Stripe del vendedor",
+      sellerPayoutsUnavailable:
+        "El checkout no está disponible por ahora porque este vendedor no ha completado todavía el onboarding de pagos de Stripe.",
+      completeSellerPayoutSetup:
+        "Completa los pagos con Stripe en Ajustes para que los compradores puedan pagarte con CampusSwap Checkout.",
+      completeSellerPayoutSetupCta: "Completar pagos"
+    }
+  },
+  myPurchases: {
+    ...mutableDictionaries.es.myPurchases,
+    sellerNetAmount: "El vendedor recibe"
+  }
+};
+
+mutableDictionaries.nl = {
+  ...mutableDictionaries.nl,
+  settings: {
+    ...mutableDictionaries.nl.settings,
+    payoutsTitle: "Stripe-uitbetalingen",
+    payoutsDescription:
+      "Koppel Stripe zodat CampusSwap Checkout-betalingen naar je verkopersaccount kan sturen en de platformfee automatisch kan behouden.",
+    payoutsNotConnected:
+      "Je hebt Stripe nog niet gekoppeld. Kopers kunnen de veilige checkout voor jouw advertenties pas afronden zodra dit klaar is.",
+    payoutsIncomplete:
+      "Stripe-onboarding is gestart, maar er ontbreken nog uitbetalingsgegevens voordat CampusSwap koperbetalingen kan doorsturen.",
+    payoutsReady:
+      "Stripe-uitbetalingen zijn klaar. CampusSwap kan Checkout-gelden nu naar je gekoppelde verkopersaccount sturen.",
+    startPayoutSetup: "Stripe-uitbetalingen koppelen",
+    continuePayoutSetup: "Stripe-onboarding vervolgen",
+    openStripeDashboard: "Stripe-dashboard openen",
+    payoutsBadgeReady: "Klaar",
+    payoutsBadgeActionNeeded: "Actie nodig",
+    payoutsBadgeNotConnected: "Niet gekoppeld",
+    stripeReturnReady:
+      "Stripe-onboarding is voltooid. Checkout kan nu uitbetalen naar je gekoppelde account.",
+    stripeReturnIncomplete:
+      "Stripe heeft nog een paar uitbetalingsgegevens nodig voordat Checkout live kan gaan voor jouw advertenties.",
+    stripeReturnMissing:
+      "Er is nog geen gekoppeld Stripe-account gevonden voor dit profiel. Start onboarding opnieuw vanuit Instellingen.",
+    stripeReturnError:
+      "CampusSwap kon je Stripe-uitbetalingsstatus nu niet verversen. Probeer het opnieuw."
+  },
+  messages: {
+    ...mutableDictionaries.nl.messages,
+    exchange: {
+      ...mutableDictionaries.nl.messages.exchange,
+      sellerNetAmount: "Verkoper ontvangt",
+      payoutStatus: "Uitbetalingsstatus",
+      payoutBlocked: "Geblokkeerd totdat de verkoper Stripe-onboarding afrondt",
+      payoutReady: "Klaar voor uitbetaling naar gekoppeld account",
+      payoutTransferred: "Geld doorgestuurd naar de Stripe-rekening van de verkoper",
+      sellerPayoutsUnavailable:
+        "Checkout is tijdelijk niet beschikbaar omdat deze verkoper Stripe-uitbetalingen nog niet volledig heeft ingesteld.",
+      completeSellerPayoutSetup:
+        "Rond Stripe-uitbetalingen af in Instellingen voordat kopers je via CampusSwap Checkout kunnen betalen.",
+      completeSellerPayoutSetupCta: "Uitbetalingen afronden"
+    }
+  },
+  myPurchases: {
+    ...mutableDictionaries.nl.myPurchases,
+    sellerNetAmount: "Verkoper ontvangt"
+  }
+};
 
   export function getConditionLabel(dictionary: Dictionary, condition: ListingCondition) {
   return dictionary.common.conditionLabels[condition] ?? condition;

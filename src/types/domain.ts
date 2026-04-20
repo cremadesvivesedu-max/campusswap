@@ -35,6 +35,10 @@ export type TransactionPaymentStatus =
   | "checkout_opened"
   | "paid"
   | "cancelled";
+export type SellerPayoutStatus =
+  | "blocked"
+  | "ready"
+  | "paid_to_connected_account";
 export type NotificationType = "message" | "promotion" | "review" | "listing" | "safety" | "system";
 export type ContentBlockType = "hero" | "faq" | "trust" | "testimonial" | "footer" | "seo";
 export type MonetizationModule = "promoted-listings" | "seller-boost" | "sponsor-cards" | "commission-ready";
@@ -86,6 +90,15 @@ export interface SellerTrustMetrics {
   reviewCount: number;
   responseRate: number;
   responseRateMethod: "conversation-reply-rate" | "profile-estimate";
+}
+
+export interface SellerStripeConnectStatus {
+  connected: boolean;
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  transfersEnabled: boolean;
+  payoutsEnabled: boolean;
+  onboardingComplete: boolean;
 }
 
 export interface User {
@@ -262,6 +275,8 @@ export interface Transaction {
   fulfillmentMethod?: FulfillmentMethod;
   shippingAmount: number;
   platformFee: number;
+  sellerNetAmount: number;
+  sellerPayoutStatus: SellerPayoutStatus;
   totalAmount: number;
   meetupSpot: string;
   meetupWindow: string;

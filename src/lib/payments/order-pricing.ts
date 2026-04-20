@@ -30,6 +30,7 @@ export function createOrderBreakdown(input: {
   const platformFee = roundCurrencyAmount(
     input.platformFee ?? calculatePlatformFee(itemAmount)
   );
+  const sellerNetAmount = roundCurrencyAmount(itemAmount + shippingAmount);
   const totalAmount = roundCurrencyAmount(
     itemAmount + shippingAmount + platformFee
   );
@@ -38,6 +39,7 @@ export function createOrderBreakdown(input: {
     amount: itemAmount,
     shipping_amount: shippingAmount,
     platform_fee: platformFee,
+    seller_net_amount: sellerNetAmount,
     total_amount: totalAmount
   };
 }

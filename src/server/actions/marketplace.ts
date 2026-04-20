@@ -9,6 +9,14 @@ import {
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
 import { createOrderBreakdown } from "@/lib/payments/order-pricing";
+import {
+  createSellerConnectedAccount,
+  createSellerDashboardLink,
+  createSellerOnboardingLink,
+  getSellerStripeConnectStatus,
+  getSellerStripeConnectStatusFromAccount,
+  retrieveSellerConnectedAccount
+} from "@/lib/payments/stripe-connect";
 import { createBuyerCheckoutSession } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type {
@@ -20,6 +28,7 @@ import type {
   ListingStatus,
   OfferStatus,
   ReportTargetType,
+  SellerPayoutStatus,
   SupportTicketType,
   TransactionPaymentStatus
 } from "@/types/domain";
@@ -42,6 +51,10 @@ interface PurchaseActionResult extends ActionResult {
   conversationId?: string;
   transactionId?: string;
   checkoutUrl?: string;
+}
+
+interface RedirectActionResult extends ActionResult {
+  url?: string;
 }
 
 interface ListingDeletionHistoryFlags {
@@ -167,6 +180,115 @@ function numberValue(value: number | string | null | undefined) {
   }
 
   return 0;
+}
+
+interface SellerStripeRoutingState {
+  connectedAccountId?: string;
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  transfersEnabled: boolean;
+  payoutsEnabled: boolean;
+  onboardingComplete: boolean;
+}
+
+function resolveSellerPayoutStatus(input: {
+  onboardingComplete: boolean;
+  fundsRouted?: boolean;
+}): SellerPayoutStatus {
+  if (input.fundsRouted) {
+    return "paid_to_connected_account";
+  }
+
+  return input.onboardingComplete ? "ready" : "blocked";
+}
+
+function buildSellerPayoutFields(input: SellerStripeRoutingState & { fundsRouted?: boolean }) {
+  return {
+    seller_stripe_account_id: input.connectedAccountId ?? null,
+    seller_payout_status: resolveSellerPayoutStatus({
+      onboardingComplete: input.onboardingComplete,
+      fundsRouted: input.fundsRouted
+    })
+  };
+}
+
+async function getSellerStripeRoutingState(
+  supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabaseClient>>>,
+  sellerId: string
+): Promise<SellerStripeRoutingState> {
+  const client = createAdminSupabaseClient() ?? supabase;
+  const { data } = await client
+    .from("users")
+    .select(
+      "stripe_connected_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_transfers_enabled, stripe_payouts_enabled"
+    )
+    .eq("id", sellerId)
+    .maybeSingle();
+
+  const row =
+    (data as
+      | {
+          stripe_connected_account_id?: string | null;
+          stripe_details_submitted?: boolean | null;
+          stripe_charges_enabled?: boolean | null;
+          stripe_transfers_enabled?: boolean | null;
+          stripe_payouts_enabled?: boolean | null;
+        }
+      | null) ?? null;
+  const status = getSellerStripeConnectStatus({
+    accountId: row?.stripe_connected_account_id,
+    detailsSubmitted: row?.stripe_details_submitted,
+    chargesEnabled: row?.stripe_charges_enabled,
+    transfersEnabled: row?.stripe_transfers_enabled,
+    payoutsEnabled: row?.stripe_payouts_enabled
+  });
+
+  return {
+    connectedAccountId: row?.stripe_connected_account_id ?? undefined,
+    detailsSubmitted: status.detailsSubmitted,
+    chargesEnabled: status.chargesEnabled,
+    transfersEnabled: status.transfersEnabled,
+    payoutsEnabled: status.payoutsEnabled,
+    onboardingComplete: status.onboardingComplete
+  };
+}
+
+async function updateSellerStripeRoutingState(
+  client: NonNullable<ReturnType<typeof createAdminSupabaseClient>>,
+  userId: string,
+  state: SellerStripeRoutingState
+) {
+  const now = new Date().toISOString();
+  const { error } = await client
+    .from("users")
+    .update({
+      stripe_connected_account_id: state.connectedAccountId ?? null,
+      stripe_details_submitted: state.detailsSubmitted,
+      stripe_charges_enabled: state.chargesEnabled,
+      stripe_transfers_enabled: state.transfersEnabled,
+      stripe_payouts_enabled: state.payoutsEnabled,
+      stripe_onboarding_completed_at: state.onboardingComplete
+        ? now
+        : null,
+      updated_at: now
+    })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await client
+    .from("transactions")
+    .update({
+      seller_stripe_account_id: state.connectedAccountId ?? null,
+      seller_payout_status: resolveSellerPayoutStatus({
+        onboardingComplete: state.onboardingComplete
+      }),
+      updated_at: now
+    })
+    .eq("seller_id", userId)
+    .neq("seller_payout_status", "paid_to_connected_account");
 }
 
 const openTransactionStates = [
@@ -308,12 +430,36 @@ async function createStripeCheckoutForTransaction(
     fulfillmentMethod: FulfillmentMethod;
     itemAmount: number;
     shippingAmount: number;
+    sellerStripe: SellerStripeRoutingState;
   }
 ) {
   const breakdown = createOrderBreakdown({
     itemAmount: input.itemAmount,
     shippingAmount: input.shippingAmount
   });
+
+  if (!input.sellerStripe.connectedAccountId || !input.sellerStripe.onboardingComplete) {
+    const now = new Date().toISOString();
+
+    await supabase
+      .from("transactions")
+      .update({
+        ...breakdown,
+        ...buildSellerPayoutFields(input.sellerStripe),
+        state: "pending",
+        checkout_status: "pending",
+        updated_at: now
+      })
+      .eq("id", input.transactionId);
+
+    await syncListingReservationState(supabase, input.listingId);
+
+    return {
+      success: false as const,
+      message:
+        "This seller has not finished Stripe payout onboarding yet, so secure checkout is not available right now."
+    };
+  }
 
   try {
     const session = await createBuyerCheckoutSession({
@@ -322,11 +468,13 @@ async function createStripeCheckoutForTransaction(
       buyerId: input.buyerId,
       buyerEmail: input.buyerEmail,
       sellerId: input.sellerId,
+      sellerConnectedAccountId: input.sellerStripe.connectedAccountId,
       listingTitle: input.listingTitle,
       fulfillmentMethod: input.fulfillmentMethod,
       itemAmount: breakdown.amount,
       shippingAmount: breakdown.shipping_amount,
-      platformFee: breakdown.platform_fee
+      platformFee: breakdown.platform_fee,
+      sellerNetAmount: breakdown.seller_net_amount
     });
 
     const now = new Date().toISOString();
@@ -335,6 +483,7 @@ async function createStripeCheckoutForTransaction(
       .from("transactions")
       .update({
         ...breakdown,
+        ...buildSellerPayoutFields(input.sellerStripe),
         fulfillment_method: input.fulfillmentMethod,
         state: "reserved",
         checkout_status: "checkout_opened",
@@ -363,6 +512,8 @@ async function createStripeCheckoutForTransaction(
     await supabase
       .from("transactions")
       .update({
+        ...breakdown,
+        ...buildSellerPayoutFields(input.sellerStripe),
         state: "pending",
         checkout_status: "pending",
         updated_at: now
@@ -793,7 +944,8 @@ async function ensureTransactionRecord(
     conversationId,
     amount,
     fulfillmentMethod,
-    shippingAmount
+    shippingAmount,
+    sellerStripe
   }: {
     listingId: string;
     buyerId: string;
@@ -802,6 +954,7 @@ async function ensureTransactionRecord(
     amount: number;
     fulfillmentMethod: FulfillmentMethod;
     shippingAmount: number;
+    sellerStripe: SellerStripeRoutingState;
   }
 ) {
   const { data: existing } = await supabase
@@ -829,11 +982,9 @@ async function ensureTransactionRecord(
       .from("transactions")
       .update({
         conversation_id: existing.conversation_id ?? conversationId,
-        amount,
+        ...breakdown,
+        ...buildSellerPayoutFields(sellerStripe),
         fulfillment_method: fulfillmentMethod,
-        shipping_amount: shippingAmount,
-        platform_fee: breakdown.platform_fee,
-        total_amount: breakdown.total_amount,
         ...fulfillmentContext,
         updated_at: new Date().toISOString()
       })
@@ -851,6 +1002,7 @@ async function ensureTransactionRecord(
       state: "pending",
       fulfillment_method: fulfillmentMethod,
       ...breakdown,
+      ...buildSellerPayoutFields(sellerStripe),
       conversation_id: conversationId,
       ...fulfillmentContext
     })
@@ -872,7 +1024,8 @@ async function ensureListingOfferContext(
     sellerId,
     amount,
     fulfillmentMethod,
-    shippingAmount
+    shippingAmount,
+    sellerStripe
   }: {
     listingId: string;
     buyerId: string;
@@ -880,6 +1033,7 @@ async function ensureListingOfferContext(
     amount: number;
     fulfillmentMethod: FulfillmentMethod;
     shippingAmount: number;
+    sellerStripe: SellerStripeRoutingState;
   }
 ) {
   const conversationId = await ensureConversationRecord(
@@ -895,7 +1049,8 @@ async function ensureListingOfferContext(
       conversationId,
       amount,
       fulfillmentMethod,
-      shippingAmount
+      shippingAmount,
+      sellerStripe
     });
 
   await supabase
@@ -906,6 +1061,7 @@ async function ensureListingOfferContext(
         itemAmount: amount,
         shippingAmount
       }),
+      ...buildSellerPayoutFields(sellerStripe),
       fulfillment_method: fulfillmentMethod,
       updated_at: new Date().toISOString()
     })
@@ -1254,6 +1410,16 @@ export async function startPurchaseIntentAction(
     };
   }
 
+  const sellerStripe = await getSellerStripeRoutingState(supabase, listing.seller_id);
+
+  if (!sellerStripe.onboardingComplete) {
+    return {
+      success: false,
+      message:
+        "This seller has not completed Stripe payout onboarding yet, so secure checkout is not available right now."
+    };
+  }
+
   try {
     const conversationId = await ensureConversationRecord(
       supabase,
@@ -1268,7 +1434,8 @@ export async function startPurchaseIntentAction(
       conversationId,
       amount: Number(listing.price),
       fulfillmentMethod,
-      shippingAmount
+      shippingAmount,
+      sellerStripe
     });
 
     await supabase
@@ -1276,6 +1443,7 @@ export async function startPurchaseIntentAction(
       .update({
         state: "pending",
         checkout_status: "pending",
+        ...buildSellerPayoutFields(sellerStripe),
         fulfillment_method: fulfillmentMethod,
         ...createOrderBreakdown({
           itemAmount: Number(listing.price),
@@ -1327,7 +1495,8 @@ export async function startPurchaseIntentAction(
       sellerId: listing.seller_id,
       fulfillmentMethod,
       itemAmount: Number(listing.price),
-      shippingAmount
+      shippingAmount,
+      sellerStripe
     });
 
     if (checkoutResult.success && checkoutResult.checkoutUrl) {
@@ -1469,6 +1638,24 @@ export async function resumeTransactionCheckoutAction(
     };
   }
 
+  const sellerStripe = await getSellerStripeRoutingState(supabase, row.seller_id);
+
+  if (!sellerStripe.onboardingComplete) {
+    await supabase
+      .from("transactions")
+      .update({
+        ...buildSellerPayoutFields(sellerStripe),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", row.id);
+
+    return {
+      success: false,
+      message:
+        "This seller has not completed Stripe payout onboarding yet, so secure checkout is not available right now."
+    };
+  }
+
   const fulfillmentMethod = row.fulfillment_method ?? "pickup";
   const itemAmount = numberValue(row.amount);
   const shippingAmount = numberValue(row.shipping_amount);
@@ -1481,7 +1668,8 @@ export async function resumeTransactionCheckoutAction(
     sellerId: row.seller_id,
     fulfillmentMethod,
     itemAmount,
-    shippingAmount
+    shippingAmount,
+    sellerStripe
   });
 
   if (!checkoutResult.success || !checkoutResult.checkoutUrl) {
@@ -1503,6 +1691,174 @@ export async function resumeTransactionCheckoutAction(
     transactionId: row.id,
     checkoutUrl: checkoutResult.checkoutUrl
   };
+}
+
+export async function beginSellerStripeOnboardingAction(): Promise<RedirectActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to connect Stripe payouts."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return {
+      success: false,
+      message: "Stripe payouts are not configured on the server."
+    };
+  }
+
+  try {
+    let sellerStripe = await getSellerStripeRoutingState(supabase, user.id);
+
+    if (!sellerStripe.connectedAccountId) {
+      const account = await createSellerConnectedAccount({
+        email: user.email
+      });
+      const status = getSellerStripeConnectStatusFromAccount(account);
+      sellerStripe = {
+        connectedAccountId: account.id,
+        detailsSubmitted: status.detailsSubmitted,
+        chargesEnabled: status.chargesEnabled,
+        transfersEnabled: status.transfersEnabled,
+        payoutsEnabled: status.payoutsEnabled,
+        onboardingComplete: status.onboardingComplete
+      };
+
+      await updateSellerStripeRoutingState(admin, user.id, sellerStripe);
+    } else {
+      const account = await retrieveSellerConnectedAccount(
+        sellerStripe.connectedAccountId
+      );
+      const status = getSellerStripeConnectStatusFromAccount(account);
+      sellerStripe = {
+        connectedAccountId: account.id,
+        detailsSubmitted: status.detailsSubmitted,
+        chargesEnabled: status.chargesEnabled,
+        transfersEnabled: status.transfersEnabled,
+        payoutsEnabled: status.payoutsEnabled,
+        onboardingComplete: status.onboardingComplete
+      };
+
+      await updateSellerStripeRoutingState(admin, user.id, sellerStripe);
+    }
+
+    if (sellerStripe.onboardingComplete && sellerStripe.connectedAccountId) {
+      const dashboardLink = await createSellerDashboardLink(
+        sellerStripe.connectedAccountId
+      );
+
+      revalidatePath("/app/settings");
+
+      return {
+        success: true,
+        message: "Opening Stripe dashboard.",
+        url: dashboardLink.url
+      };
+    }
+
+    if (!sellerStripe.connectedAccountId) {
+      return {
+        success: false,
+        message: "Unable to create a Stripe connected account right now."
+      };
+    }
+
+    const onboardingLink = await createSellerOnboardingLink(
+      sellerStripe.connectedAccountId
+    );
+
+    revalidatePath("/app/settings");
+
+    return {
+      success: true,
+      message: "Redirecting to Stripe onboarding.",
+      url: onboardingLink.url
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to start Stripe onboarding right now."
+    };
+  }
+}
+
+export async function openSellerStripeDashboardAction(): Promise<RedirectActionResult> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to open Stripe payouts."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return {
+      success: false,
+      message: "Stripe payouts are not configured on the server."
+    };
+  }
+
+  try {
+    const sellerStripe = await getSellerStripeRoutingState(supabase, user.id);
+
+    if (!sellerStripe.connectedAccountId) {
+      return {
+        success: false,
+        message: "Connect Stripe first before opening the seller dashboard."
+      };
+    }
+
+    const account = await retrieveSellerConnectedAccount(
+      sellerStripe.connectedAccountId
+    );
+    const status = getSellerStripeConnectStatusFromAccount(account);
+    const nextState: SellerStripeRoutingState = {
+      connectedAccountId: account.id,
+      detailsSubmitted: status.detailsSubmitted,
+      chargesEnabled: status.chargesEnabled,
+      transfersEnabled: status.transfersEnabled,
+      payoutsEnabled: status.payoutsEnabled,
+      onboardingComplete: status.onboardingComplete
+    };
+
+    await updateSellerStripeRoutingState(admin, user.id, nextState);
+    revalidatePath("/app/settings");
+
+    if (!nextState.onboardingComplete) {
+      const onboardingLink = await createSellerOnboardingLink(account.id);
+
+      return {
+        success: true,
+        message: "Stripe still needs more seller details.",
+        url: onboardingLink.url
+      };
+    }
+
+    const dashboardLink = await createSellerDashboardLink(account.id);
+
+    return {
+      success: true,
+      message: "Opening Stripe dashboard.",
+      url: dashboardLink.url
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to open the Stripe seller dashboard right now."
+    };
+  }
 }
 
 export async function submitOfferAction(
@@ -1577,6 +1933,7 @@ export async function submitOfferAction(
       }) ?? "pickup";
     const shippingAmount =
       fulfillmentMethod === "shipping" ? Number(listing.shipping_cost ?? 0) : 0;
+    const sellerStripe = await getSellerStripeRoutingState(supabase, listing.seller_id);
 
     const { conversationId, transactionId } = await ensureListingOfferContext(supabase, {
       listingId,
@@ -1584,7 +1941,8 @@ export async function submitOfferAction(
       sellerId: listing.seller_id,
       amount: offerAmount,
       fulfillmentMethod,
-      shippingAmount
+      shippingAmount,
+      sellerStripe
     });
     const latestOffer = await getLatestOfferForConversation(supabase, conversationId);
 
@@ -1810,11 +2168,13 @@ export async function acceptOfferAction(offerId: string): Promise<OfferActionRes
       itemAmount: offer.amount,
       shippingAmount: numberValue(transactionPricing?.shipping_amount)
     });
+    const sellerStripe = await getSellerStripeRoutingState(supabase, offer.sellerId);
 
     await supabase
       .from("transactions")
       .update({
         ...updatedBreakdown,
+        ...buildSellerPayoutFields(sellerStripe),
         state: "pending",
         updated_at: now
       })
@@ -2046,6 +2406,10 @@ export async function reserveConversationBuyerAction(
       }) ?? "pickup";
     const shippingAmount =
       fulfillmentMethod === "shipping" ? Number(listing.shipping_cost ?? 0) : 0;
+    const sellerStripe = await getSellerStripeRoutingState(
+      supabase,
+      conversation.seller_id
+    );
 
     const transactionId = await ensureTransactionRecord(supabase, {
       listingId: conversation.listing_id,
@@ -2054,13 +2418,15 @@ export async function reserveConversationBuyerAction(
       conversationId: conversation.id,
       amount: Number(listing.price),
       fulfillmentMethod,
-      shippingAmount
+      shippingAmount,
+      sellerStripe
     });
 
     await supabase
       .from("transactions")
       .update({
         state: "reserved",
+        ...buildSellerPayoutFields(sellerStripe),
         reserved_at: new Date().toISOString(),
         cancelled_at: null,
         updated_at: new Date().toISOString()

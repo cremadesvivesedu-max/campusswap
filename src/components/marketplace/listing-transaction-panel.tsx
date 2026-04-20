@@ -26,12 +26,13 @@ import {
   getExchangeStatusLabel,
   getListingStatusLabel
 } from "@/lib/i18n-shared";
-import { calculatePlatformFee } from "@/lib/payments/order-pricing";
+import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
 import type {
   FulfillmentMethod,
   ListingStatus,
   ListingTransactionContext,
+  SellerStripeConnectStatus,
   Transaction,
   User
 } from "@/types/domain";
@@ -94,29 +95,60 @@ function hasStripePaymentRecorded(transaction?: Transaction) {
   return transaction?.checkoutStatus === "paid" || Boolean(transaction?.paidAt);
 }
 
+function getSellerPayoutStatusLabel(
+  dictionary: LocaleDictionary,
+  status: Transaction["sellerPayoutStatus"] | undefined
+) {
+  switch (status) {
+    case "paid_to_connected_account":
+      return dictionary.messages.exchange.payoutTransferred;
+    case "ready":
+      return dictionary.messages.exchange.payoutReady;
+    case "blocked":
+    default:
+      return dictionary.messages.exchange.payoutBlocked;
+  }
+}
+
 function OrderSummary({
   dictionary,
   transaction,
   listingPrice,
   listingShippingCost,
-  pickupArea
+  pickupArea,
+  defaultFulfillmentMethod
 }: {
   dictionary: LocaleDictionary;
   transaction?: Transaction;
   listingPrice: number;
   listingShippingCost: number;
   pickupArea: string;
+  defaultFulfillmentMethod: FulfillmentMethod;
 }) {
-  const itemAmount = transaction?.amount ?? listingPrice;
-  const shippingAmount = transaction?.shippingAmount ?? 0;
+  const breakdown = createOrderBreakdown({
+    itemAmount: transaction?.amount ?? listingPrice,
+    shippingAmount:
+      transaction?.shippingAmount ??
+      (defaultFulfillmentMethod === "shipping" ? listingShippingCost : 0),
+    platformFee:
+      transaction && transaction.platformFee > 0
+        ? transaction.platformFee
+        : undefined
+  });
+  const itemAmount = transaction?.amount ?? breakdown.amount;
+  const shippingAmount = transaction?.shippingAmount ?? breakdown.shipping_amount;
   const platformFee =
     transaction && transaction.platformFee > 0
       ? transaction.platformFee
-      : calculatePlatformFee(itemAmount);
+      : breakdown.platform_fee;
+  const sellerNetAmount =
+    transaction && transaction.sellerNetAmount > 0
+      ? transaction.sellerNetAmount
+      : breakdown.seller_net_amount;
   const totalAmount =
     transaction && transaction.totalAmount > 0
       ? transaction.totalAmount
-      : itemAmount + shippingAmount + platformFee;
+      : breakdown.total_amount;
 
   const timelineRows = [
     {
@@ -170,12 +202,29 @@ function OrderSummary({
             <span>{dictionary.messages.exchange.platformFee}</span>
             <span className="font-medium text-slate-950">{formatCurrency(platformFee)}</span>
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>{dictionary.messages.exchange.sellerNetAmount}</span>
+            <span className="font-medium text-slate-950">
+              {formatCurrency(sellerNetAmount)}
+            </span>
+          </div>
+          {transaction ? (
+            <div className="flex items-center justify-between gap-3">
+              <span>{dictionary.messages.exchange.payoutStatus}</span>
+              <span className="font-medium text-slate-950">
+                {getSellerPayoutStatusLabel(
+                  dictionary,
+                  transaction.sellerPayoutStatus
+                )}
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
             <span className="font-semibold text-slate-950">
               {dictionary.messages.exchange.totalAmount}
             </span>
             <span className="font-semibold text-slate-950">
-              {formatCurrency(transaction ? totalAmount : listingPrice + listingShippingCost)}
+              {formatCurrency(totalAmount)}
             </span>
           </div>
         </div>
@@ -185,7 +234,7 @@ function OrderSummary({
         <div className="flex items-center justify-between gap-3">
           <span>{dictionary.messages.exchange.fulfillmentMethod}</span>
           <span className="font-medium text-slate-950">
-            {transaction?.fulfillmentMethod === "shipping"
+            {(transaction?.fulfillmentMethod ?? defaultFulfillmentMethod) === "shipping"
               ? dictionary.messages.exchange.shippingOption
               : dictionary.messages.exchange.pickupOption}
           </span>
@@ -230,6 +279,7 @@ export function ListingTransactionPanel({
   listingShippingCost,
   currentUserId,
   seller,
+  sellerStripeStatus,
   context,
   isOwnListing
 }: {
@@ -242,6 +292,7 @@ export function ListingTransactionPanel({
   listingShippingCost: number;
   currentUserId: string;
   seller: User;
+  sellerStripeStatus: SellerStripeConnectStatus;
   context: ListingTransactionContext;
   isOwnListing: boolean;
 }) {
@@ -377,7 +428,21 @@ export function ListingTransactionPanel({
             listingPrice={listingPrice}
             listingShippingCost={listingShippingCost}
             pickupArea={listingPickupArea}
+            defaultFulfillmentMethod={currentFulfillment}
           />
+
+          {!sellerStripeStatus.onboardingComplete ? (
+            <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+              <p>{dictionary.messages.exchange.completeSellerPayoutSetup}</p>
+              <div className="mt-3">
+                <Button asChild type="button" variant="outline">
+                  <Link href="/app/settings">
+                    {dictionary.messages.exchange.completeSellerPayoutSetupCta}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {stripeCheckoutOrder && !stripePaymentRecorded ? (
             <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -523,7 +588,10 @@ export function ListingTransactionPanel({
   }
 
   const canStartPurchase =
-    listingStatus === "active" && !viewerTransaction && !context.reservedForOtherBuyer;
+    listingStatus === "active" &&
+    !viewerTransaction &&
+    !context.reservedForOtherBuyer &&
+    sellerStripeStatus.onboardingComplete;
   const viewerTransactionState = viewerTransaction?.state;
   const viewerStripeCheckoutOrder = isStripeCheckoutOrder(viewerTransaction);
   const viewerStripePaymentRecorded = hasStripePaymentRecorded(viewerTransaction);
@@ -593,7 +661,14 @@ export function ListingTransactionPanel({
           listingPrice={listingPrice}
           listingShippingCost={listingShippingCost}
           pickupArea={listingPickupArea}
+          defaultFulfillmentMethod={currentFulfillment}
         />
+
+        {!sellerStripeStatus.onboardingComplete ? (
+          <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+            {dictionary.messages.exchange.sellerPayoutsUnavailable}
+          </div>
+        ) : null}
 
         {context.reservedForOtherBuyer ? (
           <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

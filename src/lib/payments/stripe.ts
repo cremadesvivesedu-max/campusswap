@@ -23,11 +23,13 @@ interface BuyerCheckoutSessionInput {
   buyerId: string;
   buyerEmail?: string;
   sellerId: string;
+  sellerConnectedAccountId: string;
   listingTitle: string;
   fulfillmentMethod: "pickup" | "shipping";
   itemAmount: number;
   shippingAmount: number;
   platformFee: number;
+  sellerNetAmount: number;
 }
 
 function toMinorUnit(amount: number) {
@@ -83,11 +85,13 @@ export async function createBuyerCheckoutSession({
   buyerId,
   buyerEmail,
   sellerId,
+  sellerConnectedAccountId,
   listingTitle,
   fulfillmentMethod,
   itemAmount,
   shippingAmount,
-  platformFee
+  platformFee,
+  sellerNetAmount
 }: BuyerCheckoutSessionInput) {
   if (!stripe) {
     throw new Error("Stripe is not configured.");
@@ -110,11 +114,19 @@ export async function createBuyerCheckoutSession({
       listing_id: listingId,
       buyer_id: buyerId,
       seller_id: sellerId,
+      seller_connected_account_id: sellerConnectedAccountId,
       fulfillment_method: fulfillmentMethod,
       item_amount: itemAmount.toFixed(2),
       shipping_amount: shippingAmount.toFixed(2),
       platform_fee: platformFee.toFixed(2),
+      seller_net_amount: sellerNetAmount.toFixed(2),
       total_amount: (itemAmount + shippingAmount + platformFee).toFixed(2)
+    },
+    payment_intent_data: {
+      application_fee_amount: toMinorUnit(platformFee),
+      transfer_data: {
+        destination: sellerConnectedAccountId
+      }
     },
     line_items: [
       {

@@ -48,6 +48,11 @@ export const transactionPaymentStatusEnum = pgEnum("transaction_payment_status",
   "paid",
   "cancelled"
 ]);
+export const sellerPayoutStatusEnum = pgEnum("seller_payout_status", [
+  "blocked",
+  "ready",
+  "paid_to_connected_account"
+]);
 export const notificationTypeEnum = pgEnum("notification_type", ["message", "promotion", "review", "listing", "safety", "system"]);
 export const contentBlockTypeEnum = pgEnum("content_block_type", ["hero", "faq", "trust", "testimonial", "footer", "seo"]);
 export const monetizationModuleEnum = pgEnum("monetization_module", ["promoted-listings", "seller-boost", "sponsor-cards", "commission-ready"]);
@@ -89,6 +94,14 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").default("student").notNull(),
   verificationStatus: verificationStatusEnum("verification_status").default("unverified").notNull(),
   avatarUrl: text("avatar_url"),
+  stripeConnectedAccountId: text("stripe_connected_account_id"),
+  stripeDetailsSubmitted: boolean("stripe_details_submitted").default(false).notNull(),
+  stripeChargesEnabled: boolean("stripe_charges_enabled").default(false).notNull(),
+  stripeTransfersEnabled: boolean("stripe_transfers_enabled").default(false).notNull(),
+  stripePayoutsEnabled: boolean("stripe_payouts_enabled").default(false).notNull(),
+  stripeOnboardingCompletedAt: timestamp("stripe_onboarding_completed_at", {
+    withTimezone: true
+  }),
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
   ...timestamps
@@ -264,11 +277,16 @@ export const transactions = pgTable("transactions", {
   checkoutStatus: transactionPaymentStatusEnum("checkout_status"),
   stripeCheckoutSessionId: text("stripe_checkout_session_id"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
+  sellerStripeAccountId: text("seller_stripe_account_id"),
+  sellerPayoutStatus: sellerPayoutStatusEnum("seller_payout_status")
+    .default("blocked")
+    .notNull(),
   conversationId: uuid("conversation_id").references(() => conversations.id),
   amount: numeric("amount", { precision: 10, scale: 2 }).default("0").notNull(),
   fulfillmentMethod: fulfillmentMethodEnum("fulfillment_method"),
   shippingAmount: numeric("shipping_amount", { precision: 10, scale: 2 }).default("0").notNull(),
   platformFee: numeric("platform_fee", { precision: 10, scale: 2 }).default("0").notNull(),
+  sellerNetAmount: numeric("seller_net_amount", { precision: 10, scale: 2 }).default("0").notNull(),
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).default("0").notNull(),
   meetupSpot: text("meetup_spot").notNull(),
   meetupWindow: text("meetup_window").notNull(),

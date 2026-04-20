@@ -4,6 +4,7 @@ import { requireAuthUser } from "@/lib/auth/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
+import { getSellerStripeConnectStatus } from "@/lib/payments/stripe-connect";
 import { getEmailDomain, resolveVerificationStatus } from "@/lib/verification";
 import { filterListings, type DiscoveryFilters } from "@/features/search/discovery";
 import { recommendListingsForUser as recommendDemoListings } from "@/server/services/recommendations";
@@ -26,6 +27,8 @@ import type {
   Review,
   SavedSearch,
   SellerListingTransaction,
+  SellerPayoutStatus,
+  SellerStripeConnectStatus,
   SellerTrustMetrics,
   SponsoredPlacement,
   SupportTicket,
@@ -128,10 +131,13 @@ interface DbTransactionRow {
   checkout_status: Transaction["checkoutStatus"] | null;
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  seller_stripe_account_id: string | null;
+  seller_payout_status: SellerPayoutStatus | null;
   amount: number | string;
   fulfillment_method: FulfillmentMethod | null;
   shipping_amount: number | string;
   platform_fee: number | string;
+  seller_net_amount: number | string;
   total_amount: number | string;
   conversation_id: string | null;
   meetup_spot: string;
@@ -791,6 +797,8 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     fulfillmentMethod: row.fulfillment_method ?? undefined,
     shippingAmount: numberValue(row.shipping_amount),
     platformFee: numberValue(row.platform_fee),
+    sellerNetAmount: numberValue(row.seller_net_amount),
+    sellerPayoutStatus: row.seller_payout_status ?? "blocked",
     totalAmount: numberValue(row.total_amount),
     meetupSpot: row.meetup_spot,
     meetupWindow: row.meetup_window,
@@ -851,6 +859,17 @@ function mapNotification(row: DbNotificationRow): Notification {
     destinationHref: row.destination_href ?? undefined,
     read: row.read,
     createdAt: row.created_at
+  };
+}
+
+function emptySellerStripeConnectStatus(): SellerStripeConnectStatus {
+  return {
+    connected: false,
+    detailsSubmitted: false,
+    chargesEnabled: false,
+    transfersEnabled: false,
+    payoutsEnabled: false,
+    onboardingComplete: false
   };
 }
 
@@ -1251,6 +1270,48 @@ export async function getUserById(userId: string) {
   });
 }
 
+export async function getSellerStripeConnectStatusForUser(
+  userId?: string
+): Promise<SellerStripeConnectStatus> {
+  if (!isLiveMode) {
+    return emptySellerStripeConnectStatus();
+  }
+
+  const resolvedUser = userId ? await getUserById(userId) : await getCurrentUser();
+  const client = createAdminSupabaseClient() ?? (await getSupabaseClient());
+
+  if (!resolvedUser || !client) {
+    return emptySellerStripeConnectStatus();
+  }
+
+  const { data } = await client
+    .from("users")
+    .select(
+      "stripe_connected_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_transfers_enabled, stripe_payouts_enabled"
+    )
+    .eq("id", resolvedUser.id)
+    .maybeSingle();
+
+  const row =
+    (data as
+      | {
+          stripe_connected_account_id?: string | null;
+          stripe_details_submitted?: boolean | null;
+          stripe_charges_enabled?: boolean | null;
+          stripe_transfers_enabled?: boolean | null;
+          stripe_payouts_enabled?: boolean | null;
+        }
+      | null) ?? null;
+
+  return getSellerStripeConnectStatus({
+    accountId: row?.stripe_connected_account_id,
+    detailsSubmitted: row?.stripe_details_submitted,
+    chargesEnabled: row?.stripe_charges_enabled,
+    transfersEnabled: row?.stripe_transfers_enabled,
+    payoutsEnabled: row?.stripe_payouts_enabled
+  });
+}
+
 export async function getFeaturedListings() {
   if (!isLiveMode) {
     return sortFeaturedOnlyByRecency(
@@ -1577,7 +1638,7 @@ export async function getTransactionsForUser(userId?: string) {
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
     .order("updated_at", { ascending: false });
@@ -1609,7 +1670,7 @@ export async function getTransactionForConversation(
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, platform_fee, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .eq("conversation_id", conversationId)
     .maybeSingle();
@@ -1687,10 +1748,13 @@ export async function getListingTransactionContext(
         checkout_status,
         stripe_checkout_session_id,
         stripe_payment_intent_id,
+        seller_stripe_account_id,
+        seller_payout_status,
         amount,
         fulfillment_method,
         shipping_amount,
         platform_fee,
+        seller_net_amount,
         total_amount,
         conversation_id,
         meetup_spot,
@@ -1847,10 +1911,13 @@ export async function getSellerListingTransactions(
         checkout_status,
         stripe_checkout_session_id,
         stripe_payment_intent_id,
+        seller_stripe_account_id,
+        seller_payout_status,
         amount,
         fulfillment_method,
         shipping_amount,
         platform_fee,
+        seller_net_amount,
         total_amount,
         conversation_id,
         meetup_spot,

@@ -122,10 +122,13 @@ interface DbTransactionRow {
   checkout_status: Transaction["checkoutStatus"] | null;
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  seller_stripe_account_id: string | null;
+  seller_payout_status: Transaction["sellerPayoutStatus"] | null;
   amount: number | string;
   fulfillment_method: Transaction["fulfillmentMethod"] | null;
   shipping_amount: number | string;
   platform_fee: number | string;
+  seller_net_amount: number | string;
   total_amount: number | string;
   conversation_id: string | null;
   meetup_spot: string;
@@ -336,6 +339,8 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     fulfillmentMethod: row.fulfillment_method ?? undefined,
     shippingAmount: numberValue(row.shipping_amount),
     platformFee: numberValue(row.platform_fee),
+    sellerNetAmount: numberValue(row.seller_net_amount),
+    sellerPayoutStatus: row.seller_payout_status ?? "blocked",
     totalAmount: numberValue(row.total_amount),
     conversationId: row.conversation_id ?? undefined,
     meetupSpot: row.meetup_spot,
@@ -524,10 +529,13 @@ const conversationSelect = `
     checkout_status,
     stripe_checkout_session_id,
     stripe_payment_intent_id,
+    seller_stripe_account_id,
+    seller_payout_status,
     amount,
     fulfillment_method,
     shipping_amount,
     platform_fee,
+    seller_net_amount,
     total_amount,
     conversation_id,
     meetup_spot,

@@ -10,7 +10,7 @@ import {
   getDictionaryForRequest,
   getExchangeStatusLabel
 } from "@/lib/i18n";
-import { calculatePlatformFee } from "@/lib/payments/order-pricing";
+import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
 import {
   getCurrentUser,
@@ -61,14 +61,23 @@ export default async function MyPurchasesPage() {
         getListingById(transaction.listingId, { includeRemoved: true }),
         getUserById(counterpartId)
       ]);
+      const breakdown = createOrderBreakdown({
+        itemAmount: transaction.amount,
+        shippingAmount: transaction.shippingAmount,
+        platformFee: transaction.platformFee > 0 ? transaction.platformFee : undefined
+      });
       const platformFee =
         transaction.platformFee > 0
           ? transaction.platformFee
-          : calculatePlatformFee(transaction.amount);
+          : breakdown.platform_fee;
+      const sellerNetAmount =
+        transaction.sellerNetAmount > 0
+          ? transaction.sellerNetAmount
+          : breakdown.seller_net_amount;
       const totalAmount =
         transaction.totalAmount > 0
           ? transaction.totalAmount
-          : transaction.amount + transaction.shippingAmount + platformFee;
+          : breakdown.total_amount;
 
       return {
         transaction,
@@ -76,6 +85,7 @@ export default async function MyPurchasesPage() {
         counterpart,
         hasAuthoredReview: authoredReviewIds.has(transaction.id),
         platformFee,
+        sellerNetAmount,
         totalAmount
       };
     })
@@ -98,6 +108,7 @@ export default async function MyPurchasesPage() {
               counterpart,
               hasAuthoredReview,
               platformFee,
+              sellerNetAmount,
               totalAmount
             }) => (
             <Card key={transaction.id} className="bg-white">
@@ -241,6 +252,12 @@ export default async function MyPurchasesPage() {
                       <span>{dictionary.myPurchases.platformFee}</span>
                       <span className="font-medium text-slate-950">
                         {formatCurrency(platformFee)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{dictionary.myPurchases.sellerNetAmount}</span>
+                      <span className="font-medium text-slate-950">
+                        {formatCurrency(sellerNetAmount)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
