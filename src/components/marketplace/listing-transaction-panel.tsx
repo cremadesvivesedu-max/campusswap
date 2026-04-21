@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import {
+  useEffect,
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type Dispatch,
+  type SetStateAction
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/providers/locale-provider";
 import { OfferNegotiationPanel } from "@/components/marketplace/offer-negotiation-panel";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
@@ -32,6 +40,7 @@ import type {
   FulfillmentMethod,
   ListingStatus,
   ListingTransactionContext,
+  ShippingAddressDetails,
   SellerStripeConnectStatus,
   Transaction,
   User
@@ -108,6 +117,167 @@ function getSellerPayoutStatusLabel(
     default:
       return dictionary.messages.exchange.payoutBlocked;
   }
+}
+
+interface ShippingAddressDraft {
+  recipientFullName: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phone: string;
+}
+
+function createShippingAddressDraft(
+  value?: ShippingAddressDetails
+): ShippingAddressDraft {
+  return {
+    recipientFullName: value?.recipientFullName ?? "",
+    addressLine1: value?.addressLine1 ?? "",
+    addressLine2: value?.addressLine2 ?? "",
+    postalCode: value?.postalCode ?? "",
+    city: value?.city ?? "",
+    country: value?.country ?? "",
+    phone: value?.phone ?? ""
+  };
+}
+
+function isShippingDraftComplete(value: ShippingAddressDraft) {
+  return Boolean(
+    value.recipientFullName.trim() &&
+      value.addressLine1.trim() &&
+      value.postalCode.trim() &&
+      value.city.trim() &&
+      value.country.trim()
+  );
+}
+
+function ShippingAddressCard({
+  dictionary,
+  shippingAddress
+}: {
+  dictionary: LocaleDictionary;
+  shippingAddress: ShippingAddressDetails;
+}) {
+  return (
+    <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {dictionary.messages.exchange.shippingAddressTitle}
+      </p>
+      <div className="mt-3 space-y-1 text-sm text-slate-700">
+        <p className="font-semibold text-slate-950">{shippingAddress.recipientFullName}</p>
+        <p>{shippingAddress.addressLine1}</p>
+        {shippingAddress.addressLine2 ? <p>{shippingAddress.addressLine2}</p> : null}
+        <p>{`${shippingAddress.postalCode} ${shippingAddress.city}`}</p>
+        <p>{shippingAddress.country}</p>
+        {shippingAddress.phone ? <p>{shippingAddress.phone}</p> : null}
+      </div>
+      <p className="mt-3 text-xs leading-6 text-slate-500">
+        {dictionary.messages.exchange.shippingAddressDescription}
+      </p>
+    </div>
+  );
+}
+
+function ShippingAddressForm({
+  dictionary,
+  shippingDraft,
+  setShippingDraft
+}: {
+  dictionary: LocaleDictionary;
+  shippingDraft: ShippingAddressDraft;
+  setShippingDraft: Dispatch<SetStateAction<ShippingAddressDraft>>;
+}) {
+  const updateField =
+    (field: keyof ShippingAddressDraft) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setShippingDraft((current) => ({
+        ...current,
+        [field]: value
+      }));
+    };
+
+  return (
+    <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {dictionary.messages.exchange.shippingAddressTitle}
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="space-y-2 sm:col-span-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.recipientFullName}
+          </span>
+          <Input
+            value={shippingDraft.recipientFullName}
+            onChange={updateField("recipientFullName")}
+            placeholder={dictionary.messages.exchange.recipientFullName}
+          />
+        </label>
+        <label className="space-y-2 sm:col-span-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.addressLine1}
+          </span>
+          <Input
+            value={shippingDraft.addressLine1}
+            onChange={updateField("addressLine1")}
+            placeholder={dictionary.messages.exchange.addressLine1}
+          />
+        </label>
+        <label className="space-y-2 sm:col-span-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.addressLine2}
+          </span>
+          <Input
+            value={shippingDraft.addressLine2}
+            onChange={updateField("addressLine2")}
+            placeholder={dictionary.messages.exchange.addressLine2}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.postalCode}
+          </span>
+          <Input
+            value={shippingDraft.postalCode}
+            onChange={updateField("postalCode")}
+            placeholder={dictionary.messages.exchange.postalCode}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.city}
+          </span>
+          <Input
+            value={shippingDraft.city}
+            onChange={updateField("city")}
+            placeholder={dictionary.messages.exchange.city}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.country}
+          </span>
+          <Input
+            value={shippingDraft.country}
+            onChange={updateField("country")}
+            placeholder={dictionary.messages.exchange.country}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-medium text-slate-600">
+            {dictionary.messages.exchange.phoneOptional}
+          </span>
+          <Input
+            value={shippingDraft.phone}
+            onChange={updateField("phone")}
+            placeholder={dictionary.messages.exchange.phoneOptional}
+          />
+        </label>
+      </div>
+    </div>
+  );
 }
 
 function OrderSummary({
@@ -195,7 +365,7 @@ function OrderSummary({
           <div className="flex items-center justify-between gap-3">
             <span>{dictionary.messages.exchange.shippingCost}</span>
             <span className="font-medium text-slate-950">
-              {formatCurrency(transaction ? shippingAmount : listingShippingCost)}
+              {formatCurrency(shippingAmount)}
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">
@@ -242,7 +412,7 @@ function OrderSummary({
         <div className="flex items-center justify-between gap-3">
           <span>{dictionary.messages.exchange.meetupArea}</span>
           <span className="font-medium text-slate-950">
-            {transaction?.fulfillmentMethod === "shipping"
+            {(transaction?.fulfillmentMethod ?? defaultFulfillmentMethod) === "shipping"
               ? dictionary.messages.exchange.shippingOption
               : pickupArea}
           </span>
@@ -304,9 +474,30 @@ export function ListingTransactionPanel({
   const transaction = context.viewerTransaction ?? context.activeTransaction;
   const viewerTransaction = context.viewerTransaction;
   const buyer = context.buyer;
-  const currentFulfillment =
-    transaction?.fulfillmentMethod ??
-    getDefaultFulfillmentMethod(listingPickupAvailable, listingShippingAvailable);
+  const defaultFulfillment = getDefaultFulfillmentMethod(
+    listingPickupAvailable,
+    listingShippingAvailable
+  );
+  const transactionFulfillment = transaction?.fulfillmentMethod ?? defaultFulfillment;
+  const viewerFulfillment = viewerTransaction?.fulfillmentMethod ?? defaultFulfillment;
+  const viewerShippingAddress = viewerTransaction?.shippingAddress;
+  const [shippingDraft, setShippingDraft] = useState<ShippingAddressDraft>(
+    createShippingAddressDraft(viewerShippingAddress)
+  );
+  const [showShippingForm, setShowShippingForm] = useState(
+    listingShippingAvailable && !listingPickupAvailable && !viewerShippingAddress
+  );
+  const shippingDraftComplete = isShippingDraftComplete(shippingDraft);
+  const buyerDisplayFulfillment =
+    viewerTransaction?.fulfillmentMethod ??
+    (showShippingForm && listingShippingAvailable ? "shipping" : defaultFulfillment);
+
+  useEffect(() => {
+    setShippingDraft(createShippingAddressDraft(viewerShippingAddress));
+    if (viewerShippingAddress) {
+      setShowShippingForm(false);
+    }
+  }, [viewerShippingAddress]);
 
   const runAction = (
     action: () => Promise<{
@@ -364,17 +555,17 @@ export function ListingTransactionPanel({
         : false;
     const canMarkReadyForPickup =
       Boolean(transactionState) &&
-      currentFulfillment === "pickup" &&
+      transactionFulfillment === "pickup" &&
       (!stripeCheckoutOrder || stripePaymentRecorded) &&
       (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
     const canMarkShipped =
       Boolean(transactionState) &&
-      currentFulfillment === "shipping" &&
+      transactionFulfillment === "shipping" &&
       (!stripeCheckoutOrder || stripePaymentRecorded) &&
       (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
     const canMarkDelivered =
       Boolean(transactionState) &&
-      currentFulfillment === "shipping" &&
+      transactionFulfillment === "shipping" &&
       transactionState === "shipped";
     const canComplete =
       Boolean(transactionState) &&
@@ -428,8 +619,15 @@ export function ListingTransactionPanel({
             listingPrice={listingPrice}
             listingShippingCost={listingShippingCost}
             pickupArea={listingPickupArea}
-            defaultFulfillmentMethod={currentFulfillment}
+            defaultFulfillmentMethod={transactionFulfillment}
           />
+
+          {transaction?.fulfillmentMethod === "shipping" && transaction.shippingAddress ? (
+            <ShippingAddressCard
+              dictionary={dictionary}
+              shippingAddress={transaction.shippingAddress}
+            />
+          ) : null}
 
           {!sellerStripeStatus.onboardingComplete ? (
             <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
@@ -600,6 +798,8 @@ export function ListingTransactionPanel({
     viewerStripeCheckoutOrder &&
     !viewerStripePaymentRecorded &&
     viewerTransactionState !== "cancelled";
+  const shippingAddressMissingForCheckout =
+    viewerTransaction?.fulfillmentMethod === "shipping" && !viewerShippingAddress;
   const canCancelOwnExchange =
     Boolean(viewerTransactionState) &&
     !viewerStripePaymentRecorded &&
@@ -608,15 +808,15 @@ export function ListingTransactionPanel({
       : false);
   const canCompletePickupOrder =
     Boolean(viewerTransaction) &&
-    currentFulfillment === "pickup" &&
+    viewerFulfillment === "pickup" &&
     viewerTransaction?.state === "ready-for-pickup";
   const canConfirmDelivered =
     Boolean(viewerTransaction) &&
-    currentFulfillment === "shipping" &&
+    viewerFulfillment === "shipping" &&
     viewerTransaction?.state === "shipped";
   const canCompleteDeliveredOrder =
     Boolean(viewerTransaction) &&
-    currentFulfillment === "shipping" &&
+    viewerFulfillment === "shipping" &&
     viewerTransaction?.state === "delivered";
 
   return (
@@ -661,8 +861,52 @@ export function ListingTransactionPanel({
           listingPrice={listingPrice}
           listingShippingCost={listingShippingCost}
           pickupArea={listingPickupArea}
-          defaultFulfillmentMethod={currentFulfillment}
+          defaultFulfillmentMethod={buyerDisplayFulfillment}
         />
+
+        {buyerDisplayFulfillment === "shipping" && viewerShippingAddress ? (
+          <ShippingAddressCard
+            dictionary={dictionary}
+            shippingAddress={viewerShippingAddress}
+          />
+        ) : null}
+
+        {listingShippingAvailable &&
+        showShippingForm &&
+        (canStartPurchase ||
+          viewerTransaction?.fulfillmentMethod === "shipping") ? (
+          <div className="space-y-3">
+            <ShippingAddressForm
+              dictionary={dictionary}
+              shippingDraft={shippingDraft}
+              setShippingDraft={setShippingDraft}
+            />
+            <Button
+              type="button"
+              onClick={() =>
+                runAction(() =>
+                  viewerTransaction?.fulfillmentMethod === "shipping"
+                    ? resumeTransactionCheckoutAction({
+                        transactionId: viewerTransaction.id,
+                        shippingAddress: shippingDraft
+                      })
+                    : startPurchaseIntentAction({
+                        listingId,
+                        requestedFulfillmentMethod: "shipping",
+                        shippingAddress: shippingDraft
+                      })
+                )
+              }
+              disabled={isPending || !shippingDraftComplete}
+            >
+              {isPending
+                ? dictionary.messages.exchange.stripeRedirecting
+                : viewerTransaction
+                  ? dictionary.messages.exchange.continueShippingCheckout
+                  : dictionary.messages.exchange.continueToStripe}
+            </Button>
+          </div>
+        ) : null}
 
         {!sellerStripeStatus.onboardingComplete ? (
           <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
@@ -696,23 +940,32 @@ export function ListingTransactionPanel({
                 ? dictionary.messages.exchange.paymentCancelledBuyer
                 : dictionary.messages.exchange.paymentPendingBuyer}
             </p>
+            {shippingAddressMissingForCheckout ? (
+              <p className="mt-2 text-sm text-amber-900">
+                {dictionary.messages.exchange.shippingAddressMissing}
+              </p>
+            ) : null}
             {canRetryCheckout ? (
               <div className="mt-3">
-                <Button
-                  type="button"
-                  onClick={() =>
-                    runAction(() =>
-                      resumeTransactionCheckoutAction(viewerTransaction.id)
-                    )
-                  }
-                  disabled={isPending}
-                >
-                  {isPending
-                    ? dictionary.messages.exchange.stripeRedirecting
-                    : viewerTransaction.checkoutStatus === "cancelled"
-                      ? dictionary.messages.exchange.retryPayment
-                      : dictionary.messages.exchange.continueToStripe}
-                </Button>
+                {shippingAddressMissingForCheckout || showShippingForm ? null : (
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      runAction(() =>
+                        resumeTransactionCheckoutAction({
+                          transactionId: viewerTransaction.id
+                        })
+                      )
+                    }
+                    disabled={isPending}
+                  >
+                    {isPending
+                      ? dictionary.messages.exchange.stripeRedirecting
+                      : viewerTransaction.checkoutStatus === "cancelled"
+                        ? dictionary.messages.exchange.retryPayment
+                        : dictionary.messages.exchange.continueToStripe}
+                  </Button>
+                )}
               </div>
             ) : null}
           </div>
@@ -729,9 +982,15 @@ export function ListingTransactionPanel({
             <>
               <Button
                 type="button"
-                onClick={() =>
-                  runAction(() => startPurchaseIntentAction(listingId, "pickup"))
-                }
+                onClick={() => {
+                  setShowShippingForm(false);
+                  runAction(() =>
+                    startPurchaseIntentAction({
+                      listingId,
+                      requestedFulfillmentMethod: "pickup"
+                    })
+                  );
+                }}
                 disabled={isPending}
               >
                 {isPending
@@ -741,36 +1000,54 @@ export function ListingTransactionPanel({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() =>
-                  runAction(() => startPurchaseIntentAction(listingId, "shipping"))
-                }
+                onClick={() => setShowShippingForm(true)}
                 disabled={isPending}
               >
-                {isPending
-                  ? dictionary.messages.exchange.startingPurchase
-                  : `${dictionary.messages.exchange.startPurchase} - ${dictionary.messages.exchange.shippingOption}`}
+                {`${dictionary.messages.exchange.startPurchase} - ${dictionary.messages.exchange.shippingOption}`}
               </Button>
             </>
           ) : null}
           {canStartPurchase && !(listingPickupAvailable && listingShippingAvailable) ? (
+            <>
+              {defaultFulfillment === "pickup" ? (
+                <Button
+                  type="button"
+                  onClick={() =>
+                    runAction(() =>
+                      startPurchaseIntentAction({
+                        listingId,
+                        requestedFulfillmentMethod: "pickup"
+                      })
+                    )
+                  }
+                  disabled={isPending}
+                >
+                  {isPending
+                    ? dictionary.messages.exchange.startingPurchase
+                    : dictionary.messages.exchange.startPurchase}
+                </Button>
+              ) : null}
+              {defaultFulfillment === "shipping" && !showShippingForm ? (
+                <Button
+                  type="button"
+                  onClick={() => setShowShippingForm(true)}
+                  disabled={isPending}
+                >
+                  {dictionary.messages.exchange.addShippingAddress}
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+          {viewerTransaction?.fulfillmentMethod === "shipping" &&
+          viewerShippingAddress &&
+          !viewerStripePaymentRecorded ? (
             <Button
               type="button"
-              onClick={() =>
-                runAction(() =>
-                  startPurchaseIntentAction(
-                    listingId,
-                    getDefaultFulfillmentMethod(
-                      listingPickupAvailable,
-                      listingShippingAvailable
-                    )
-                  )
-                )
-              }
+              variant="outline"
+              onClick={() => setShowShippingForm((current) => !current)}
               disabled={isPending}
             >
-              {isPending
-                ? dictionary.messages.exchange.startingPurchase
-                : dictionary.messages.exchange.startPurchase}
+              {dictionary.messages.exchange.editShippingAddress}
             </Button>
           ) : null}
           {context.viewerTransaction?.conversationId ? (

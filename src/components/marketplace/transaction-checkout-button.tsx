@@ -33,7 +33,9 @@ export function TransactionCheckoutButton({
         onClick={() =>
           startTransition(async () => {
             setError(null);
-            const result = await resumeTransactionCheckoutAction(transactionId);
+            const result = await resumeTransactionCheckoutAction({
+              transactionId
+            });
 
             if (!result.success || !result.checkoutUrl) {
               setError(result.message);

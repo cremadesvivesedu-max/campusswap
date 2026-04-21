@@ -136,6 +136,13 @@ interface DbTransactionRow {
   amount: number | string;
   fulfillment_method: FulfillmentMethod | null;
   shipping_amount: number | string;
+  shipping_recipient_name?: string | null;
+  shipping_address_line1?: string | null;
+  shipping_address_line2?: string | null;
+  shipping_postal_code?: string | null;
+  shipping_city?: string | null;
+  shipping_country?: string | null;
+  shipping_phone?: string | null;
   platform_fee: number | string;
   seller_net_amount: number | string;
   total_amount: number | string;
@@ -796,6 +803,22 @@ function mapTransaction(row: DbTransactionRow): Transaction {
     amount: numberValue(row.amount),
     fulfillmentMethod: row.fulfillment_method ?? undefined,
     shippingAmount: numberValue(row.shipping_amount),
+    shippingAddress:
+      row.shipping_recipient_name &&
+      row.shipping_address_line1 &&
+      row.shipping_postal_code &&
+      row.shipping_city &&
+      row.shipping_country
+        ? {
+            recipientFullName: row.shipping_recipient_name,
+            addressLine1: row.shipping_address_line1,
+            addressLine2: row.shipping_address_line2 ?? undefined,
+            postalCode: row.shipping_postal_code,
+            city: row.shipping_city,
+            country: row.shipping_country,
+            phone: row.shipping_phone ?? undefined
+          }
+        : undefined,
     platformFee: numberValue(row.platform_fee),
     sellerNetAmount: numberValue(row.seller_net_amount),
     sellerPayoutStatus: row.seller_payout_status ?? "blocked",
@@ -1638,7 +1661,7 @@ export async function getTransactionsForUser(userId?: string) {
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, shipping_recipient_name, shipping_address_line1, shipping_address_line2, shipping_postal_code, shipping_city, shipping_country, shipping_phone, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
     .order("updated_at", { ascending: false });
@@ -1670,7 +1693,7 @@ export async function getTransactionForConversation(
   const { data } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
+      "id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, seller_stripe_account_id, seller_payout_status, amount, fulfillment_method, shipping_amount, shipping_recipient_name, shipping_address_line1, shipping_address_line2, shipping_postal_code, shipping_city, shipping_country, shipping_phone, platform_fee, seller_net_amount, total_amount, conversation_id, meetup_spot, meetup_window, created_at, updated_at, reserved_at, paid_at, ready_at, shipped_at, delivered_at, cancelled_at, completed_at"
     )
     .eq("conversation_id", conversationId)
     .maybeSingle();
@@ -1753,6 +1776,13 @@ export async function getListingTransactionContext(
         amount,
         fulfillment_method,
         shipping_amount,
+        shipping_recipient_name,
+        shipping_address_line1,
+        shipping_address_line2,
+        shipping_postal_code,
+        shipping_city,
+        shipping_country,
+        shipping_phone,
         platform_fee,
         seller_net_amount,
         total_amount,

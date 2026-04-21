@@ -271,6 +271,32 @@ export default async function MyPurchasesPage() {
                   </div>
                 </div>
 
+                {transaction.fulfillmentMethod === "shipping" &&
+                transaction.shippingAddress ? (
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      {dictionary.myPurchases.shippingAddressTitle}
+                    </p>
+                    <div className="mt-3 space-y-1 text-sm text-slate-700">
+                      <p className="font-semibold text-slate-950">
+                        {transaction.shippingAddress.recipientFullName}
+                      </p>
+                      <p>{transaction.shippingAddress.addressLine1}</p>
+                      {transaction.shippingAddress.addressLine2 ? (
+                        <p>{transaction.shippingAddress.addressLine2}</p>
+                      ) : null}
+                      <p>
+                        {transaction.shippingAddress.postalCode}{" "}
+                        {transaction.shippingAddress.city}
+                      </p>
+                      <p>{transaction.shippingAddress.country}</p>
+                      {transaction.shippingAddress.phone ? (
+                        <p>{transaction.shippingAddress.phone}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 {transaction.conversationId ? (
                   <Button asChild variant="outline">
                     <Link href={`/app/messages/${transaction.conversationId}`}>

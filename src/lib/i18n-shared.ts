@@ -332,6 +332,21 @@ export const dictionaries = {
           "Payment confirmed. The seller can now move this order forward.",
         paymentPendingSeller:
           "The buyer has not completed Stripe payment yet. Wait for payment before preparing pickup or shipping.",
+        shippingAddressTitle: "Delivery details",
+        shippingAddressDescription:
+          "These shipping details stay visible only inside the relevant buyer and seller order surfaces.",
+        recipientFullName: "Recipient full name",
+        addressLine1: "Address line 1",
+        addressLine2: "Address line 2 (optional)",
+        postalCode: "Postal code",
+        city: "City",
+        country: "Country",
+        phoneOptional: "Phone (optional)",
+        addShippingAddress: "Ship to address",
+        continueShippingCheckout: "Continue with shipping",
+        editShippingAddress: "Edit shipping details",
+        shippingAddressMissing:
+          "Shipping orders need delivery details before CampusSwap can continue to Stripe Checkout.",
         sellerPayoutsUnavailable:
           "Checkout is temporarily unavailable because this seller has not completed Stripe payout onboarding yet.",
         completeSellerPayoutSetup:
@@ -383,6 +398,7 @@ export const dictionaries = {
       meetupWindow: "Meetup window",
       orderBreakdown: "Order breakdown",
       shippingAmount: "Shipping",
+      shippingAddressTitle: "Delivery details",
       platformFee: "Platform fee",
       sellerNetAmount: "Seller receives",
       totalAmount: "Total",
@@ -2972,6 +2988,21 @@ mutableDictionaries.es = {
     ...mutableDictionaries.es.messages,
     exchange: {
       ...mutableDictionaries.es.messages.exchange,
+      shippingAddressTitle: "Datos de entrega",
+      shippingAddressDescription:
+        "Estos datos de envío solo se muestran dentro del contexto del pedido para el comprador y el vendedor implicados.",
+      recipientFullName: "Nombre completo del destinatario",
+      addressLine1: "Dirección línea 1",
+      addressLine2: "Dirección línea 2 (opcional)",
+      postalCode: "Código postal",
+      city: "Ciudad",
+      country: "País",
+      phoneOptional: "Teléfono (opcional)",
+      addShippingAddress: "Enviar a dirección",
+      continueShippingCheckout: "Continuar con envío",
+      editShippingAddress: "Editar datos de envío",
+      shippingAddressMissing:
+        "Los pedidos con envío necesitan datos de entrega antes de continuar a Stripe Checkout.",
       sellerNetAmount: "El vendedor recibe",
       payoutStatus: "Estado del pago al vendedor",
       payoutBlocked: "Bloqueado hasta que el vendedor complete el onboarding de Stripe",
@@ -2986,6 +3017,7 @@ mutableDictionaries.es = {
   },
   myPurchases: {
     ...mutableDictionaries.es.myPurchases,
+    shippingAddressTitle: "Datos de entrega",
     sellerNetAmount: "El vendedor recibe"
   }
 };
@@ -3022,6 +3054,21 @@ mutableDictionaries.nl = {
     ...mutableDictionaries.nl.messages,
     exchange: {
       ...mutableDictionaries.nl.messages.exchange,
+      shippingAddressTitle: "Bezorggegevens",
+      shippingAddressDescription:
+        "Deze verzendgegevens zijn alleen zichtbaar binnen de relevante bestelcontext voor koper en verkoper.",
+      recipientFullName: "Volledige naam ontvanger",
+      addressLine1: "Adresregel 1",
+      addressLine2: "Adresregel 2 (optioneel)",
+      postalCode: "Postcode",
+      city: "Plaats",
+      country: "Land",
+      phoneOptional: "Telefoon (optioneel)",
+      addShippingAddress: "Verzenden naar adres",
+      continueShippingCheckout: "Doorgaan met verzending",
+      editShippingAddress: "Verzendgegevens bewerken",
+      shippingAddressMissing:
+        "Verzendbestellingen hebben bezorggegevens nodig voordat CampusSwap verder kan naar Stripe Checkout.",
       sellerNetAmount: "Verkoper ontvangt",
       payoutStatus: "Uitbetalingsstatus",
       payoutBlocked: "Geblokkeerd totdat de verkoper Stripe-onboarding afrondt",
@@ -3036,6 +3083,7 @@ mutableDictionaries.nl = {
   },
   myPurchases: {
     ...mutableDictionaries.nl.myPurchases,
+    shippingAddressTitle: "Bezorggegevens",
     sellerNetAmount: "Verkoper ontvangt"
   }
 };

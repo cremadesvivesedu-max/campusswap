@@ -29,6 +29,7 @@ import type {
   OfferStatus,
   ReportTargetType,
   SellerPayoutStatus,
+  ShippingAddressDetails,
   SupportTicketType,
   TransactionPaymentStatus
 } from "@/types/domain";
@@ -55,6 +56,16 @@ interface PurchaseActionResult extends ActionResult {
 
 interface RedirectActionResult extends ActionResult {
   url?: string;
+}
+
+interface ShippingAddressInput {
+  recipientFullName?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  phone?: string;
 }
 
 interface ListingDeletionHistoryFlags {
@@ -180,6 +191,81 @@ function numberValue(value: number | string | null | undefined) {
   }
 
   return 0;
+}
+
+function normalizeShippingAddressInput(
+  value?: ShippingAddressInput | null
+): ShippingAddressDetails {
+  return {
+    recipientFullName: String(value?.recipientFullName ?? "").trim(),
+    addressLine1: String(value?.addressLine1 ?? "").trim(),
+    addressLine2: String(value?.addressLine2 ?? "").trim() || undefined,
+    postalCode: String(value?.postalCode ?? "").trim(),
+    city: String(value?.city ?? "").trim(),
+    country: String(value?.country ?? "").trim(),
+    phone: String(value?.phone ?? "").trim() || undefined
+  };
+}
+
+function validateShippingAddress(
+  value?: ShippingAddressInput | null
+): ShippingAddressDetails | null {
+  const normalized = normalizeShippingAddressInput(value);
+
+  if (
+    !normalized.recipientFullName ||
+    !normalized.addressLine1 ||
+    !normalized.postalCode ||
+    !normalized.city ||
+    !normalized.country
+  ) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function buildShippingAddressFields(
+  fulfillmentMethod: FulfillmentMethod,
+  shippingAddress?: ShippingAddressDetails | null
+) {
+  if (fulfillmentMethod !== "shipping" || !shippingAddress) {
+    return {
+      shipping_recipient_name: null,
+      shipping_address_line1: null,
+      shipping_address_line2: null,
+      shipping_postal_code: null,
+      shipping_city: null,
+      shipping_country: null,
+      shipping_phone: null
+    };
+  }
+
+  return {
+    shipping_recipient_name: shippingAddress.recipientFullName,
+    shipping_address_line1: shippingAddress.addressLine1,
+    shipping_address_line2: shippingAddress.addressLine2 ?? null,
+    shipping_postal_code: shippingAddress.postalCode,
+    shipping_city: shippingAddress.city,
+    shipping_country: shippingAddress.country,
+    shipping_phone: shippingAddress.phone ?? null
+  };
+}
+
+function hasStoredShippingAddress(input: {
+  shipping_recipient_name?: string | null;
+  shipping_address_line1?: string | null;
+  shipping_postal_code?: string | null;
+  shipping_city?: string | null;
+  shipping_country?: string | null;
+}) {
+  return Boolean(
+    input.shipping_recipient_name &&
+      input.shipping_address_line1 &&
+      input.shipping_postal_code &&
+      input.shipping_city &&
+      input.shipping_country
+  );
 }
 
 interface SellerStripeRoutingState {
@@ -945,6 +1031,7 @@ async function ensureTransactionRecord(
     amount,
     fulfillmentMethod,
     shippingAmount,
+    shippingAddress,
     sellerStripe
   }: {
     listingId: string;
@@ -954,6 +1041,7 @@ async function ensureTransactionRecord(
     amount: number;
     fulfillmentMethod: FulfillmentMethod;
     shippingAmount: number;
+    shippingAddress?: ShippingAddressDetails | null;
     sellerStripe: SellerStripeRoutingState;
   }
 ) {
@@ -983,6 +1071,7 @@ async function ensureTransactionRecord(
       .update({
         conversation_id: existing.conversation_id ?? conversationId,
         ...breakdown,
+        ...buildShippingAddressFields(fulfillmentMethod, shippingAddress),
         ...buildSellerPayoutFields(sellerStripe),
         fulfillment_method: fulfillmentMethod,
         ...fulfillmentContext,
@@ -1002,6 +1091,7 @@ async function ensureTransactionRecord(
       state: "pending",
       fulfillment_method: fulfillmentMethod,
       ...breakdown,
+      ...buildShippingAddressFields(fulfillmentMethod, shippingAddress),
       ...buildSellerPayoutFields(sellerStripe),
       conversation_id: conversationId,
       ...fulfillmentContext
@@ -1329,10 +1419,11 @@ export async function updateListingStatusAction(
   };
 }
 
-export async function startPurchaseIntentAction(
-  listingId: string,
-  requestedFulfillmentMethod?: FulfillmentMethod
-): Promise<PurchaseActionResult> {
+export async function startPurchaseIntentAction(input: {
+  listingId: string;
+  requestedFulfillmentMethod?: FulfillmentMethod;
+  shippingAddress?: ShippingAddressInput;
+}): Promise<PurchaseActionResult> {
   if (!isLiveMode) {
     return {
       success: false,
@@ -1346,7 +1437,7 @@ export async function startPurchaseIntentAction(
     .select(
       "id, seller_id, title, status, price, pickup_available, shipping_available, shipping_cost"
     )
-    .eq("id", listingId)
+    .eq("id", input.listingId)
     .maybeSingle();
 
   if (listingError || !listing) {
@@ -1373,7 +1464,7 @@ export async function startPurchaseIntentAction(
   const fulfillmentMethod = resolveRequestedFulfillment({
     pickupAvailable: listing.pickup_available,
     shippingAvailable: listing.shipping_available,
-    requestedMethod: requestedFulfillmentMethod
+    requestedMethod: input.requestedFulfillmentMethod
   });
 
   if (!fulfillmentMethod) {
@@ -1386,8 +1477,20 @@ export async function startPurchaseIntentAction(
 
   const shippingAmount =
     fulfillmentMethod === "shipping" ? numberValue(listing.shipping_cost) : 0;
+  const shippingAddress =
+    fulfillmentMethod === "shipping"
+      ? validateShippingAddress(input.shippingAddress)
+      : null;
 
-  const openTransactions = await getOpenTransactionForListing(supabase, listingId);
+  if (fulfillmentMethod === "shipping" && !shippingAddress) {
+    return {
+      success: false,
+      message:
+        "Enter the recipient name, delivery address, postal code, city, and country before starting a shipping order."
+    };
+  }
+
+  const openTransactions = await getOpenTransactionForListing(supabase, input.listingId);
   const reservedForAnotherBuyer = openTransactions.find(
     (transaction) =>
       isHeldTransactionState(transaction.state) && transaction.buyer_id !== user.id
@@ -1423,18 +1526,19 @@ export async function startPurchaseIntentAction(
   try {
     const conversationId = await ensureConversationRecord(
       supabase,
-      listingId,
+      input.listingId,
       user.id,
       listing.seller_id
     );
     const transactionId = await ensureTransactionRecord(supabase, {
-      listingId,
+      listingId: input.listingId,
       buyerId: user.id,
       sellerId: listing.seller_id,
       conversationId,
       amount: Number(listing.price),
       fulfillmentMethod,
       shippingAmount,
+      shippingAddress,
       sellerStripe
     });
 
@@ -1445,6 +1549,7 @@ export async function startPurchaseIntentAction(
         checkout_status: "pending",
         ...buildSellerPayoutFields(sellerStripe),
         fulfillment_method: fulfillmentMethod,
+        ...buildShippingAddressFields(fulfillmentMethod, shippingAddress),
         ...createOrderBreakdown({
           itemAmount: Number(listing.price),
           shippingAmount
@@ -1481,14 +1586,14 @@ export async function startPurchaseIntentAction(
       }
     );
 
-    revalidatePath(`/app/listings/${listingId}`);
+    revalidatePath(`/app/listings/${input.listingId}`);
     revalidatePath("/app/messages");
     revalidatePath(`/app/messages/${conversationId}`);
     revalidatePath("/app/my-purchases");
 
     const checkoutResult = await createStripeCheckoutForTransaction(supabase, {
       transactionId,
-      listingId,
+      listingId: input.listingId,
       listingTitle: listing.title,
       buyerId: user.id,
       buyerEmail: user.email,
@@ -1500,7 +1605,7 @@ export async function startPurchaseIntentAction(
     });
 
     if (checkoutResult.success && checkoutResult.checkoutUrl) {
-      revalidatePath(`/app/listings/${listingId}`);
+      revalidatePath(`/app/listings/${input.listingId}`);
       revalidatePath("/app/my-purchases");
 
       return {
@@ -1530,9 +1635,10 @@ export async function startPurchaseIntentAction(
   }
 }
 
-export async function resumeTransactionCheckoutAction(
-  transactionId: string
-): Promise<PurchaseActionResult> {
+export async function resumeTransactionCheckoutAction(input: {
+  transactionId: string;
+  shippingAddress?: ShippingAddressInput;
+}): Promise<PurchaseActionResult> {
   if (!isLiveMode) {
     return {
       success: false,
@@ -1544,10 +1650,10 @@ export async function resumeTransactionCheckoutAction(
   const { data: transaction, error: transactionError } = await supabase
     .from("transactions")
     .select(
-      `id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, conversation_id, paid_at,
+      `id, listing_id, buyer_id, seller_id, state, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, amount, fulfillment_method, shipping_amount, shipping_recipient_name, shipping_address_line1, shipping_address_line2, shipping_postal_code, shipping_city, shipping_country, shipping_phone, conversation_id, paid_at,
        listing:listings!transactions_listing_id_fkey (id, title, status)`
     )
-    .eq("id", transactionId)
+    .eq("id", input.transactionId)
     .maybeSingle();
 
   const row = (transaction as
@@ -1563,6 +1669,13 @@ export async function resumeTransactionCheckoutAction(
         amount: number | string;
         fulfillment_method: FulfillmentMethod | null;
         shipping_amount: number | string;
+        shipping_recipient_name: string | null;
+        shipping_address_line1: string | null;
+        shipping_address_line2: string | null;
+        shipping_postal_code: string | null;
+        shipping_city: string | null;
+        shipping_country: string | null;
+        shipping_phone: string | null;
         conversation_id: string | null;
         paid_at: string | null;
         listing:
@@ -1659,6 +1772,39 @@ export async function resumeTransactionCheckoutAction(
   const fulfillmentMethod = row.fulfillment_method ?? "pickup";
   const itemAmount = numberValue(row.amount);
   const shippingAmount = numberValue(row.shipping_amount);
+  const shippingAddress =
+    fulfillmentMethod === "shipping"
+      ? hasStoredShippingAddress(row)
+        ? {
+            recipientFullName: row.shipping_recipient_name!,
+            addressLine1: row.shipping_address_line1!,
+            addressLine2: row.shipping_address_line2 ?? undefined,
+            postalCode: row.shipping_postal_code!,
+            city: row.shipping_city!,
+            country: row.shipping_country!,
+            phone: row.shipping_phone ?? undefined
+          }
+        : validateShippingAddress(input.shippingAddress)
+      : null;
+
+  if (fulfillmentMethod === "shipping" && !shippingAddress) {
+    return {
+      success: false,
+      message:
+        "Shipping address is still missing for this order. Return to the order panel and complete the delivery details before continuing to Stripe."
+    };
+  }
+
+  if (fulfillmentMethod === "shipping") {
+    await supabase
+      .from("transactions")
+      .update({
+        ...buildShippingAddressFields(fulfillmentMethod, shippingAddress),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", row.id);
+  }
+
   const checkoutResult = await createStripeCheckoutForTransaction(supabase, {
     transactionId: row.id,
     listingId: row.listing_id,

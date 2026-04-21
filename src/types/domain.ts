@@ -262,6 +262,16 @@ export interface ConversationThreadData {
   latestOffer?: ListingOffer;
 }
 
+export interface ShippingAddressDetails {
+  recipientFullName: string;
+  addressLine1: string;
+  addressLine2?: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phone?: string;
+}
+
 export interface Transaction {
   id: string;
   listingId: string;
@@ -274,6 +284,7 @@ export interface Transaction {
   amount: number;
   fulfillmentMethod?: FulfillmentMethod;
   shippingAmount: number;
+  shippingAddress?: ShippingAddressDetails;
   platformFee: number;
   sellerNetAmount: number;
   sellerPayoutStatus: SellerPayoutStatus;
