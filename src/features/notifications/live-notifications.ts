@@ -105,6 +105,7 @@ export function useLiveNotifications(
   const { enabled = true, limit = 24 } = options;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(enabled);
   const supabase = useMemo(() => createClient(), []);
   const unreadCount = useMemo(
     () => notifications.reduce((count, notification) => count + (notification.read ? 0 : 1), 0),
@@ -143,6 +144,10 @@ export function useLiveNotifications(
 
     const sync = async () => {
       try {
+        if (active) {
+          setIsLoading(true);
+        }
+
         if (!isLiveClientMode || !supabase) {
           const nextNotifications = [...demoData.notifications]
             .filter((notification) => notification.userId === currentUserId)
@@ -154,6 +159,7 @@ export function useLiveNotifications(
           if (active) {
             setNotifications(nextNotifications);
             setError(null);
+            setIsLoading(false);
           }
 
           return;
@@ -164,6 +170,7 @@ export function useLiveNotifications(
         if (active) {
           setNotifications(nextNotifications);
           setError(null);
+          setIsLoading(false);
         }
       } catch (syncError) {
         if (active) {
@@ -172,6 +179,7 @@ export function useLiveNotifications(
               ? syncError.message
               : "Unable to load notifications."
           );
+          setIsLoading(false);
         }
       }
     };
@@ -188,6 +196,8 @@ export function useLiveNotifications(
     };
 
     if (!enabled) {
+      setIsLoading(false);
+
       return () => {
         active = false;
 
@@ -238,6 +248,7 @@ export function useLiveNotifications(
   return {
     notifications,
     unreadCount,
+    isLoading,
     error,
     markNotificationReadLocally,
     markAllNotificationsReadLocally

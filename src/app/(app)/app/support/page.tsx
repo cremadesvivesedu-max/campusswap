@@ -270,7 +270,18 @@ export default async function SupportPage({
           conversationId={params.conversationId}
           targetUserId={params.targetUserId}
         />
-      ) : null}
+      ) : (
+        <Card className="border-dashed border-slate-300 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.92))]">
+          <CardContent className="space-y-2 p-6">
+            <p className="font-display text-2xl font-semibold text-slate-950">
+              {dictionary.support.chooseCategory}
+            </p>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600">
+              {dictionary.support.description}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <section className="space-y-4">
         <SectionHeading

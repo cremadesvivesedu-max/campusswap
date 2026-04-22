@@ -157,6 +157,15 @@ export default async function MyPurchasesPage() {
                         pendingLabel={dictionary.messages.exchange.stripeRedirecting}
                       />
                     </div>
+                    <div className="mt-3">
+                      <Button asChild size="sm" variant="outline">
+                        <Link
+                          href={`/app/support?type=payment-help&transactionId=${transaction.id}${listing ? `&listingId=${listing.id}` : ""}${transaction.conversationId ? `&conversationId=${transaction.conversationId}` : ""}${counterpart ? `&targetUserId=${counterpart.id}` : ""}`}
+                        >
+                          {dictionary.support.paymentHelpCta}
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
 
@@ -276,6 +285,9 @@ export default async function MyPurchasesPage() {
                   <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                       {dictionary.myPurchases.shippingAddressTitle}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {dictionary.messages.exchange.shippingAddressDescription}
                     </p>
                     <div className="mt-3 space-y-1 text-sm text-slate-700">
                       <p className="font-semibold text-slate-950">

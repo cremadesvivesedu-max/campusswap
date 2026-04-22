@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { resolveNotificationDestination } from "@/features/notifications/destinations";
 import {
   getNotificationTypeLabel
@@ -55,6 +56,7 @@ export function NotificationsFeed({
   const {
     notifications,
     unreadCount,
+    isLoading,
     error,
     markNotificationReadLocally,
     markAllNotificationsReadLocally
@@ -68,6 +70,21 @@ export function NotificationsFeed({
       })),
     [notifications]
   );
+
+  if (isLoading && !notifications.length && !error) {
+    return (
+      <Card className="border-dashed border-slate-300 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.92))]">
+        <CardContent className="space-y-2 p-6">
+          <p className="font-display text-2xl font-semibold text-slate-950">
+            {dictionary.notifications.loadingTitle}
+          </p>
+          <p className="max-w-2xl text-sm leading-7 text-slate-600">
+            {dictionary.notifications.loadingDescription}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!notifications.length && !error) {
     return (

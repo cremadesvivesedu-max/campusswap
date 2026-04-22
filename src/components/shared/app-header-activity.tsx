@@ -65,6 +65,7 @@ export function AppHeaderActivity() {
   } = useLiveUnreadNotificationCount(user.id);
   const {
     notifications,
+    isLoading: notificationsLoading,
     error: notificationsError,
     markNotificationReadLocally,
     markAllNotificationsReadLocally
@@ -320,6 +321,10 @@ export function AppHeaderActivity() {
             {notificationsError || actionError ? (
               <p className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {actionError ?? notificationsError}
+              </p>
+            ) : notificationsLoading && !notifications.length ? (
+              <p className="rounded-[20px] border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-500">
+                {dictionary.notifications.loadingTitle}
               </p>
             ) : notifications.length ? (
               <div className="space-y-3">

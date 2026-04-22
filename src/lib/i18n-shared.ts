@@ -537,6 +537,9 @@ export const dictionaries = {
       }
     },
     notifications: {
+      loadingTitle: "Loading notifications...",
+      loadingDescription:
+        "CampusSwap is fetching your latest alerts so you can jump back into the right listing, message, or order context.",
       eyebrow: "Notifications",
       title: "Messages, promotions, and trust updates in one place.",
       description: "Notification preferences set the foundation for future saved-search alerts, featured digests, and referral-ready growth loops.",
@@ -2958,6 +2961,12 @@ mutableDictionaries.es = {
 
 mutableDictionaries.es = {
   ...mutableDictionaries.es,
+  notifications: {
+    ...mutableDictionaries.es.notifications,
+    loadingTitle: "Cargando notificaciones...",
+    loadingDescription:
+      "CampusSwap está preparando tus alertas más recientes para que vuelvas al anuncio, mensaje o pedido correcto."
+  },
   settings: {
     ...mutableDictionaries.es.settings,
     payoutsTitle: "Pagos con Stripe",
@@ -3024,6 +3033,12 @@ mutableDictionaries.es = {
 
 mutableDictionaries.nl = {
   ...mutableDictionaries.nl,
+  notifications: {
+    ...mutableDictionaries.nl.notifications,
+    loadingTitle: "Meldingen laden...",
+    loadingDescription:
+      "CampusSwap haalt je nieuwste meldingen op zodat je snel terug kunt naar de juiste advertentie, chat of bestelling."
+  },
   settings: {
     ...mutableDictionaries.nl.settings,
     payoutsTitle: "Stripe-uitbetalingen",
