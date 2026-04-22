@@ -4,6 +4,8 @@ import { BrandLogo } from "@/components/shared/brand-logo";
 const footerLinks = [
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+  { href: "/refund-policy", label: "Refunds & disputes" },
+  { href: "/contact", label: "Contact" },
   { href: "/trust-safety", label: "Trust & Safety" },
   { href: "/join", label: "Join" }
 ];

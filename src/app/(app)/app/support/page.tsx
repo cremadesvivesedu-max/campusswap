@@ -184,6 +184,29 @@ export default async function SupportPage({
         </CardContent>
       </Card>
 
+      <Card className="bg-white/96">
+        <CardHeader className="space-y-2">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Policies and contact</p>
+          <p className="text-lg font-semibold text-slate-950">
+            Know where to go before a payment or dispute becomes stressful.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3 pt-0 text-sm text-slate-600">
+          <Link href="/refund-policy" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+            Refunds & disputes
+          </Link>
+          <Link href="/privacy" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+            Terms of Service
+          </Link>
+          <Link href="/contact" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+            Contact support
+          </Link>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {supportTypes.map((type) => {
           const card = getSupportCardCopy(dictionary, type);
