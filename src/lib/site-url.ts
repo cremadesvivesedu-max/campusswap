@@ -21,6 +21,20 @@ export function getSiteUrl() {
   );
 }
 
+export function sanitizeInternalPath(path?: string | null, fallback = "/") {
+  if (!path) {
+    return fallback;
+  }
+
+  const trimmed = path.trim();
+
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 export function buildSiteUrl(path = "/") {
   return new URL(path, getSiteUrl()).toString();
 }

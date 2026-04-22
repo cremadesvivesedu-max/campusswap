@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env, supabasePublicKey } from "@/lib/env";
-import { buildSiteUrl } from "@/lib/site-url";
+import { buildSiteUrl, sanitizeInternalPath } from "@/lib/site-url";
 
 interface SupabaseCookieOptions {
   domain?: string;
@@ -22,7 +22,7 @@ interface SupabaseCookieRecord {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") || "/app";
+  const next = sanitizeInternalPath(requestUrl.searchParams.get("next"), "/app");
   let response = NextResponse.redirect(buildSiteUrl(next));
 
   if (!env.NEXT_PUBLIC_SUPABASE_URL || !supabasePublicKey || !code) {

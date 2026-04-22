@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { trackClientEvent } from "@/lib/client-instrumentation";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
-import { buildSiteUrl } from "@/lib/site-url";
+import { buildSiteUrl, sanitizeInternalPath } from "@/lib/site-url";
 import { getEmailDomain } from "@/lib/verification";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
             }
           });
 
-          const nextPath = searchParams.get("next") || "/app";
+          const nextPath = sanitizeInternalPath(searchParams.get("next"), "/app");
 
           if (data.session) {
             router.replace(nextPath === "/app" ? "/onboarding" : nextPath);

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { trackClientEvent } from "@/lib/client-instrumentation";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
+import { sanitizeInternalPath } from "@/lib/site-url";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,7 @@ export function LoginForm() {
             }
           });
 
-          const nextPath = searchParams.get("next") || "/app";
+          const nextPath = sanitizeInternalPath(searchParams.get("next"), "/app");
           router.replace(nextPath);
           router.refresh();
         });

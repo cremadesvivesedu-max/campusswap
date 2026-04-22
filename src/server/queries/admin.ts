@@ -58,6 +58,17 @@ function numberValue(value: number | string | null | undefined) {
   return 0;
 }
 
+async function safeCount(
+  queryFactory: () => any
+) {
+  try {
+    const result = await queryFactory();
+    return result.error ? 0 : (result.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
 function mapAdminUser(row: DbUserAdminRow): User {
   return {
     id: row.id,
@@ -160,16 +171,69 @@ export async function getAdminMetrics() {
     throw new Error("Supabase is not configured for admin analytics.");
   }
 
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [
+    signupsLast7Days,
+    loginsLast7Days,
+    listingsCreatedLast7Days,
+    checkoutsStartedLast7Days,
+    checkoutsCompletedLast7Days,
+    supportTicketsLast7Days,
+    capturedErrorsLast7Days
+  ] = await Promise.all([
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "signup")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "login")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "listing_created")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "checkout_started")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "checkout_completed")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_events")
+        .select("*", { count: "exact", head: true })
+        .eq("event_name", "support_ticket_created")
+        .gte("created_at", sevenDaysAgo)
+    ),
+    safeCount(() =>
+      supabase
+        .from("app_error_logs")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", sevenDaysAgo)
+    )
+  ]);
+
   const [
     usersResult,
     verifiedUsersResult,
-    signupsLast7DaysResult,
-    loginsLast7DaysResult,
-    listingsCreatedLast7DaysResult,
-    checkoutsStartedLast7DaysResult,
-    checkoutsCompletedLast7DaysResult,
-    supportTicketsLast7DaysResult,
-    capturedErrorsLast7DaysResult,
     activeListingsResult,
     soldListingsResult,
     featuredListingsResult,
@@ -188,40 +252,6 @@ export async function getAdminMetrics() {
       .select("*", { count: "exact", head: true })
       .eq("role", "student")
       .eq("verification_status", "verified"),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "signup")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "login")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "listing_created")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "checkout_started")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "checkout_completed")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_events")
-      .select("*", { count: "exact", head: true })
-      .eq("event_name", "support_ticket_created")
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    supabase
-      .from("app_error_logs")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "sold"),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("featured", true),
@@ -291,13 +321,13 @@ export async function getAdminMetrics() {
   return {
     totalUsers: usersResult.count ?? 0,
     verifiedUsers: verifiedUsersResult.count ?? 0,
-    signupsLast7Days: signupsLast7DaysResult.count ?? 0,
-    loginsLast7Days: loginsLast7DaysResult.count ?? 0,
-    listingsCreatedLast7Days: listingsCreatedLast7DaysResult.count ?? 0,
-    checkoutsStartedLast7Days: checkoutsStartedLast7DaysResult.count ?? 0,
-    checkoutsCompletedLast7Days: checkoutsCompletedLast7DaysResult.count ?? 0,
-    supportTicketsLast7Days: supportTicketsLast7DaysResult.count ?? 0,
-    capturedErrorsLast7Days: capturedErrorsLast7DaysResult.count ?? 0,
+    signupsLast7Days,
+    loginsLast7Days,
+    listingsCreatedLast7Days,
+    checkoutsStartedLast7Days,
+    checkoutsCompletedLast7Days,
+    supportTicketsLast7Days,
+    capturedErrorsLast7Days,
     newUsersThisWeek: 0,
     activeListings: activeListingsResult.count ?? 0,
     soldListings: soldListingsResult.count ?? 0,
