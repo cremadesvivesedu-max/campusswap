@@ -12,6 +12,7 @@ import {
   uploadPublicFile
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
+import { recordAppEvent } from "@/lib/instrumentation";
 import { createFeaturedCheckoutSession, stripe } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { shouldModerateListing } from "@/server/services/moderation";
@@ -1245,6 +1246,19 @@ export async function createListingAction(_: unknown, formData: FormData) {
       sellerId: user.id
     });
   }
+
+  await recordAppEvent({
+    eventName: "listing_created",
+    actorUserId: user.id,
+    listingId: listing.id,
+    metadata: {
+      categorySlug,
+      requestFeatured,
+      needsReview,
+      pickupAvailable,
+      shippingAvailable
+    }
+  });
 
   revalidatePath("/app");
   revalidatePath("/app/my-listings");

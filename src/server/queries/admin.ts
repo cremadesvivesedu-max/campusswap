@@ -121,6 +121,13 @@ export async function getAdminMetrics() {
     return {
       totalUsers: users.length,
       verifiedUsers: users.filter((user) => user.verificationStatus === "verified").length,
+      signupsLast7Days: 0,
+      loginsLast7Days: 0,
+      listingsCreatedLast7Days: 0,
+      checkoutsStartedLast7Days: 0,
+      checkoutsCompletedLast7Days: 0,
+      supportTicketsLast7Days: 0,
+      capturedErrorsLast7Days: 0,
       newUsersThisWeek: 3,
       activeListings: listings.filter((listing) => listing.status === "active").length,
       soldListings: listings.filter((listing) => listing.status === "sold").length,
@@ -156,6 +163,13 @@ export async function getAdminMetrics() {
   const [
     usersResult,
     verifiedUsersResult,
+    signupsLast7DaysResult,
+    loginsLast7DaysResult,
+    listingsCreatedLast7DaysResult,
+    checkoutsStartedLast7DaysResult,
+    checkoutsCompletedLast7DaysResult,
+    supportTicketsLast7DaysResult,
+    capturedErrorsLast7DaysResult,
     activeListingsResult,
     soldListingsResult,
     featuredListingsResult,
@@ -174,6 +188,40 @@ export async function getAdminMetrics() {
       .select("*", { count: "exact", head: true })
       .eq("role", "student")
       .eq("verification_status", "verified"),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "signup")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "login")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "listing_created")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "checkout_started")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "checkout_completed")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_name", "support_ticket_created")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("app_error_logs")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "sold"),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("featured", true),
@@ -243,6 +291,13 @@ export async function getAdminMetrics() {
   return {
     totalUsers: usersResult.count ?? 0,
     verifiedUsers: verifiedUsersResult.count ?? 0,
+    signupsLast7Days: signupsLast7DaysResult.count ?? 0,
+    loginsLast7Days: loginsLast7DaysResult.count ?? 0,
+    listingsCreatedLast7Days: listingsCreatedLast7DaysResult.count ?? 0,
+    checkoutsStartedLast7Days: checkoutsStartedLast7DaysResult.count ?? 0,
+    checkoutsCompletedLast7Days: checkoutsCompletedLast7DaysResult.count ?? 0,
+    supportTicketsLast7Days: supportTicketsLast7DaysResult.count ?? 0,
+    capturedErrorsLast7Days: capturedErrorsLast7DaysResult.count ?? 0,
     newUsersThisWeek: 0,
     activeListings: activeListingsResult.count ?? 0,
     soldListings: soldListingsResult.count ?? 0,

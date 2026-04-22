@@ -40,6 +40,17 @@ export type SellerPayoutStatus =
   | "ready"
   | "paid_to_connected_account";
 export type NotificationType = "message" | "promotion" | "review" | "listing" | "safety" | "system";
+export type AppEventName =
+  | "signup"
+  | "login"
+  | "listing_created"
+  | "listing_saved"
+  | "message_started"
+  | "offer_sent"
+  | "checkout_started"
+  | "checkout_cancelled"
+  | "checkout_completed"
+  | "support_ticket_created";
 export type ContentBlockType = "hero" | "faq" | "trust" | "testimonial" | "footer" | "seo";
 export type MonetizationModule = "promoted-listings" | "seller-boost" | "sponsor-cards" | "commission-ready";
 
@@ -414,6 +425,30 @@ export interface Notification {
   body: string;
   destinationHref?: string;
   read: boolean;
+  createdAt: string;
+}
+
+export interface AppEvent {
+  id: string;
+  eventName: AppEventName;
+  actorUserId?: string;
+  listingId?: string;
+  conversationId?: string;
+  transactionId?: string;
+  supportTicketId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AppErrorLog {
+  id: string;
+  source: string;
+  message: string;
+  digest?: string;
+  stack?: string;
+  pathname?: string;
+  actorUserId?: string;
+  metadata: Record<string, unknown>;
   createdAt: string;
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { trackClientEvent } from "@/lib/client-instrumentation";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
 import { buildSiteUrl } from "@/lib/site-url";
@@ -63,6 +64,16 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
             setError(signupError.message);
             return;
           }
+
+          trackClientEvent({
+            eventName: "signup",
+            actorUserId: data.user?.id,
+            metadata: {
+              method: "password",
+              emailConfirmedImmediately: Boolean(data.session),
+              emailDomain
+            }
+          });
 
           const nextPath = searchParams.get("next") || "/app";
 

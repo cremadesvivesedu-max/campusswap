@@ -1,11 +1,24 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/client-instrumentation";
 import { Button } from "@/components/ui/button";
 
-export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
     console.error(error);
+    reportClientError({
+      error,
+      digest: error.digest,
+      pathname:
+        typeof window !== "undefined" ? window.location.pathname : undefined
+    });
   }, [error]);
 
   return (

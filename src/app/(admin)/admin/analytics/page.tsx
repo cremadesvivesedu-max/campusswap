@@ -12,9 +12,44 @@ export default async function AdminAnalyticsPage() {
         hint="Student-trust baseline"
       />
       <MetricCard
+        title="Signups (7d)"
+        value={String(metrics.signupsLast7Days)}
+        hint="Launch acquisition pulse"
+      />
+      <MetricCard
+        title="Logins (7d)"
+        value={String(metrics.loginsLast7Days)}
+        hint="Retention heartbeat"
+      />
+      <MetricCard
+        title="Listings created (7d)"
+        value={String(metrics.listingsCreatedLast7Days)}
+        hint="Supply growth"
+      />
+      <MetricCard
         title="Conversations started"
         value={String(metrics.conversationsStarted)}
         hint="Marketplace liquidity signal"
+      />
+      <MetricCard
+        title="Checkouts started (7d)"
+        value={String(metrics.checkoutsStartedLast7Days)}
+        hint="Buyer intent"
+      />
+      <MetricCard
+        title="Checkouts completed (7d)"
+        value={String(metrics.checkoutsCompletedLast7Days)}
+        hint="Real paid conversions"
+      />
+      <MetricCard
+        title="Support tickets (7d)"
+        value={String(metrics.supportTicketsLast7Days)}
+        hint="Launch support load"
+      />
+      <MetricCard
+        title="Captured errors (7d)"
+        value={String(metrics.capturedErrorsLast7Days)}
+        hint="Monitoring readiness"
       />
       <MetricCard
         title="Average rating"

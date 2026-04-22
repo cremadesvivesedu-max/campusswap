@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordAppEvent } from "@/lib/instrumentation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildSiteUrl } from "@/lib/site-url";
@@ -63,6 +64,16 @@ export async function GET(request: Request) {
         if (resolvedListingId) {
           await syncListingReservationState(resolvedListingId, admin);
         }
+
+        await recordAppEvent({
+          eventName: "checkout_cancelled",
+          actorUserId: user.id,
+          listingId: resolvedListingId || undefined,
+          transactionId: transaction.id,
+          metadata: {
+            reason: "cancel_route"
+          }
+        });
       }
     }
   }

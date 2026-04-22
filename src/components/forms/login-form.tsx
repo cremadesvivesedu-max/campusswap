@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { trackClientEvent } from "@/lib/client-instrumentation";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
 import { useLocale } from "@/components/providers/locale-provider";
@@ -46,6 +47,13 @@ export function LoginForm() {
             setError(signInError.message);
             return;
           }
+
+          trackClientEvent({
+            eventName: "login",
+            metadata: {
+              method: "password"
+            }
+          });
 
           const nextPath = searchParams.get("next") || "/app";
           router.replace(nextPath);

@@ -412,6 +412,37 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+export const appEvents = pgTable("app_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventName: varchar("event_name", { length: 80 }).notNull(),
+  actorUserId: uuid("actor_user_id").references(() => users.id),
+  listingId: uuid("listing_id").references(() => listings.id),
+  conversationId: uuid("conversation_id").references(() => conversations.id),
+  transactionId: uuid("transaction_id").references(() => transactions.id),
+  supportTicketId: uuid("support_ticket_id").references(() => supportTickets.id),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  nameCreatedIdx: index("app_events_name_created_idx").on(table.eventName, table.createdAt),
+  actorCreatedIdx: index("app_events_actor_created_idx").on(table.actorUserId, table.createdAt),
+  transactionIdx: index("app_events_transaction_idx").on(table.transactionId, table.createdAt)
+}));
+
+export const appErrorLogs = pgTable("app_error_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  source: varchar("source", { length: 60 }).notNull(),
+  message: text("message").notNull(),
+  digest: varchar("digest", { length: 255 }),
+  stack: text("stack"),
+  pathname: text("pathname"),
+  actorUserId: uuid("actor_user_id").references(() => users.id),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  createdIdx: index("app_error_logs_created_idx").on(table.createdAt),
+  sourceCreatedIdx: index("app_error_logs_source_created_idx").on(table.source, table.createdAt)
+}));
+
 export const notificationEvents = pgTable("notification_events", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id").references(() => users.id).notNull(),

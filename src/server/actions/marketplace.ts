@@ -8,6 +8,7 @@ import {
   listingImagesBucket
 } from "@/lib/supabase/storage";
 import { isLiveMode } from "@/lib/env";
+import { recordAppEvent } from "@/lib/instrumentation";
 import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import {
   createSellerConnectedAccount,
@@ -588,6 +589,20 @@ async function createStripeCheckoutForTransaction(
       .eq("id", input.listingId)
       .neq("status", "sold");
 
+    await recordAppEvent({
+      eventName: "checkout_started",
+      actorUserId: input.buyerId,
+      listingId: input.listingId,
+      transactionId: input.transactionId,
+      metadata: {
+        fulfillmentMethod: input.fulfillmentMethod,
+        itemAmount: breakdown.amount,
+        shippingAmount: breakdown.shipping_amount,
+        platformFee: breakdown.platform_fee,
+        totalAmount: breakdown.total_amount
+      }
+    });
+
     return {
       success: true as const,
       checkoutUrl: session.url ?? undefined
@@ -991,6 +1006,16 @@ async function ensureConversationRecord(
     throw new Error(error?.message ?? "Unable to open the conversation.");
   }
 
+  await recordAppEvent({
+    eventName: "message_started",
+    actorUserId: buyerId,
+    listingId,
+    conversationId: data.id,
+    metadata: {
+      sellerId
+    }
+  });
+
   return data.id;
 }
 
@@ -1274,8 +1299,13 @@ export async function toggleFavoriteAction(listingId: string): Promise<ToggleFav
       };
     }
 
-    await syncListingSaveCount(listingId);
-    revalidatePath("/app");
+  await syncListingSaveCount(listingId);
+  await recordAppEvent({
+    eventName: "listing_saved",
+    actorUserId: user.id,
+    listingId
+  });
+  revalidatePath("/app");
     revalidatePath("/app/saved");
     revalidatePath("/app/for-you");
     revalidatePath("/app/search");
@@ -2135,6 +2165,17 @@ export async function submitOfferAction(
       conversationId,
       senderId: user.id,
       text: `Offer sent: EUR ${offerAmount.toFixed(2)}`
+    });
+
+    await recordAppEvent({
+      eventName: "offer_sent",
+      actorUserId: user.id,
+      listingId,
+      conversationId,
+      transactionId,
+      metadata: {
+        amount: offerAmount
+      }
     });
 
     revalidatePath(`/app/listings/${listingId}`);
@@ -3778,24 +3819,40 @@ export async function submitSupportEntryAction(
     };
   }
 
-  const { error } = await supabase.from("support_tickets").insert({
-    user_id: user.id,
-    type,
-    status: "open",
-    subject,
-    details,
-    listing_id: listingId || null,
-    conversation_id: conversationId || null,
-    transaction_id: transactionId || null,
-    target_user_id: targetUserId || null
-  });
+  const { data: createdTicket, error } = await supabase
+    .from("support_tickets")
+    .insert({
+      user_id: user.id,
+      type,
+      status: "open",
+      subject,
+      details,
+      listing_id: listingId || null,
+      conversation_id: conversationId || null,
+      transaction_id: transactionId || null,
+      target_user_id: targetUserId || null
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !createdTicket?.id) {
     return {
       success: false,
-      message: error.message
+      message: error?.message ?? "Unable to submit this support request right now."
     };
   }
+
+  await recordAppEvent({
+    eventName: "support_ticket_created",
+    actorUserId: user.id,
+    listingId: listingId || undefined,
+    conversationId: conversationId || undefined,
+    transactionId: transactionId || undefined,
+    supportTicketId: createdTicket.id,
+    metadata: {
+      type
+    }
+  });
 
   revalidatePath("/app/support");
   revalidatePath("/admin/reports");

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { env } from "@/lib/env";
+import { captureAppError, recordAppEvent } from "@/lib/instrumentation";
 import { getSellerStripeConnectStatusFromAccount } from "@/lib/payments/stripe-connect";
 import { stripe } from "@/lib/payments/stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -425,6 +426,17 @@ async function handleCompletedBuyerCheckout(
       href: destinationHref
     })
   ]);
+
+  await recordAppEvent({
+    eventName: "checkout_completed",
+    actorUserId: metadata.buyerId,
+    listingId: metadata.listingId,
+    transactionId: transaction.id,
+    metadata: {
+      fulfillmentMethod: fulfillmentLabel,
+      sellerId: metadata.sellerId
+    }
+  });
 }
 
 async function handleExpiredPromotionCheckout(
@@ -494,6 +506,16 @@ async function handleExpiredBuyerCheckout(
     .in("state", ["pending", "reserved"]);
 
   await syncListingReservationState(admin, transaction.listing_id);
+
+  await recordAppEvent({
+    eventName: "checkout_cancelled",
+    actorUserId: metadata.buyerId || undefined,
+    listingId: transaction.listing_id,
+    transactionId: transaction.id,
+    metadata: {
+      reason: "checkout_expired"
+    }
+  });
 }
 
 async function handleCompletedCheckout(session: Stripe.Checkout.Session) {
@@ -563,26 +585,39 @@ export async function POST(request: Request) {
     );
   }
 
-  switch (event.type) {
-    case "checkout.session.completed":
-      await handleCompletedCheckout(event.data.object as Stripe.Checkout.Session);
-      break;
-    case "checkout.session.expired":
-      await handleExpiredCheckout(event.data.object as Stripe.Checkout.Session);
-      break;
-    case "account.updated":
-      {
-        const admin = createAdminSupabaseClient();
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+        await handleCompletedCheckout(event.data.object as Stripe.Checkout.Session);
+        break;
+      case "checkout.session.expired":
+        await handleExpiredCheckout(event.data.object as Stripe.Checkout.Session);
+        break;
+      case "account.updated":
+        {
+          const admin = createAdminSupabaseClient();
 
-        if (!admin) {
-          throw new Error("Supabase admin client is not configured.");
+          if (!admin) {
+            throw new Error("Supabase admin client is not configured.");
+          }
+
+          await syncConnectedAccountState(admin, event.data.object as Stripe.Account);
         }
-
-        await syncConnectedAccountState(admin, event.data.object as Stripe.Account);
+        break;
+      default:
+        break;
+    }
+  } catch (error) {
+    await captureAppError({
+      source: "stripe-webhook",
+      error,
+      metadata: {
+        eventType: event.type,
+        eventId: event.id
       }
-      break;
-    default:
-      break;
+    });
+
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
