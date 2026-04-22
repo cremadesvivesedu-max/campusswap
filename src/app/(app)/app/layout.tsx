@@ -8,7 +8,7 @@ import { CurrentUserProvider } from "@/components/providers/current-user-provide
 import { VerificationPromptCard } from "@/components/shared/verification-prompt-card";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { FloatingSellButton } from "@/components/shared/floating-sell-button";
-import { AppHeaderActivity } from "@/components/shared/app-header-activity";
+import { AppHeaderActivityShell } from "@/components/shared/app-header-activity-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +46,7 @@ export default async function AppLayout({
             </nav>
             <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/75 p-1.5 shadow-sm">
               <LanguageSwitcher tone="dark" />
-              <AppHeaderActivity />
+              <AppHeaderActivityShell />
               <UserIdentityButton user={user} />
             </div>
           </div>

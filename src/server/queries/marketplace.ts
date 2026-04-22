@@ -1101,19 +1101,30 @@ async function fetchListingRows(
   return (data as unknown as DbListingWithRelations[] | null) ?? [];
 }
 
-async function fetchActiveListings(input: ListingSearchInput = {}) {
+async function fetchActiveListings(
+  input: ListingSearchInput = {},
+  options?: {
+    includeSavedState?: boolean;
+    includeSellerMetrics?: boolean;
+  }
+) {
   if (!isLiveMode) {
     return searchDemoListings(input);
   }
 
   const rows = await fetchListingRows(input);
-  const supabase = await getSupabaseClient();
+  const includeSavedState = options?.includeSavedState ?? true;
+  const includeSellerMetrics = options?.includeSellerMetrics ?? true;
+  const supabase = includeSavedState ? await getSupabaseClient() : null;
   const {
     data: { user: authUser }
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  } =
+    includeSavedState && supabase
+      ? await supabase.auth.getUser()
+      : { data: { user: null } };
   let savedListingIds = new Set<string>();
 
-  if (authUser?.id && rows.length) {
+  if (includeSavedState && authUser?.id && rows.length) {
     const { data: favoriteRows } = await supabase!
       .from("favorites")
       .select("listing_id")
@@ -1130,9 +1141,9 @@ async function fetchActiveListings(input: ListingSearchInput = {}) {
     );
   }
 
-  const sellerMetricsByUserId = await fetchSellerMetricsMap(
-    rows.map((row) => row.seller_id)
-  );
+  const sellerMetricsByUserId = includeSellerMetrics
+    ? await fetchSellerMetricsMap(rows.map((row) => row.seller_id))
+    : undefined;
   const listings = rows.map((row) =>
     mapListing(row, { savedListingIds, sellerMetricsByUserId })
   );
@@ -1335,7 +1346,7 @@ export async function getSellerStripeConnectStatusForUser(
   });
 }
 
-export async function getFeaturedListings() {
+export async function getFeaturedListings(limit = 8) {
   if (!isLiveMode) {
     return sortFeaturedOnlyByRecency(
       demoData.listings.filter(
@@ -1347,19 +1358,28 @@ export async function getFeaturedListings() {
   const listings = await fetchActiveListings({
     featured: true,
     sort: "newest",
-    limit: 8
+    limit
+  }, {
+    includeSavedState: false,
+    includeSellerMetrics: false
   });
   return sortFeaturedOnlyByRecency(listings);
 }
 
-export async function getOutletListings() {
+export async function getOutletListings(limit = 18) {
   if (!isLiveMode) {
     return demoData.listings.filter(
       (listing) => listing.outlet && listing.status === "active"
     );
   }
 
-  return fetchActiveListings({ outlet: true, sort: "recommended", limit: 18 });
+  return fetchActiveListings(
+    { outlet: true, sort: "recommended", limit },
+    {
+      includeSavedState: false,
+      includeSellerMetrics: false
+    }
+  );
 }
 
 export async function getTrendingSearches() {
@@ -1516,24 +1536,23 @@ export async function getListingById(
   const {
     data: { user: authUser }
   } = await supabase.auth.getUser();
+  const [favoriteResult, sellerMetricsByUserId, listingAnalyticsByListingId] =
+    await Promise.all([
+      authUser?.id
+        ? supabase
+            .from("favorites")
+            .select("listing_id")
+            .eq("user_id", authUser.id)
+            .eq("listing_id", id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      fetchSellerMetricsMap([row.seller_id]),
+      fetchListingAnalyticsMap([row.id])
+    ]);
+  const savedListingIds = favoriteResult.data?.listing_id
+    ? new Set([favoriteResult.data.listing_id])
+    : new Set<string>();
 
-  let savedListingIds = new Set<string>();
-
-  if (authUser?.id) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", authUser.id)
-      .eq("listing_id", id)
-      .maybeSingle();
-
-    if (favorite?.listing_id) {
-      savedListingIds = new Set([favorite.listing_id]);
-    }
-  }
-
-  const sellerMetricsByUserId = await fetchSellerMetricsMap([row.seller_id]);
-  const listingAnalyticsByListingId = await fetchListingAnalyticsMap([row.id]);
   return mapListing(row, {
     savedListingIds,
     sellerMetricsByUserId,
@@ -2141,12 +2160,18 @@ export async function getListingsForSeller(userId: string) {
   );
 }
 
-export async function getHomeFeed() {
-  const listings = await fetchActiveListings({ sort: "recommended", limit: 24 });
+export async function getHomeFeed(limit = 24) {
+  const listings = await fetchActiveListings(
+    { sort: "recommended", limit },
+    {
+      includeSavedState: false,
+      includeSellerMetrics: false
+    }
+  );
   return sortFeaturedListingsFirst(listings);
 }
 
-export async function getForYouFeed(userId?: string) {
+export async function getForYouFeed(userId?: string, limit = 6) {
   if (!isLiveMode) {
     const resolvedUserId = userId ?? demoCurrentUserId;
     return recommendDemoListings(resolvedUserId);
@@ -2159,12 +2184,8 @@ export async function getForYouFeed(userId?: string) {
     return [];
   }
 
-  const [candidateRows, favoriteRows, searchRows, viewRows] = await Promise.all([
-    fetchListingRows({ sort: "recommended", limit: 36 }),
-    supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", currentUser.id),
+  const [candidateRows, searchRows, viewRows] = await Promise.all([
+    fetchListingRows({ sort: "recommended", limit: Math.max(limit * 4, 24) }),
     supabase
       .from("search_events")
       .select("query")
@@ -2179,11 +2200,6 @@ export async function getForYouFeed(userId?: string) {
       .limit(20)
   ]);
 
-  const favoriteListingIds = new Set(
-    (((favoriteRows.data as { listing_id: string }[] | null) ?? []).map(
-      (row) => row.listing_id
-    ))
-  );
   const recentQueries = (((searchRows.data as { query: string }[] | null) ?? []).map(
     (row) => row.query.toLowerCase()
   ));
@@ -2196,7 +2212,7 @@ export async function getForYouFeed(userId?: string) {
   const candidates = candidateRows
     .map((row) => ({
       row,
-      listing: mapListing(row, { savedListingIds: favoriteListingIds })
+      listing: mapListing(row)
     }))
     .filter((entry) => entry.listing.sellerId !== currentUser.id);
 
@@ -2208,21 +2224,6 @@ export async function getForYouFeed(userId?: string) {
       if (currentUser.profile.preferredCategories.includes(entry.listing.categorySlug)) {
         score += 30;
         reasons.push("matches your preferred categories");
-      }
-
-      if (favoriteListingIds.has(entry.listing.id)) {
-        score -= 16;
-      } else if (
-        entry.listing.tags.some((tag) =>
-          [...favoriteListingIds].some((favoriteId) =>
-            candidateRows
-              .find((row) => row.id === favoriteId)
-              ?.tags?.some((favoriteTag) => favoriteTag === tag)
-          )
-        )
-      ) {
-        score += 14;
-        reasons.push("similar to items you saved");
       }
 
       if (
@@ -2274,12 +2275,12 @@ export async function getForYouFeed(userId?: string) {
     })
     .filter((entry) => entry.breakdown.score > 0)
     .sort((left, right) => right.breakdown.score - left.breakdown.score)
-    .slice(0, 8);
+    .slice(0, limit);
 
   return ranked;
 }
 
-export async function getBecauseYouViewedFeed(userId?: string) {
+export async function getBecauseYouViewedFeed(userId?: string, limit = 6) {
   if (!isLiveMode) {
     return [] as { listing: Listing; reasons: string[] }[];
   }
@@ -2292,7 +2293,13 @@ export async function getBecauseYouViewedFeed(userId?: string) {
   }
 
   const [candidateListings, viewRows] = await Promise.all([
-    fetchActiveListings({ sort: "recommended", limit: 36 }),
+    fetchActiveListings(
+      { sort: "recommended", limit: Math.max(limit * 3, 18) },
+      {
+        includeSavedState: false,
+        includeSellerMetrics: false
+      }
+    ),
     supabase
       .from("view_events")
       .select("listing_id")
@@ -2371,19 +2378,18 @@ export async function getBecauseYouViewedFeed(userId?: string) {
     })
     .filter((entry) => entry.score > 0)
     .sort((left, right) => right.score - left.score)
-    .slice(0, 6)
+    .slice(0, limit)
     .map(({ listing, reasons }) => ({ listing, reasons }));
 }
 
-export async function getMostPopularInAreaFeed(userId?: string) {
+export async function getMostPopularInAreaFeed(userId?: string, limit = 6) {
   if (!isLiveMode) {
     return [] as Listing[];
   }
 
   const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
-  const supabase = await getSupabaseClient();
 
-  if (!currentUser || !supabase) {
+  if (!currentUser) {
     return [];
   }
 
@@ -2392,34 +2398,18 @@ export async function getMostPopularInAreaFeed(userId?: string) {
     pickupArea: areaSeed,
     distance: "nearby",
     sort: "newest",
-    limit: 24
+    limit: Math.max(limit * 2, 12)
   });
 
   if (!rows.length) {
     return [];
   }
 
-  const [{ data: favoriteRows }, sellerMetricsByUserId, listingAnalyticsByListingId] =
-    await Promise.all([
-      supabase
-        .from("favorites")
-        .select("listing_id")
-        .eq("user_id", currentUser.id)
-        .in(
-          "listing_id",
-          rows.map((row) => row.id)
-        ),
-      fetchSellerMetricsMap(rows.map((row) => row.seller_id)),
-      fetchListingAnalyticsMap(rows.map((row) => row.id))
-    ]);
-
-  const savedListingIds = new Set(
-    (((favoriteRows as { listing_id: string }[] | null) ?? []).map((row) => row.listing_id))
+  const listingAnalyticsByListingId = await fetchListingAnalyticsMap(
+    rows.map((row) => row.id)
   );
   const listings = rows.map((row) =>
     mapListing(row, {
-      savedListingIds,
-      sellerMetricsByUserId,
       listingAnalyticsByListingId
     })
   );
@@ -2446,17 +2436,23 @@ export async function getMostPopularInAreaFeed(userId?: string) {
 
         return rightScore - leftScore;
       })
-      .slice(0, 6);
+      .slice(0, limit);
 }
 
-export async function getNewTodayFeed(userId?: string) {
+export async function getNewTodayFeed(userId?: string, limit = 6) {
   const currentUser = userId ? await getUserById(userId) : await getCurrentUser();
-  const listings = await fetchActiveListings({
-    pickupArea: currentUser?.profile.neighborhood,
-    distance: currentUser?.profile.neighborhood ? "nearby" : undefined,
-    sort: "newest",
-    limit: 18
-  });
+  const listings = await fetchActiveListings(
+    {
+      pickupArea: currentUser?.profile.neighborhood,
+      distance: currentUser?.profile.neighborhood ? "nearby" : undefined,
+      sort: "newest",
+      limit: Math.max(limit * 2, 12)
+    },
+    {
+      includeSavedState: false,
+      includeSellerMetrics: false
+    }
+  );
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const fallbackThreshold = Date.now() - 1000 * 60 * 60 * 72;
@@ -2468,7 +2464,7 @@ export async function getNewTodayFeed(userId?: string) {
   );
 
   if (primary.length >= 3) {
-    return primary.slice(0, 6);
+    return primary.slice(0, limit);
   }
 
   return listings
@@ -2477,10 +2473,10 @@ export async function getNewTodayFeed(userId?: string) {
         Date.parse(listing.createdAt) >= fallbackThreshold &&
         listing.sellerId !== currentUser?.id
       )
-    .slice(0, 6);
+    .slice(0, limit);
 }
 
-export async function getLastChanceFeed() {
+export async function getLastChanceFeed(limit = 6) {
   if (!isLiveMode) {
     return demoData.listings
       .filter((listing) => listing.status === "active" && (listing.urgent || listing.outlet))
@@ -2492,7 +2488,13 @@ export async function getLastChanceFeed() {
       .slice(0, 6);
   }
 
-  const listings = await fetchActiveListings({ sort: "newest", limit: 18 });
+  const listings = await fetchActiveListings(
+    { sort: "newest", limit: Math.max(limit * 2, 12) },
+    {
+      includeSavedState: false,
+      includeSellerMetrics: false
+    }
+  );
 
   return listings
     .filter((listing) => listing.urgent || listing.outlet)
@@ -2510,7 +2512,7 @@ export async function getLastChanceFeed() {
 
       return rightScore - leftScore;
     })
-    .slice(0, 6);
+    .slice(0, limit);
 }
 
 export async function getActiveSponsoredPlacements(location?: string) {

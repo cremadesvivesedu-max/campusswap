@@ -34,15 +34,15 @@ export default async function AppHomePage() {
     dictionary
   ] = await Promise.all([
     getCurrentUser(),
-    getHomeFeed(),
-    getFeaturedListings(),
+    getHomeFeed(12),
+    getFeaturedListings(4),
     getActiveSponsoredPlacements("Home feed"),
-    getForYouFeed(),
-    getBecauseYouViewedFeed(),
-    getMostPopularInAreaFeed(),
-    getNewTodayFeed(),
-    getOutletListings(),
-    getLastChanceFeed(),
+    getForYouFeed(undefined, 6),
+    getBecauseYouViewedFeed(undefined, 6),
+    getMostPopularInAreaFeed(undefined, 6),
+    getNewTodayFeed(undefined, 6),
+    getOutletListings(9),
+    getLastChanceFeed(6),
     getDictionaryForRequest()
   ]);
   const sponsor = sponsors[0];

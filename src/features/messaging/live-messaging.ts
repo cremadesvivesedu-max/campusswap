@@ -178,6 +178,60 @@ interface DbConversationWithRelations {
   messages: DbMessageRow[] | null;
 }
 
+interface DbPreviewUserRow {
+  id: string;
+  avatar_url: string | null;
+  joined_at: string;
+  last_seen_at: string | null;
+  profile: {
+    full_name: string;
+  } | null;
+}
+
+interface DbPreviewListingRow {
+  id: string;
+  seller_id: string;
+  title: string;
+  condition: Listing["condition"];
+  price: number | string;
+  pickup_area: string;
+  pickup_available: boolean;
+  shipping_available: boolean;
+  shipping_cost: number | string;
+  status: Listing["status"];
+  outlet: boolean;
+  featured: boolean;
+  urgent: boolean;
+  view_count: number;
+  save_count: number;
+  created_at: string;
+  listing_images:
+    | {
+        id: string;
+        url: string;
+        alt: string;
+        is_primary: boolean;
+        created_at?: string;
+      }[]
+    | null;
+}
+
+interface DbPreviewConversationRow {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  blocked_by: string | null;
+  unread_count: number;
+  buyer_unread_count: number | null;
+  seller_unread_count: number | null;
+  quick_actions: string[] | null;
+  listing: DbPreviewListingRow | null;
+  buyer: DbPreviewUserRow | null;
+  seller: DbPreviewUserRow | null;
+  messages: DbMessageRow[] | null;
+}
+
 function numberValue(value: number | string | null | undefined) {
   if (typeof value === "number") {
     return value;
@@ -249,6 +303,34 @@ function mapUser(row: DbUserWithProfile): User {
   };
 }
 
+function mapPreviewUser(row: DbPreviewUserRow): User {
+  return {
+    id: row.id,
+    email: "",
+    role: "student",
+    verificationStatus: "unverified",
+    avatar: row.avatar_url ?? undefined,
+    joinedAt: row.joined_at,
+    lastSeenAt: row.last_seen_at ?? row.joined_at,
+    profile: {
+      userId: row.id,
+      fullName: row.profile?.full_name ?? "CampusSwap student",
+      university: "CampusSwap",
+      studentStatus: "current",
+      neighborhood: "Maastricht",
+      bio: "",
+      preferredCategories: [],
+      buyerIntent: true,
+      sellerIntent: false,
+      notificationPreferences: [],
+      ratingAverage: 0,
+      reviewCount: 0,
+      responseRate: 0,
+      verifiedBadge: false
+    }
+  };
+}
+
 function mapListing(row: DbListingRow): Listing {
   const images = [...(row.listing_images ?? [])].sort(
     (left, right) =>
@@ -282,6 +364,47 @@ function mapListing(row: DbListingRow): Listing {
     saveCount: row.save_count,
     tags: row.tags ?? [],
     removedAt: row.removed_at ?? undefined,
+    images: images.map((image) => ({
+      id: image.id,
+      url: image.url,
+      alt: image.alt,
+      isPrimary: image.is_primary
+    }))
+  };
+}
+
+function mapPreviewListing(row: DbPreviewListingRow): Listing {
+  const images = [...(row.listing_images ?? [])].sort(
+    (left, right) =>
+      Number(right.is_primary) - Number(left.is_primary) ||
+      Date.parse(left.created_at ?? "") - Date.parse(right.created_at ?? "")
+  );
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: "",
+    categorySlug: "outlet",
+    condition: row.condition,
+    price: numberValue(row.price),
+    negotiable: false,
+    location: row.pickup_area,
+    pickupArea: row.pickup_area,
+    pickupAvailable: row.pickup_available,
+    shippingAvailable: row.shipping_available,
+    shippingCost: numberValue(row.shipping_cost),
+    outlet: row.outlet,
+    featured: row.featured,
+    urgent: row.urgent,
+    status: row.status,
+    createdAt: row.created_at,
+    freshnessLabel: freshnessLabel(row.created_at, row.status, row.outlet),
+    sellerId: row.seller_id,
+    sellerRating: 0,
+    sellerResponseRate: 0,
+    viewCount: row.view_count,
+    saveCount: row.save_count,
+    tags: [],
     images: images.map((image) => ({
       id: image.id,
       url: image.url,
@@ -563,6 +686,72 @@ const conversationSelect = `
   )
 `;
 
+const previewConversationSelect = `
+  id,
+  listing_id,
+  buyer_id,
+  seller_id,
+  blocked_by,
+  unread_count,
+  buyer_unread_count,
+  seller_unread_count,
+  quick_actions,
+  listing:listings!conversations_listing_id_fkey (
+    id,
+    seller_id,
+    title,
+    condition,
+    price,
+    pickup_area,
+    pickup_available,
+    shipping_available,
+    shipping_cost,
+    status,
+    outlet,
+    featured,
+    urgent,
+    view_count,
+    save_count,
+    created_at,
+    listing_images (
+      id,
+      url,
+      alt,
+      is_primary,
+      created_at
+    )
+  ),
+  buyer:users!conversations_buyer_id_fkey (
+    id,
+    avatar_url,
+    joined_at,
+    last_seen_at,
+    profile:profiles (
+      full_name
+    )
+  ),
+  seller:users!conversations_seller_id_fkey (
+    id,
+    avatar_url,
+    joined_at,
+    last_seen_at,
+    profile:profiles (
+      full_name
+    )
+  ),
+  messages (
+    id,
+    conversation_id,
+    sender_id,
+    text,
+    sent_at,
+    read,
+    attachment_url,
+    attachment_name,
+    attachment_mime_type
+  )
+`;
+
 async function fetchUserConversations(currentUserId: string, limit?: number) {
   const supabase = createClient();
 
@@ -570,15 +759,19 @@ async function fetchUserConversations(currentUserId: string, limit?: number) {
     return [];
   }
 
-  let query = supabase
+  const query = supabase
     .from("conversations")
-    .select(conversationSelect)
+    .select(previewConversationSelect)
     .or(`buyer_id.eq.${currentUserId},seller_id.eq.${currentUserId}`)
     .order("updated_at", { ascending: false });
 
   if (typeof limit === "number") {
-    query = query.limit(limit);
+    query.limit(limit);
   }
+
+  (query as any)
+    .order("sent_at", { ascending: false, foreignTable: "messages" })
+    .limit(1, { foreignTable: "messages" });
 
   const { data, error } = await query;
 
@@ -588,13 +781,18 @@ async function fetchUserConversations(currentUserId: string, limit?: number) {
 
   const previews: ConversationPreview[] = [];
 
-  for (const row of (data as unknown as DbConversationWithRelations[] | null) ?? []) {
+  for (const row of (data as unknown as DbPreviewConversationRow[] | null) ?? []) {
     try {
-      const conversation = mapConversation(row);
-      const listing = row.listing ? mapListing(row.listing) : undefined;
+      const conversation = mapConversation(
+        row as unknown as DbConversationWithRelations
+      );
+      const listing = row.listing ? mapPreviewListing(row.listing) : undefined;
       const counterpartRow = row.seller_id === currentUserId ? row.buyer : row.seller;
-      const counterpart = counterpartRow ? mapUser(counterpartRow) : undefined;
-      const unreadCount = getUnreadCount(row, currentUserId);
+      const counterpart = counterpartRow ? mapPreviewUser(counterpartRow) : undefined;
+      const unreadCount = getUnreadCount(
+        row as unknown as DbConversationWithRelations,
+        currentUserId
+      );
 
       if (
         !conversation.id ||
@@ -920,9 +1118,27 @@ export function useLiveConversationPreviews(
 
     const channel = supabase
       .channel(createRealtimeChannelName(`conversation-previews-${currentUserId}`))
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, scheduleSync)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `buyer_id=eq.${currentUserId}`
+        },
+        scheduleSync
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `seller_id=eq.${currentUserId}`
+        },
+        scheduleSync
+      )
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, scheduleSync)
-      .on("postgres_changes", { event: "*", schema: "public", table: "listings" }, scheduleSync)
       .subscribe();
 
     return () => {
@@ -993,7 +1209,26 @@ export function useLiveUnreadConversationCount(currentUserId: string) {
 
     const channel = supabase
       .channel(createRealtimeChannelName(`conversation-count-${currentUserId}`))
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, scheduleSync)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `buyer_id=eq.${currentUserId}`
+        },
+        scheduleSync
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `seller_id=eq.${currentUserId}`
+        },
+        scheduleSync
+      )
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, scheduleSync)
       .subscribe();
 
