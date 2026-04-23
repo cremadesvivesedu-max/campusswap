@@ -255,7 +255,11 @@ export function useLiveNotifications(
   };
 }
 
-export function useLiveUnreadNotificationCount(currentUserId: string) {
+export function useLiveUnreadNotificationCount(
+  currentUserId: string,
+  options: LiveNotificationsOptions = {}
+) {
+  const { enabled = true } = options;
   const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
@@ -315,6 +319,16 @@ export function useLiveUnreadNotificationCount(currentUserId: string) {
       }, 120);
     };
 
+    if (!enabled) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
     void sync();
 
     if (!isLiveClientMode || !supabase) {
@@ -351,7 +365,7 @@ export function useLiveUnreadNotificationCount(currentUserId: string) {
       void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
-  }, [currentUserId, supabase]);
+  }, [currentUserId, enabled, supabase]);
 
   return {
     unreadCount,

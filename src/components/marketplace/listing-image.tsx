@@ -35,6 +35,7 @@ export function ListingImage({
         alt={alt}
         fill
         priority={priority}
+        quality={72}
         sizes={sizes}
         className="object-cover"
         onError={() => {

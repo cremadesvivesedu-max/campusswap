@@ -1,4 +1,5 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireAuthUser } from "@/lib/auth/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
@@ -1270,7 +1271,7 @@ async function ensurePublicUserRecord() {
   return fetchUserRowById(authUser.id);
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   if (!isLiveMode) {
     return (
       demoData.users.find((user) => user.id === demoCurrentUserId) ?? demoData.users[0]
@@ -1286,9 +1287,9 @@ export async function getCurrentUser() {
   return mapUser(row, {
     sellerMetrics: sellerMetricsByUserId.get(row.id)
   });
-}
+});
 
-export async function getUserById(userId: string) {
+export const getUserById = cache(async function getUserById(userId: string) {
   if (!isLiveMode) {
     return demoData.users.find((user) => user.id === userId);
   }
@@ -1302,7 +1303,7 @@ export async function getUserById(userId: string) {
   return mapUser(row, {
     sellerMetrics: sellerMetricsByUserId.get(row.id)
   });
-}
+});
 
 export async function getSellerStripeConnectStatusForUser(
   userId?: string
@@ -2185,19 +2186,19 @@ export async function getForYouFeed(userId?: string, limit = 6) {
   }
 
   const [candidateRows, searchRows, viewRows] = await Promise.all([
-    fetchListingRows({ sort: "recommended", limit: Math.max(limit * 4, 24) }),
+    fetchListingRows({ sort: "recommended", limit: Math.max(limit * 3, 12) }),
     supabase
       .from("search_events")
       .select("query")
       .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(6),
     supabase
       .from("view_events")
       .select("listing_id")
       .eq("user_id", currentUser.id)
       .order("viewed_at", { ascending: false })
-      .limit(20)
+      .limit(10)
   ]);
 
   const recentQueries = (((searchRows.data as { query: string }[] | null) ?? []).map(
@@ -2294,7 +2295,7 @@ export async function getBecauseYouViewedFeed(userId?: string, limit = 6) {
 
   const [candidateListings, viewRows] = await Promise.all([
     fetchActiveListings(
-      { sort: "recommended", limit: Math.max(limit * 3, 18) },
+      { sort: "recommended", limit: Math.max(limit * 3, 9) },
       {
         includeSavedState: false,
         includeSellerMetrics: false
@@ -2305,7 +2306,7 @@ export async function getBecauseYouViewedFeed(userId?: string, limit = 6) {
       .select("listing_id")
       .eq("user_id", currentUser.id)
       .order("viewed_at", { ascending: false })
-      .limit(12)
+      .limit(8)
   ]);
 
   const viewedIds = [
@@ -2398,7 +2399,7 @@ export async function getMostPopularInAreaFeed(userId?: string, limit = 6) {
     pickupArea: areaSeed,
     distance: "nearby",
     sort: "newest",
-    limit: Math.max(limit * 2, 12)
+    limit: Math.max(limit * 2, 8)
   });
 
   if (!rows.length) {
@@ -2446,7 +2447,7 @@ export async function getNewTodayFeed(userId?: string, limit = 6) {
       pickupArea: currentUser?.profile.neighborhood,
       distance: currentUser?.profile.neighborhood ? "nearby" : undefined,
       sort: "newest",
-      limit: Math.max(limit * 2, 12)
+      limit: Math.max(limit * 2, 8)
     },
     {
       includeSavedState: false,
@@ -2489,7 +2490,7 @@ export async function getLastChanceFeed(limit = 6) {
   }
 
   const listings = await fetchActiveListings(
-    { sort: "newest", limit: Math.max(limit * 2, 12) },
+    { sort: "newest", limit: Math.max(limit * 2, 8) },
     {
       includeSavedState: false,
       includeSellerMetrics: false

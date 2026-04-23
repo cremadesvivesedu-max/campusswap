@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Images, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,6 @@ import { getListingStatusLabel } from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 import { ListingImage } from "@/components/marketplace/listing-image";
-import { MessageSellerButton } from "@/components/marketplace/message-seller-button";
 import { StarRating } from "@/components/shared/star-rating";
 
 interface ListingCardProps {
@@ -21,6 +21,21 @@ interface ListingCardProps {
   showMessageAction?: boolean;
   messageActionMode?: "chat" | "signup";
 }
+
+const DeferredMessageSellerButton = dynamic(
+  () =>
+    import("@/components/marketplace/message-seller-button").then(
+      (module) => module.MessageSellerButton
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Button className="sm:flex-1" type="button" variant="outline" disabled>
+        ...
+      </Button>
+    )
+  }
+);
 
 function ListingCardComponent({
   listing,
@@ -119,7 +134,7 @@ function ListingCardComponent({
             <Link href={listingHref}>{dictionary.common.actions.viewListing}</Link>
           </Button>
           {showChatAction ? (
-            <MessageSellerButton
+            <DeferredMessageSellerButton
               listingId={listing.id}
               sellerId={listing.sellerId}
               listingStatus={listing.status}

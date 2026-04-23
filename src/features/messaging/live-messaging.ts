@@ -1058,6 +1058,7 @@ export function useLiveConversationPreviews(
   const { enabled = true, limit } = options;
   const [previews, setPreviews] = useState<ConversationPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(enabled);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -1066,11 +1067,16 @@ export function useLiveConversationPreviews(
 
     const sync = async () => {
       try {
+        if (active) {
+          setIsLoading(true);
+        }
+
         const nextPreviews = await fetchUserConversations(currentUserId, limit);
 
         if (active) {
           setPreviews(nextPreviews);
           setError(null);
+          setIsLoading(false);
         }
       } catch (syncError) {
         if (active) {
@@ -1095,6 +1101,8 @@ export function useLiveConversationPreviews(
     };
 
     if (!enabled) {
+      setIsLoading(false);
+
       return () => {
         active = false;
 
@@ -1153,10 +1161,14 @@ export function useLiveConversationPreviews(
     };
   }, [currentUserId, enabled, limit, supabase]);
 
-  return { previews, error };
+  return { previews, isLoading, error };
 }
 
-export function useLiveUnreadConversationCount(currentUserId: string) {
+export function useLiveUnreadConversationCount(
+  currentUserId: string,
+  options: LiveConversationPreviewsOptions = {}
+) {
+  const { enabled = true } = options;
   const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
@@ -1195,6 +1207,16 @@ export function useLiveUnreadConversationCount(currentUserId: string) {
       }, 120);
     };
 
+    if (!enabled) {
+      return () => {
+        active = false;
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+        }
+      };
+    }
+
     void sync();
 
     if (!supabase) {
@@ -1229,7 +1251,6 @@ export function useLiveUnreadConversationCount(currentUserId: string) {
         },
         scheduleSync
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, scheduleSync)
       .subscribe();
 
     return () => {
@@ -1242,7 +1263,7 @@ export function useLiveUnreadConversationCount(currentUserId: string) {
       void channel.unsubscribe();
       void supabase.removeChannel(channel);
     };
-  }, [currentUserId, supabase]);
+  }, [currentUserId, enabled, supabase]);
 
   return { unreadCount, error };
 }

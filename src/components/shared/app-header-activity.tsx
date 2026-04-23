@@ -57,12 +57,13 @@ export function AppHeaderActivity() {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [openPanel, setOpenPanel] = useState<"notifications" | "messages" | null>(null);
+  const [activityEnabled, setActivityEnabled] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const {
     unreadCount,
     markOneNotificationReadLocally,
     markAllNotificationsReadLocally: markAllNotificationCountsReadLocally
-  } = useLiveUnreadNotificationCount(user.id);
+  } = useLiveUnreadNotificationCount(user.id, { enabled: activityEnabled });
   const {
     notifications,
     isLoading: notificationsLoading,
@@ -73,7 +74,9 @@ export function AppHeaderActivity() {
     enabled: openPanel === "notifications",
     limit: 4
   });
-  const { unreadCount: unreadMessages } = useLiveUnreadConversationCount(user.id);
+  const { unreadCount: unreadMessages } = useLiveUnreadConversationCount(user.id, {
+    enabled: activityEnabled
+  });
   const { previews, error: messagesError } = useLiveConversationPreviews(user.id, {
     enabled: openPanel === "messages",
     limit: 4
@@ -92,6 +95,23 @@ export function AppHeaderActivity() {
     setOpenPanel(null);
     setActionError(null);
   }, [pathname]);
+
+  useEffect(() => {
+    const idleCallback =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback
+        : undefined;
+
+    if (idleCallback) {
+      const id = idleCallback(() => setActivityEnabled(true), { timeout: 2400 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+
+    const timeout = window.setTimeout(() => setActivityEnabled(true), 1200);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  const enableActivityNow = () => setActivityEnabled(true);
 
   const navigateFromPanel = (href: string) => {
     setOpenPanel(null);
@@ -174,19 +194,21 @@ export function AppHeaderActivity() {
           count={unreadMessages}
           icon={<MessageSquare className="h-4 w-4" />}
           label={dictionary.messages.inbox.recentTitle}
-          onClick={() =>
+          onClick={() => {
+            enableActivityNow();
             setOpenPanel((current) => (current === "messages" ? null : "messages"))
-          }
+          }}
         />
         <HeaderIconButton
           count={unreadCount}
           icon={<Bell className="h-4 w-4" />}
           label={dictionary.notifications.recentTitle}
-          onClick={() =>
+          onClick={() => {
+            enableActivityNow();
             setOpenPanel((current) =>
               current === "notifications" ? null : "notifications"
             )
-          }
+          }}
         />
 
         {openPanel === "messages" ? (

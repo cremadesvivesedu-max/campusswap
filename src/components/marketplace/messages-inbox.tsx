@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
 import { MessagePreview } from "@/components/marketplace/message-preview";
 import { useLocale } from "@/components/providers/locale-provider";
 import { useDemoConversations } from "@/features/messaging/demo-messaging-store";
@@ -77,7 +78,7 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
 
 function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   const { dictionary } = useLocale();
-  const { previews, error } = useLiveConversationPreviews(currentUserId);
+  const { previews, isLoading, error } = useLiveConversationPreviews(currentUserId);
   const safePreviews = useMemo(
     () => previews.filter(isRenderablePreview),
     [previews]
@@ -89,6 +90,21 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
         title={dictionary.messages.inbox.loadErrorTitle}
         description={error}
       />
+    );
+  }
+
+  if (isLoading && !safePreviews.length) {
+    return (
+      <Card className="border-dashed border-slate-300 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.92))]">
+        <CardContent className="space-y-2 p-6">
+          <p className="font-display text-2xl font-semibold text-slate-950">
+            {dictionary.messages.inbox.recentTitle}
+          </p>
+          <p className="max-w-2xl text-sm leading-7 text-slate-600">
+            {dictionary.messages.description}
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 

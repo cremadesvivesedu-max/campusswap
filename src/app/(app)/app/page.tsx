@@ -22,28 +22,32 @@ import {
 export default async function AppHomePage() {
   const [
     user,
+    dictionary,
+    sponsors,
     feed,
     featuredListings,
-    sponsors,
+    outletListings,
+    lastChanceFeed
+  ] = await Promise.all([
+    getCurrentUser(),
+    getDictionaryForRequest(),
+    getActiveSponsoredPlacements("Home feed"),
+    getHomeFeed(6),
+    getFeaturedListings(3),
+    getOutletListings(3),
+    getLastChanceFeed(3)
+  ]);
+
+  const [
     forYouFeed,
     becauseYouViewed,
     popularInArea,
-    newToday,
-    outletListings,
-    lastChanceFeed,
-    dictionary
+    newToday
   ] = await Promise.all([
-    getCurrentUser(),
-    getHomeFeed(12),
-    getFeaturedListings(4),
-    getActiveSponsoredPlacements("Home feed"),
-    getForYouFeed(undefined, 6),
-    getBecauseYouViewedFeed(undefined, 6),
-    getMostPopularInAreaFeed(undefined, 6),
-    getNewTodayFeed(undefined, 6),
-    getOutletListings(9),
-    getLastChanceFeed(6),
-    getDictionaryForRequest()
+    getForYouFeed(user.id, 3),
+    getBecauseYouViewedFeed(user.id, 3),
+    getMostPopularInAreaFeed(user.id, 3),
+    getNewTodayFeed(user.id, 3)
   ]);
   const sponsor = sponsors[0];
 
