@@ -78,7 +78,9 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
 
 function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   const { dictionary } = useLocale();
-  const { previews, isLoading, error } = useLiveConversationPreviews(currentUserId);
+  const { previews, isLoading, error } = useLiveConversationPreviews(currentUserId, {
+    limit: 12
+  });
   const safePreviews = useMemo(
     () => previews.filter(isRenderablePreview),
     [previews]

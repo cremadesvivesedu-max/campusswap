@@ -60,7 +60,7 @@ export function NotificationsFeed({
     error,
     markNotificationReadLocally,
     markAllNotificationsReadLocally
-  } = useLiveNotifications(currentUserId);
+  } = useLiveNotifications(currentUserId, { limit: 12 });
   const [isPending, startTransition] = useTransition();
   const notificationItems = useMemo(
     () =>
