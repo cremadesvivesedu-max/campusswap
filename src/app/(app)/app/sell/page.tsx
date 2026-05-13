@@ -165,6 +165,19 @@ export default async function SellPage({
             <p>{dictionary.listingForm.moderationBody}</p>
           </CardContent>
         </Card>
+        <Card className="border-emerald-200 bg-emerald-50/70">
+          <CardContent className="space-y-3 p-6 text-sm leading-7 text-emerald-950">
+            <p className="font-semibold">{dictionary.listingForm.firstUseTitle}</p>
+            <ul className="space-y-2">
+              {dictionary.listingForm.firstUseTips.map((tip) => (
+                <li key={tip} className="flex gap-2">
+                  <span aria-hidden="true">-</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
         {user.verificationStatus !== "verified" ? (
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-700">

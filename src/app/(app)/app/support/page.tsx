@@ -114,10 +114,12 @@ export default async function SupportPage({
     transactionId?: string;
     conversationId?: string;
     targetUserId?: string;
+    intent?: string;
   }>;
 }) {
   const params = await searchParams;
   const selectedType = isSupportType(params.type) ? params.type : undefined;
+  const feedbackIntent = selectedType === "payment-help" && params.intent === "feedback";
 
   const [user, dictionary, reports, tickets, transactions] = await Promise.all([
     getCurrentUser(),
@@ -139,7 +141,14 @@ export default async function SupportPage({
     params.targetUserId ? getUserById(params.targetUserId) : Promise.resolve(undefined)
   ]);
 
-  const selectedCard = selectedType ? getSupportCardCopy(dictionary, selectedType) : null;
+  const selectedCard = feedbackIntent
+    ? {
+        title: dictionary.support.feedbackFormTitle,
+        description: dictionary.support.feedbackFormDescription
+      }
+    : selectedType
+      ? getSupportCardCopy(dictionary, selectedType)
+      : null;
   const subjectRequired = selectedType ? !selectedType.startsWith("report-") : false;
   const contextSummary = selectedTransaction
     ? `${dictionary.support.targetLabels.transaction}: ${selectedListing?.title ?? selectedTransaction.id}`
@@ -150,7 +159,9 @@ export default async function SupportPage({
         : undefined;
 
   const detailsPlaceholder =
-    selectedType === "report-user"
+    feedbackIntent
+      ? dictionary.support.form.feedbackPlaceholder
+      : selectedType === "report-user"
       ? dictionary.support.form.reportUserPlaceholder
       : selectedType === "report-listing"
         ? dictionary.support.form.reportListingPlaceholder
@@ -181,6 +192,31 @@ export default async function SupportPage({
           <Button asChild variant="outline">
             <Link href="/app/my-purchases">{dictionary.support.openPurchases}</Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-200 bg-emerald-50/70">
+        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-emerald-950">
+              {dictionary.support.feedbackTitle}
+            </p>
+            <p className="max-w-3xl text-sm leading-6 text-emerald-900">
+              {dictionary.support.feedbackDescription.replace("{email}", env.SUPPORT_EMAIL)}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="secondary">
+              <Link href="/app/support?type=payment-help&intent=feedback">
+                {dictionary.support.feedbackCta}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`mailto:${env.SUPPORT_EMAIL}`}>
+                {dictionary.support.emailSupportCta}
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -338,6 +374,8 @@ export default async function SupportPage({
           <EmptyState
             title={dictionary.support.noTicketsTitle}
             description={dictionary.support.noTicketsDescription}
+            actionHref="/app/support?type=payment-help&intent=feedback"
+            actionLabel={dictionary.support.noTicketsAction}
           />
         )}
       </section>
@@ -396,6 +434,8 @@ export default async function SupportPage({
           <EmptyState
             title={dictionary.support.noReportsTitle}
             description={dictionary.support.noReportsDescription}
+            actionHref="/app/search"
+            actionLabel={dictionary.support.noReportsAction}
           />
         )}
       </section>

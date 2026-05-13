@@ -71,6 +71,37 @@ export default async function AppHomePage() {
         </Card>
       </div>
 
+      <HomeSection>
+        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              {dictionary.appHome.firstUseEyebrow}
+            </p>
+            <h2 className="font-display text-2xl font-semibold text-slate-950">
+              {dictionary.appHome.firstUseTitle}
+            </h2>
+            <p className="text-sm leading-7 text-slate-600">
+              {dictionary.appHome.firstUseDescription}
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/app/support">{dictionary.appHome.feedbackCta}</Link>
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {dictionary.appHome.firstUseSteps.map((step) => (
+              <Link
+                key={step.href}
+                href={step.href}
+                className="rounded-[24px] border border-slate-200 bg-white/90 p-4 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
+              >
+                <p className="font-semibold text-slate-950">{step.title}</p>
+                <p className="mt-2 leading-6 text-slate-600">{step.body}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </HomeSection>
+
       {featuredListings.length ? (
         <HomeSection tone="featured">
           <SectionHeading

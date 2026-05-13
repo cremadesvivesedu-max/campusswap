@@ -25,6 +25,8 @@ export default async function SavedPage() {
         <EmptyState
           title={dictionary.saved.emptyTitle}
           description={dictionary.saved.emptyDescription}
+          actionHref="/app/search"
+          actionLabel={dictionary.saved.emptyAction}
         />
       )}
     </div>

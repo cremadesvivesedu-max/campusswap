@@ -3,6 +3,7 @@ import { ListingCard } from "@/components/marketplace/listing-card";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { ListingStatusActions } from "@/components/marketplace/listing-status-actions";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
@@ -27,9 +28,10 @@ export default async function MyListingsPage() {
         title={dictionary.myListings.title}
         description={dictionary.myListings.description}
       />
-      <div className="grid gap-6 lg:grid-cols-3">
-        {listings.map((listing) => (
-          <div key={listing.id} className="space-y-4">
+      {listings.length ? (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {listings.map((listing) => (
+            <div key={listing.id} className="space-y-4">
             <ListingCard listing={listing} compact />
             <div className="rounded-[24px] border border-slate-200 bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -91,8 +93,16 @@ export default async function MyListingsPage() {
               listingTitle={listing.title}
             />
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title={dictionary.myListings.emptyTitle}
+          description={dictionary.myListings.emptyDescription}
+          actionHref="/app/sell"
+          actionLabel={dictionary.myListings.emptyAction}
+        />
+      )}
     </div>
   );
 }

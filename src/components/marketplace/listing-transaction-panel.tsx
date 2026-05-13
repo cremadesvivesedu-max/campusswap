@@ -621,6 +621,9 @@ export function ListingTransactionPanel({
             pickupArea={listingPickupArea}
             defaultFulfillmentMethod={transactionFulfillment}
           />
+          <p className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs leading-6 text-slate-500">
+            {dictionary.messages.exchange.checkoutTrustNote}
+          </p>
 
           {transaction?.fulfillmentMethod === "shipping" && transaction.shippingAddress ? (
             <ShippingAddressCard
@@ -863,6 +866,9 @@ export function ListingTransactionPanel({
           pickupArea={listingPickupArea}
           defaultFulfillmentMethod={buyerDisplayFulfillment}
         />
+        <p className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs leading-6 text-slate-500">
+          {dictionary.messages.exchange.checkoutTrustNote}
+        </p>
 
         {buyerDisplayFulfillment === "shipping" && viewerShippingAddress ? (
           <ShippingAddressCard

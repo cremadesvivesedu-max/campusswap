@@ -63,6 +63,8 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
       <EmptyState
         title={dictionary.messages.inbox.emptyTitle}
         description={dictionary.messages.inbox.emptyDescription}
+        actionHref="/app/search"
+        actionLabel={dictionary.messages.inbox.emptyAction}
       />
     );
   }
@@ -115,6 +117,8 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
       <EmptyState
         title={dictionary.messages.inbox.emptyTitle}
         description={dictionary.messages.inbox.emptyDescription}
+        actionHref="/app/search"
+        actionLabel={dictionary.messages.inbox.emptyAction}
       />
     );
   }

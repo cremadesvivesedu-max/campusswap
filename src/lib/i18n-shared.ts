@@ -45,6 +45,14 @@ export const dictionaries = {
       paymentHelpCta: "Payment help",
       shippingHelpCta: "Shipping help",
       orderHelpTitle: "Need help with this order?",
+      feedbackTitle: "First launch feedback",
+      feedbackDescription:
+        "If something feels unclear, broken, or confusing during early use, send it to CampusSwap support. For urgent issues outside the app, email {email}.",
+      feedbackCta: "Send feedback / report a bug",
+      emailSupportCta: "Email support",
+      feedbackFormTitle: "Send feedback or report a product issue",
+      feedbackFormDescription:
+        "Use this lightweight support request for launch feedback, confusing UX, or bugs that are not tied to a specific order.",
       cards: {
         reportUserTitle: "Report user",
         reportUserDescription: "Flag suspicious, unsafe, or misleading seller behavior for moderation review.",
@@ -69,18 +77,22 @@ export const dictionaries = {
         reportListingPlaceholder: "Tell CampusSwap what feels inaccurate, unsafe, or suspicious about this listing.",
         purchaseDisputePlaceholder: "Explain what happened with the order, meetup, or item condition so CampusSwap can review the dispute.",
         paymentHelpPlaceholder: "Describe the payment or promotion issue you need help with.",
-        shippingHelpPlaceholder: "Describe the shipping issue, delay, or delivery problem you need help with."
+        shippingHelpPlaceholder: "Describe the shipping issue, delay, or delivery problem you need help with.",
+        feedbackPlaceholder:
+          "Tell CampusSwap what felt confusing, slow, broken, or hard to complete. Include the page or flow if you remember it."
       },
       yourTicketsEyebrow: "Support tickets",
       yourTicketsTitle: "Your active support requests",
       yourTicketsDescription: "Track dispute, payment, and shipping requests without losing listing context.",
       noTicketsTitle: "No support tickets yet",
       noTicketsDescription: "When you ask CampusSwap for help, your requests will appear here with their latest status.",
+      noTicketsAction: "Open a help request",
       yourReportsEyebrow: "Reports",
       yourReportsTitle: "Your safety reports",
       yourReportsDescription: "Marketplace reports stay visible here while moderation reviews them.",
       noReportsTitle: "No reports yet",
       noReportsDescription: "When you report a listing or user, CampusSwap will track it here.",
+      noReportsAction: "Browse listings",
       ticketStatusLabels: { open: "Open", inReview: "In review", resolved: "Resolved", closed: "Closed" },
       reportStatusLabels: { open: "Open", inReview: "In review", actioned: "Actioned", dismissed: "Dismissed" },
       targetLabels: { listing: "Listing", user: "User", conversation: "Conversation", transaction: "Transaction" }
@@ -273,6 +285,8 @@ export const dictionaries = {
         title: "Exchange status",
         sellerBody: "Use this thread to coordinate the handoff. Only move the order forward after CampusSwap records payment.",
         buyerBody: "Use this thread to confirm details. The order only counts as paid after Stripe Checkout succeeds.",
+        checkoutTrustNote:
+          "CampusSwap only treats an order as paid after Stripe confirms it. Pickup and shipping details stay tied to this order so support can help if anything goes wrong.",
         buyerLabel: "Buyer",
         sellerLabel: "Seller",
         listingStatus: "Listing status",
@@ -364,6 +378,7 @@ export const dictionaries = {
         openAll: "Open messages",
         emptyTitle: "No conversations yet",
         emptyDescription: "When you message a seller from a listing, the thread will appear here with the listing context attached.",
+        emptyAction: "Find listings to message",
         loadErrorTitle: "Unable to load messages"
       }
     },
@@ -384,6 +399,10 @@ export const dictionaries = {
       fulfillmentSummary: "Fulfillment",
       pickupLabel: "Pickup",
       shippingLabel: "Shipping",
+      emptyTitle: "No listings yet",
+      emptyDescription:
+        "Create your first listing with clear photos, pickup or shipping details, and a short condition note so buyers know what to expect.",
+      emptyAction: "Create your first listing",
       statusOptions: { active: "Active", archived: "Archive" }
     },
     myPurchases: {
@@ -559,7 +578,8 @@ export const dictionaries = {
         system: "System"
       },
       emptyTitle: "No notifications yet",
-      emptyDescription: "Messages, promotion updates, and trust notifications will appear here as you use CampusSwap."
+      emptyDescription: "Messages, promotion updates, and trust notifications will appear here as you use CampusSwap.",
+      emptyAction: "Open support center"
     },
     listingForm: {
       eyebrow: "Sell",
@@ -570,6 +590,12 @@ export const dictionaries = {
       requirementsBody: "Required fields: title, description, category, condition, price, image gallery, and pickup area.",
       optionalControlsBody: "Optional controls: negotiable, outlet, urgent, and future bumping or promotion purchases.",
       moderationBody: "Suspicious phrases automatically route listings into moderation review.",
+      firstUseTitle: "First listing checklist",
+      firstUseTips: [
+        "Use bright photos and mention any wear honestly.",
+        "Choose pickup, shipping, or both before publishing.",
+        "Promotion checkout is optional and only activates after Stripe confirms payment."
+      ],
       verificationOptionalTitle: "Student verification is optional.",
       verificationOptionalBody: "You can publish listings now. Because your account is not student-verified yet, new listings may go through a quick trust review before they appear publicly.",
       titlePlaceholder: "Title",
@@ -608,6 +634,43 @@ export const dictionaries = {
       feedDescription: "Your feed prioritizes bikes, furniture, kitchen equipment, and fast pickup listings based on your profile, saved items, and recent searches.",
       sellUpload: "Sell / upload product",
       searchAllListings: "Search all listings",
+      firstUseEyebrow: "First steps",
+      firstUseTitle: "New here? Start with the flows that matter.",
+      firstUseDescription:
+        "CampusSwap is simplest when you keep listings, messages, checkout, and support inside the app. These shortcuts explain the core paths without a heavy tour.",
+      feedbackCta: "Send feedback or report a bug",
+      firstUseSteps: [
+        {
+          title: "Create a listing",
+          body: "Add photos, condition, pickup or shipping, then publish from the sell flow.",
+          href: "/app/sell"
+        },
+        {
+          title: "Save before deciding",
+          body: "Use saved listings to compare price, area, seller trust, and availability.",
+          href: "/app/saved"
+        },
+        {
+          title: "Message from a listing",
+          body: "Start chat from the item page so pickup, offer, and order context stays attached.",
+          href: "/app/messages"
+        },
+        {
+          title: "Buy with checkout",
+          body: "Choose pickup or shipping, review the total, then pay only through Stripe Checkout.",
+          href: "/app/search"
+        },
+        {
+          title: "Make an offer",
+          body: "Negotiate in the listing chat so both sides can see the latest offer state.",
+          href: "/app/search"
+        },
+        {
+          title: "Open support",
+          body: "Use support for reports, disputes, shipping help, payment help, or launch feedback.",
+          href: "/app/support"
+        }
+      ],
       sellerMomentumEyebrow: "Seller momentum",
       sellerMomentumTitle: "Need to sell before moving out?",
       sellerMomentumDescription: "Launch your listing, mark it urgent, and promote it if timing is tight.",
@@ -830,6 +893,7 @@ type DictionaryExtensions = {
     description: string;
     emptyTitle: string;
     emptyDescription: string;
+    emptyAction: string;
     compareLabel: string;
     compareLimit: string;
     addToCompare: string;
@@ -1024,6 +1088,7 @@ mutableDictionaries.es = {
       openAll: "Abrir mensajes",
       emptyTitle: "Aun no hay conversaciones",
       emptyDescription: "Cuando escribas a un vendedor desde un anuncio, el hilo aparecera aqui con todo el contexto.",
+      emptyAction: "Buscar anuncios para escribir",
       loadErrorTitle: "No se pudieron cargar los mensajes"
     }
   },
@@ -1473,6 +1538,7 @@ mutableDictionaries.nl = {
       openAll: "Berichten openen",
       emptyTitle: "Nog geen conversaties",
       emptyDescription: "Wanneer je vanuit een advertentie een verkoper bericht, verschijnt de thread hier met de advertentiecontext.",
+      emptyAction: "Advertenties zoeken om te berichten",
       loadErrorTitle: "Berichten konden niet worden geladen"
     }
   },
@@ -1994,6 +2060,7 @@ mutableDictionaries.en = {
     emptyTitle: "No saved listings yet",
     emptyDescription:
       "Once you save a listing, it will appear here so you can compare prices, pickup zones, and seller trust signals.",
+    emptyAction: "Browse listings",
     compareLabel: "Compare",
     compareLimit: "Select up to {count} listings",
     addToCompare: "Add",
@@ -2064,6 +2131,7 @@ mutableDictionaries.en = {
     emptyTitle: "Aún no tienes anuncios guardados",
     emptyDescription:
       "Cuando guardes un anuncio, aparecerá aquí para comparar precio, zona de recogida y señales de confianza del vendedor.",
+    emptyAction: "Explorar anuncios",
     compareLabel: "Comparar",
     compareLimit: "Selecciona hasta {count} anuncios",
     addToCompare: "Añadir",
@@ -2189,6 +2257,7 @@ mutableDictionaries.nl = {
     emptyTitle: "Nog geen opgeslagen advertenties",
     emptyDescription:
       "Zodra je een advertentie opslaat, verschijnt die hier zodat je prijs, afhaalgebied en verkopersvertrouwen kunt vergelijken.",
+    emptyAction: "Advertenties bekijken",
     compareLabel: "Vergelijken",
     compareLimit: "Selecteer maximaal {count} advertenties",
     addToCompare: "Toevoegen",
@@ -2362,6 +2431,8 @@ mutableDictionaries.nl = {
     exchange: {
       ...mutableDictionaries.nl.messages.exchange,
       fulfillmentMethod: "Levering",
+      checkoutTrustNote:
+        "CampusSwap ziet een bestelling pas als betaald wanneer Stripe dit bevestigt. Afhaal- of verzendgegevens blijven aan de bestelling gekoppeld zodat support kan helpen als er iets misgaat.",
       chooseFulfillment: "Kies levering",
       pickupOption: "Afhalen",
       shippingOption: "Verzending",
@@ -2392,7 +2463,11 @@ mutableDictionaries.nl = {
     offersReceived: "Biedingen",
     fulfillmentSummary: "Levering",
     pickupLabel: "Afhalen",
-    shippingLabel: "Verzending"
+    shippingLabel: "Verzending",
+    emptyTitle: "Nog geen advertenties",
+    emptyDescription:
+      "Maak je eerste advertentie met heldere foto's, afhalen of verzenden en een korte conditienotitie.",
+    emptyAction: "Eerste advertentie maken"
   },
   myPurchases: {
     ...mutableDictionaries.nl.myPurchases,
@@ -2419,6 +2494,12 @@ mutableDictionaries.nl = {
     pickupAvailable: "Lokaal afhalen beschikbaar",
     shippingAvailable: "Verzending beschikbaar",
     shippingCostPlaceholder: "Verzendkosten",
+    firstUseTitle: "Checklist voor je eerste advertentie",
+    firstUseTips: [
+      "Gebruik heldere foto's en beschrijf slijtage eerlijk.",
+      "Kies afhalen, verzending of beide opties voordat je publiceert.",
+      "Promotie is optioneel en wordt pas actief nadat Stripe betaling bevestigt."
+    ],
     fulfillmentHelp:
       "Kies minstens een leveringsoptie. Kopers kunnen tussen afhalen en verzending kiezen wanneer beide beschikbaar zijn."
   }
@@ -2522,6 +2603,8 @@ mutableDictionaries.es = {
     exchange: {
       ...mutableDictionaries.es.messages.exchange,
       fulfillmentMethod: "Entrega",
+      checkoutTrustNote:
+        "CampusSwap solo marca un pedido como pagado cuando Stripe lo confirma. Los datos de recogida o env\u00edo quedan vinculados al pedido para que soporte pueda ayudar si algo falla.",
       chooseFulfillment: "Elegir entrega",
       pickupOption: "Recogida",
       shippingOption: "Env\u00edo",
@@ -2552,7 +2635,11 @@ mutableDictionaries.es = {
     offersReceived: "Ofertas",
     fulfillmentSummary: "Entrega",
     pickupLabel: "Recogida",
-    shippingLabel: "Env\u00edo"
+    shippingLabel: "Env\u00edo",
+    emptyTitle: "Todav\u00eda no tienes anuncios",
+    emptyDescription:
+      "Crea tu primer anuncio con fotos claras, recogida o env\u00edo y una nota breve sobre el estado.",
+    emptyAction: "Crear primer anuncio"
   },
   myPurchases: {
     ...mutableDictionaries.es.myPurchases,
@@ -2579,6 +2666,12 @@ mutableDictionaries.es = {
       pickupAvailable: "Recogida local disponible",
       shippingAvailable: "Env\u00edo disponible",
       shippingCostPlaceholder: "Coste de env\u00edo",
+      firstUseTitle: "Checklist del primer anuncio",
+      firstUseTips: [
+        "Usa fotos claras y menciona el desgaste con honestidad.",
+        "Elige recogida, env\u00edo o ambas opciones antes de publicar.",
+        "La promoci\u00f3n es opcional y solo se activa cuando Stripe confirma el pago."
+      ],
       fulfillmentHelp:
         "Elige al menos una opci\u00f3n de entrega. Si ambas est\u00e1n disponibles, el comprador podr\u00e1 elegir entre recogida y env\u00edo."
     }
@@ -2638,6 +2731,14 @@ mutableDictionaries.es = {
       paymentHelpCta: "Payment help",
       shippingHelpCta: "Shipping help",
       orderHelpTitle: "Need help with this order?",
+      feedbackTitle: "First launch feedback",
+      feedbackDescription:
+        "If something feels unclear, broken, or confusing during early use, send it to CampusSwap support. For urgent issues outside the app, email {email}.",
+      feedbackCta: "Send feedback / report a bug",
+      emailSupportCta: "Email support",
+      feedbackFormTitle: "Send feedback or report a product issue",
+      feedbackFormDescription:
+        "Use this lightweight support request for launch feedback, confusing UX, or bugs that are not tied to a specific order.",
       cards: {
         reportUserTitle: "Report user",
         reportUserDescription:
@@ -2672,7 +2773,9 @@ mutableDictionaries.es = {
         paymentHelpPlaceholder:
           "Describe the payment or promotion issue you need help with.",
         shippingHelpPlaceholder:
-          "Describe the shipping issue, delay, or delivery problem you need help with."
+          "Describe the shipping issue, delay, or delivery problem you need help with.",
+        feedbackPlaceholder:
+          "Tell CampusSwap what felt confusing, slow, broken, or hard to complete. Include the page or flow if you remember it."
       },
       yourTicketsEyebrow: "Support tickets",
       yourTicketsTitle: "Your active support requests",
@@ -2681,6 +2784,7 @@ mutableDictionaries.es = {
       noTicketsTitle: "No support tickets yet",
       noTicketsDescription:
         "When you ask CampusSwap for help, your requests will appear here with their latest status.",
+      noTicketsAction: "Open a help request",
       yourReportsEyebrow: "Reports",
       yourReportsTitle: "Your safety reports",
       yourReportsDescription:
@@ -2688,6 +2792,7 @@ mutableDictionaries.es = {
       noReportsTitle: "No reports yet",
       noReportsDescription:
         "When you report a listing or user, CampusSwap will track it here.",
+      noReportsAction: "Browse listings",
       ticketStatusLabels: {
         open: "Open",
         inReview: "In review",
@@ -2723,6 +2828,43 @@ mutableDictionaries.es = {
       featuredTitle: "Anuncios destacados de pago",
       featuredDescription:
         "Aqu\u00ed solo aparecen primero los anuncios destacados realmente pagados y activos.",
+      firstUseEyebrow: "Primeros pasos",
+      firstUseTitle: "Nuevo por aqu\u00ed? Empieza por los flujos clave.",
+      firstUseDescription:
+        "CampusSwap funciona mejor cuando mantienes anuncios, mensajes, checkout y soporte dentro de la app.",
+      feedbackCta: "Enviar feedback o reportar bug",
+      firstUseSteps: [
+        {
+          title: "Crear un anuncio",
+          body: "Sube fotos, estado, recogida o env\u00edo y publica desde el flujo de venta.",
+          href: "/app/sell"
+        },
+        {
+          title: "Guardar antes de decidir",
+          body: "Compara precio, zona, confianza del vendedor y disponibilidad.",
+          href: "/app/saved"
+        },
+        {
+          title: "Enviar mensaje",
+          body: "Escribe desde el anuncio para conservar contexto de pickup, oferta y pedido.",
+          href: "/app/messages"
+        },
+        {
+          title: "Comprar con checkout",
+          body: "Elige recogida o env\u00edo, revisa el total y paga solo con Stripe Checkout.",
+          href: "/app/search"
+        },
+        {
+          title: "Hacer una oferta",
+          body: "Negocia en el chat del anuncio para que ambos vean el estado actualizado.",
+          href: "/app/search"
+        },
+        {
+          title: "Abrir soporte",
+          body: "Usa soporte para reportes, disputas, env\u00edo, pagos o feedback de lanzamiento.",
+          href: "/app/support"
+        }
+      ],
       popularAreaEyebrow: "Tendencia cerca de ti",
       popularAreaTitle: "Tendencia en {area}.",
       popularAreaDescription:
@@ -2763,6 +2905,14 @@ mutableDictionaries.es = {
       paymentHelpCta: "Ayuda con pago",
       shippingHelpCta: "Ayuda con env\u00edo",
       orderHelpTitle: "\u00bfNecesitas ayuda con este pedido?",
+      feedbackTitle: "Feedback de lanzamiento",
+      feedbackDescription:
+        "Si algo no queda claro, falla o confunde durante el uso inicial, env\u00edalo a soporte. Para incidencias urgentes fuera de la app, escribe a {email}.",
+      feedbackCta: "Enviar feedback / reportar bug",
+      emailSupportCta: "Email a soporte",
+      feedbackFormTitle: "Enviar feedback o reportar un problema",
+      feedbackFormDescription:
+        "Usa esta solicitud ligera para feedback de lanzamiento, UX confusa o bugs que no est\u00e9n ligados a un pedido concreto.",
       cards: {
         reportUserTitle: "Denunciar usuario",
         reportUserDescription:
@@ -2797,7 +2947,9 @@ mutableDictionaries.es = {
         paymentHelpPlaceholder:
           "Describe el problema de pago o promoci\u00f3n con el que necesitas ayuda.",
         shippingHelpPlaceholder:
-          "Describe el problema de env\u00edo, retraso o entrega con el que necesitas ayuda."
+          "Describe el problema de env\u00edo, retraso o entrega con el que necesitas ayuda.",
+        feedbackPlaceholder:
+          "Cuenta a CampusSwap qu\u00e9 fue confuso, lento, roto o dif\u00edcil de completar. Incluye la p\u00e1gina o flujo si lo recuerdas."
       },
       yourTicketsEyebrow: "Tickets de soporte",
       yourTicketsTitle: "Tus solicitudes activas",
@@ -2806,6 +2958,7 @@ mutableDictionaries.es = {
       noTicketsTitle: "Todav\u00eda no hay tickets de soporte",
       noTicketsDescription:
         "Cuando pidas ayuda a CampusSwap, tus solicitudes aparecer\u00e1n aqu\u00ed con su estado m\u00e1s reciente.",
+      noTicketsAction: "Abrir solicitud de ayuda",
       yourReportsEyebrow: "Denuncias",
       yourReportsTitle: "Tus denuncias de seguridad",
       yourReportsDescription:
@@ -2813,6 +2966,7 @@ mutableDictionaries.es = {
       noReportsTitle: "Todav\u00eda no hay denuncias",
       noReportsDescription:
         "Cuando denuncies un anuncio o un usuario, CampusSwap lo seguir\u00e1 aqu\u00ed.",
+      noReportsAction: "Explorar anuncios",
       ticketStatusLabels: {
         open: "Abierto",
         inReview: "En revisi\u00f3n",
@@ -2848,6 +3002,43 @@ mutableDictionaries.es = {
       featuredTitle: "Betaalde uitgelichte advertenties",
       featuredDescription:
         "Alleen echt betaalde en actieve uitgelichte advertenties komen hier eerst naar voren.",
+      firstUseEyebrow: "Eerste stappen",
+      firstUseTitle: "Nieuw hier? Begin met de belangrijkste flows.",
+      firstUseDescription:
+        "CampusSwap werkt het duidelijkst wanneer advertenties, berichten, checkout en support in de app blijven.",
+      feedbackCta: "Feedback sturen of bug melden",
+      firstUseSteps: [
+        {
+          title: "Advertentie maken",
+          body: "Voeg foto's, conditie, afhalen of verzenden toe en publiceer via verkopen.",
+          href: "/app/sell"
+        },
+        {
+          title: "Opslaan voor later",
+          body: "Vergelijk prijs, gebied, verkopervertrouwen en beschikbaarheid.",
+          href: "/app/saved"
+        },
+        {
+          title: "Bericht sturen",
+          body: "Start vanuit de advertentie zodat pickup, bod en ordercontext gekoppeld blijven.",
+          href: "/app/messages"
+        },
+        {
+          title: "Kopen met checkout",
+          body: "Kies afhalen of verzenden, controleer het totaal en betaal via Stripe Checkout.",
+          href: "/app/search"
+        },
+        {
+          title: "Bod doen",
+          body: "Onderhandel in de advertentiechat zodat beide kanten de laatste status zien.",
+          href: "/app/search"
+        },
+        {
+          title: "Support openen",
+          body: "Gebruik support voor meldingen, geschillen, verzending, betaling of launch-feedback.",
+          href: "/app/support"
+        }
+      ],
       popularAreaEyebrow: "Trending dichtbij",
       popularAreaTitle: "Trending rond {area}.",
       popularAreaDescription:
@@ -2888,6 +3079,14 @@ mutableDictionaries.es = {
       paymentHelpCta: "Hulp bij betaling",
       shippingHelpCta: "Hulp bij verzending",
       orderHelpTitle: "Hulp nodig bij deze bestelling?",
+      feedbackTitle: "Feedback voor eerste launch",
+      feedbackDescription:
+        "Als iets onduidelijk, kapot of verwarrend voelt tijdens vroeg gebruik, stuur het naar CampusSwap support. Voor urgente zaken buiten de app mail je {email}.",
+      feedbackCta: "Feedback sturen / bug melden",
+      emailSupportCta: "Support mailen",
+      feedbackFormTitle: "Feedback sturen of productprobleem melden",
+      feedbackFormDescription:
+        "Gebruik dit lichte supportverzoek voor launch-feedback, verwarrende UX of bugs die niet aan een specifieke bestelling gekoppeld zijn.",
       cards: {
         reportUserTitle: "Gebruiker melden",
         reportUserDescription:
@@ -2922,7 +3121,9 @@ mutableDictionaries.es = {
         paymentHelpPlaceholder:
           "Beschrijf het betaal- of promotieprobleem waar je hulp bij nodig hebt.",
         shippingHelpPlaceholder:
-          "Beschrijf het verzendprobleem, de vertraging of de leveringskwestie waar je hulp bij nodig hebt."
+          "Beschrijf het verzendprobleem, de vertraging of de leveringskwestie waar je hulp bij nodig hebt.",
+        feedbackPlaceholder:
+          "Vertel CampusSwap wat verwarrend, traag, kapot of lastig af te ronden voelde. Noem de pagina of flow als je die nog weet."
       },
       yourTicketsEyebrow: "Supporttickets",
       yourTicketsTitle: "Jouw actieve supportverzoeken",
@@ -2931,6 +3132,7 @@ mutableDictionaries.es = {
       noTicketsTitle: "Nog geen supporttickets",
       noTicketsDescription:
         "Wanneer je CampusSwap om hulp vraagt, verschijnen je verzoeken hier met hun laatste status.",
+      noTicketsAction: "Hulpverzoek openen",
       yourReportsEyebrow: "Meldingen",
       yourReportsTitle: "Jouw veiligheidsmeldingen",
       yourReportsDescription:
@@ -2938,6 +3140,7 @@ mutableDictionaries.es = {
       noReportsTitle: "Nog geen meldingen",
       noReportsDescription:
         "Wanneer je een advertentie of gebruiker meldt, volgt CampusSwap dat hier op.",
+      noReportsAction: "Advertenties bekijken",
       ticketStatusLabels: {
         open: "Open",
         inReview: "In beoordeling",
@@ -2964,6 +3167,7 @@ mutableDictionaries.es = {
   notifications: {
     ...mutableDictionaries.es.notifications,
     loadingTitle: "Cargando notificaciones...",
+    emptyAction: "Abrir soporte",
     loadingDescription:
       "CampusSwap está preparando tus alertas más recientes para que vuelvas al anuncio, mensaje o pedido correcto."
   },
@@ -3036,6 +3240,7 @@ mutableDictionaries.nl = {
   notifications: {
     ...mutableDictionaries.nl.notifications,
     loadingTitle: "Meldingen laden...",
+    emptyAction: "Support openen",
     loadingDescription:
       "CampusSwap haalt je nieuwste meldingen op zodat je snel terug kunt naar de juiste advertentie, chat of bestelling."
   },

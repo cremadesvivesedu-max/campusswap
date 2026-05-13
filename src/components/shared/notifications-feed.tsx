@@ -91,6 +91,8 @@ export function NotificationsFeed({
       <EmptyState
         title={dictionary.notifications.emptyTitle}
         description={dictionary.notifications.emptyDescription}
+        actionHref="/app/support"
+        actionLabel={dictionary.notifications.emptyAction}
       />
     );
   }
