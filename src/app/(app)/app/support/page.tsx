@@ -172,8 +172,8 @@ export default async function SupportPage({
             : dictionary.support.form.shippingHelpPlaceholder;
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-[36px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] p-6 shadow-sm sm:p-7">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] p-4 shadow-sm sm:rounded-[36px] sm:p-7">
         <SectionHeading
           eyebrow={dictionary.support.eyebrow}
           title={dictionary.support.title}
@@ -182,21 +182,21 @@ export default async function SupportPage({
       </div>
 
       <Card className="bg-white/96">
-        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+        <CardContent className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-950">{dictionary.support.chooseCategory}</p>
             <p className="text-sm leading-6 text-slate-600">
               {dictionary.support.contactFallback.replace("{email}", env.SUPPORT_EMAIL)}
             </p>
           </div>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/app/my-purchases">{dictionary.support.openPurchases}</Link>
           </Button>
         </CardContent>
       </Card>
 
       <Card className="border-emerald-200 bg-emerald-50/70">
-        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+        <CardContent className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <p className="text-sm font-semibold text-emerald-950">
               {dictionary.support.feedbackTitle}
@@ -205,13 +205,13 @@ export default async function SupportPage({
               {dictionary.support.feedbackDescription.replace("{email}", env.SUPPORT_EMAIL)}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild variant="secondary">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button asChild variant="secondary" className="w-full sm:w-auto">
               <Link href="/app/support?type=payment-help&intent=feedback">
                 {dictionary.support.feedbackCta}
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href={`mailto:${env.SUPPORT_EMAIL}`}>
                 {dictionary.support.emailSupportCta}
               </Link>
@@ -227,17 +227,17 @@ export default async function SupportPage({
             Know where to go before a payment or dispute becomes stressful.
           </p>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3 pt-0 text-sm text-slate-600">
-          <Link href="/refund-policy" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+        <CardContent className="flex flex-col gap-3 pt-0 text-sm text-slate-600 sm:flex-row sm:flex-wrap">
+          <Link href="/refund-policy" className="rounded-full border border-slate-200 px-4 py-2 text-center transition hover:border-slate-300 hover:text-slate-950">
             Refunds & disputes
           </Link>
-          <Link href="/privacy" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+          <Link href="/privacy" className="rounded-full border border-slate-200 px-4 py-2 text-center transition hover:border-slate-300 hover:text-slate-950">
             Privacy Policy
           </Link>
-          <Link href="/terms" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+          <Link href="/terms" className="rounded-full border border-slate-200 px-4 py-2 text-center transition hover:border-slate-300 hover:text-slate-950">
             Terms of Service
           </Link>
-          <Link href="/contact" className="rounded-full border border-slate-200 px-4 py-2 transition hover:border-slate-300 hover:text-slate-950">
+          <Link href="/contact" className="rounded-full border border-slate-200 px-4 py-2 text-center transition hover:border-slate-300 hover:text-slate-950">
             Contact support
           </Link>
         </CardContent>

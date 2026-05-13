@@ -50,7 +50,7 @@ export function ListingForm({
   return (
     <form
       action={action}
-      className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow"
+      className="space-y-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-glow sm:rounded-[28px] sm:p-6"
     >
       {initialListing ? <input type="hidden" name="listingId" value={initialListing.id} /> : null}
       {!initialListing && state.listingId ? (
@@ -84,9 +84,9 @@ export function ListingForm({
           {dictionary.listingForm.fulfillmentTitle}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
+          <label className="flex min-h-12 items-center rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
             <input
-              className="mr-2"
+              className="mr-2 h-4 w-4"
               name="pickupAvailable"
               type="checkbox"
               checked={pickupEnabled}
@@ -94,9 +94,9 @@ export function ListingForm({
             />
             {dictionary.listingForm.pickupAvailable}
           </label>
-          <label className="rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
+          <label className="flex min-h-12 items-center rounded-2xl border border-border bg-white p-4 text-sm text-slate-700">
             <input
-              className="mr-2"
+              className="mr-2 h-4 w-4"
               name="shippingAvailable"
               type="checkbox"
               checked={shippingEnabled}
@@ -124,7 +124,7 @@ export function ListingForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <select
           name="category"
-          className="h-11 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
+          className="h-12 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
           defaultValue={initialListing?.categorySlug}
         >
           {categories.map((category) => (
@@ -135,7 +135,7 @@ export function ListingForm({
         </select>
         <select
           name="condition"
-        className="h-11 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
+          className="h-12 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
           defaultValue={initialListing?.condition ?? "good"}
         >
           <option value="like-new">{getConditionLabel(dictionary, "like-new")}</option>
@@ -172,36 +172,36 @@ export function ListingForm({
             ? dictionary.listingForm.addMorePhotos
             : dictionary.listingForm.listingPhotos}
         </span>
-        <input name="images" type="file" accept="image/*" multiple />
+        <input name="images" type="file" accept="image/*" multiple className="w-full text-sm" />
       </label>
       {isEditing && initialListing?.images.length ? (
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm text-slate-700">
-          <input className="mr-2" name="replaceImages" type="checkbox" />{" "}
+        <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm text-slate-700">
+          <input className="mr-2 h-4 w-4" name="replaceImages" type="checkbox" />{" "}
           {dictionary.listingForm.replaceGallery}
         </label>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+        <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
-            className="mr-2"
+            className="mr-2 h-4 w-4"
             name="negotiable"
             type="checkbox"
             defaultChecked={initialListing?.negotiable ?? true}
           />{" "}
           {dictionary.listingForm.negotiable}
         </label>
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+        <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
-            className="mr-2"
+            className="mr-2 h-4 w-4"
             name="outlet"
             type="checkbox"
             defaultChecked={initialListing?.outlet ?? false}
           />{" "}
           {dictionary.listingForm.outlet}
         </label>
-        <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+        <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm">
           <input
-            className="mr-2"
+            className="mr-2 h-4 w-4"
             name="urgent"
             type="checkbox"
             defaultChecked={initialListing?.urgent ?? false}
@@ -212,7 +212,7 @@ export function ListingForm({
       <div className="space-y-3 rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
         <label className="block">
           <input
-            className="mr-2"
+            className="mr-2 h-4 w-4"
             name="requestFeatured"
             type="checkbox"
             defaultChecked={effectivePromotionState !== "none"}

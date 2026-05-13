@@ -161,7 +161,7 @@ function ShippingAddressCard({
   shippingAddress: ShippingAddressDetails;
 }) {
   return (
-    <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4">
+    <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 sm:rounded-[26px]">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {dictionary.messages.exchange.shippingAddressTitle}
       </p>
@@ -200,7 +200,7 @@ function ShippingAddressForm({
     };
 
   return (
-    <div className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-4">
+    <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 sm:rounded-[26px]">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {dictionary.messages.exchange.shippingAddressTitle}
       </p>
@@ -352,7 +352,7 @@ function OrderSummary({
   ].filter((entry) => entry.value);
 
   return (
-    <div className="space-y-4 rounded-[26px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(241,245,249,0.92))] p-5 shadow-sm">
+    <div className="space-y-4 rounded-[22px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(241,245,249,0.92))] p-4 shadow-sm sm:rounded-[26px] sm:p-5">
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
           {dictionary.messages.exchange.orderBreakdownTitle}
@@ -651,7 +651,7 @@ export function ListingTransactionPanel({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3">
+          <div className="flex flex-col gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:flex-wrap [&>a]:w-full [&>button]:w-full sm:[&>a]:w-auto sm:[&>button]:w-auto">
             {transaction?.conversationId ? (
               <Button asChild type="button" variant="secondary">
                 <Link href={`/app/messages/${transaction.conversationId}`}>
@@ -889,6 +889,7 @@ export function ListingTransactionPanel({
             />
             <Button
               type="button"
+              className="w-full sm:w-auto"
               onClick={() =>
                 runAction(() =>
                   viewerTransaction?.fulfillmentMethod === "shipping"
@@ -983,7 +984,7 @@ export function ListingTransactionPanel({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3">
+        <div className="flex flex-col gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:flex-wrap [&>a]:w-full [&>button]:w-full sm:[&>a]:w-auto sm:[&>button]:w-auto">
           {canStartPurchase && listingPickupAvailable && listingShippingAvailable ? (
             <>
               <Button

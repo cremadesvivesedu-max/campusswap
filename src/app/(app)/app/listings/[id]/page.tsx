@@ -57,11 +57,11 @@ export default async function ListingDetailPage({
     : null;
 
   return (
-    <div className="grid gap-8 xl:gap-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
-      <div className="space-y-8">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:gap-10">
+      <div className="space-y-6 sm:space-y-8">
         <ListingGallery images={listing.images} title={listing.title} />
         <Card className="border-slate-200/80 bg-white/96 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <CardContent className="space-y-7 p-6 sm:p-8">
+          <CardContent className="space-y-6 p-4 sm:space-y-7 sm:p-8">
             <div className="flex flex-wrap gap-2">
               {listing.featured ? (
                 <Badge className="bg-amber-200 text-slate-900">
@@ -83,20 +83,20 @@ export default async function ListingDetailPage({
                 <Badge>{getListingStatusLabel(dictionary, listing.status)}</Badge>
               ) : null}
             </div>
-            <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-7 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-6 sm:pb-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
-                <h1 className="font-display text-4xl font-semibold tracking-tight text-slate-950 sm:text-[2.9rem]">
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2.9rem]">
                   {listing.title}
                 </h1>
                 <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
                   {listing.description}
                 </p>
               </div>
-              <div className="min-w-[12rem] rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.9))] px-5 py-4 shadow-sm lg:text-right">
+              <div className="w-full rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.9))] px-5 py-4 shadow-sm sm:w-auto sm:min-w-[12rem] sm:rounded-[28px] lg:text-right">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                   {listing.freshnessLabel}
                 </p>
-                <p className="mt-2 font-display text-3xl font-semibold text-slate-950">
+                <p className="mt-2 font-display text-2xl font-semibold text-slate-950 sm:text-3xl">
                   {formatCurrency(listing.price)}
                 </p>
               </div>
@@ -142,7 +142,7 @@ export default async function ListingDetailPage({
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {dictionary.myListings.analyticsTitle}
                 </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Eye className="h-4 w-4" />
@@ -189,12 +189,12 @@ export default async function ListingDetailPage({
               </div>
               {!isOwnListing ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full">
                     <Link href={`/app/support?type=report-listing&listingId=${listing.id}`}>
                       {dictionary.support.reportListingCta}
                     </Link>
                   </Button>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full">
                     <Link
                       href={`/app/support?type=report-user&targetUserId=${listing.sellerId}&listingId=${listing.id}`}
                     >
@@ -223,7 +223,7 @@ export default async function ListingDetailPage({
           copy={dictionary.map}
         />
       </div>
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         <Card className="border-slate-200/80 bg-white/96 shadow-[0_18px_56px_rgba(15,23,42,0.08)]">
           <CardHeader>
             <h2 className="font-display text-2xl font-semibold text-slate-950">
@@ -300,7 +300,7 @@ export default async function ListingDetailPage({
                   {dictionary.listing.ownListing}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="w-full">
                     <Link href={`/app/sell?listingId=${listing.id}`}>
                       {dictionary.listing.editListing}
                     </Link>

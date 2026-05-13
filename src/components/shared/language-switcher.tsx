@@ -11,13 +11,13 @@ export function LanguageSwitcher({ tone = "light" }: { tone?: "light" | "dark" }
 
   return (
     <label
-      className={`relative inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
+      className={`relative inline-flex items-center gap-2 rounded-full border px-2 py-1.5 text-sm sm:px-3 sm:py-2 ${
         tone === "light"
           ? "border-white/15 bg-slate-950/50 text-slate-100 shadow-[0_10px_30px_rgba(15,23,42,0.22)]"
           : "border-slate-200 bg-white text-slate-700"
       }`}
     >
-      <span className="text-xs font-semibold uppercase tracking-[0.16em]">
+      <span className="hidden text-xs font-semibold uppercase tracking-[0.16em] md:inline">
         {dictionary.languageSwitcher.label}
       </span>
       <select
@@ -26,7 +26,7 @@ export function LanguageSwitcher({ tone = "light" }: { tone?: "light" | "dark" }
           document.cookie = `${localeCookieName}=${event.target.value}; path=/; max-age=31536000; SameSite=Lax`;
           router.refresh();
         }}
-        className={`appearance-none rounded-full border-0 pl-1 pr-7 text-sm outline-none ring-0 ${
+        className={`max-w-20 appearance-none rounded-full border-0 pl-1 pr-6 text-xs outline-none ring-0 sm:max-w-none sm:pr-7 sm:text-sm ${
           tone === "light"
             ? "bg-transparent text-white"
             : "bg-transparent text-slate-700"

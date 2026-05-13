@@ -28,15 +28,15 @@ export function SavedListingsWorkspace({
   );
 
   return (
-    <div className="space-y-9">
-      <div className="grid gap-6 xl:grid-cols-3">
+    <div className="space-y-7 sm:space-y-9">
+      <div className="grid gap-5 sm:gap-6 xl:grid-cols-3">
         {listings.map((listing) => {
           const selected = selectedIds.includes(listing.id);
           const maxed = !selected && selectedIds.length >= maxComparedListings;
 
           return (
             <div key={listing.id} className="space-y-3">
-              <div className="flex items-center justify-between gap-3 rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.86))] px-4 py-4 shadow-sm">
+              <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.86))] px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:rounded-[28px]">
                 <div>
                   <p className="text-sm font-semibold text-slate-950">
                     {dictionary.saved.compareLabel}
@@ -53,6 +53,7 @@ export function SavedListingsWorkspace({
                   size="sm"
                   variant={selected ? "secondary" : "outline"}
                   disabled={maxed}
+                  className="w-full sm:w-auto"
                   onClick={() =>
                     setSelectedIds((current) =>
                       current.includes(listing.id)
@@ -86,6 +87,7 @@ export function SavedListingsWorkspace({
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => setSelectedIds([])}
             >
               {dictionary.common.actions.clearAll}
@@ -165,7 +167,7 @@ export function SavedListingsWorkspace({
                     {listing.sellerName ?? dictionary.listing.campusSwapSeller}
                   </p>
                   <div className="mt-4 flex gap-2">
-                    <Button asChild size="sm" variant="secondary">
+                    <Button asChild size="sm" variant="secondary" className="w-full sm:w-auto">
                       <Link href={`/app/listings/${listing.id}`}>
                         {dictionary.common.actions.openListing}
                       </Link>

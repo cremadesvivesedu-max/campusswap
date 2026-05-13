@@ -143,8 +143,8 @@ export default async function SellPage({
               : null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-      <div className="space-y-6">
+    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
+      <div className="space-y-4 sm:space-y-6">
         <SectionHeading
           eyebrow={dictionary.listingForm.eyebrow}
           title={
@@ -159,14 +159,14 @@ export default async function SellPage({
           }
         />
         <Card className="bg-white">
-          <CardContent className="space-y-3 p-8 text-sm leading-7 text-slate-600">
+          <CardContent className="space-y-3 p-5 text-sm leading-7 text-slate-600 sm:p-8">
             <p>{dictionary.listingForm.requirementsBody}</p>
             <p>{dictionary.listingForm.optionalControlsBody}</p>
             <p>{dictionary.listingForm.moderationBody}</p>
           </CardContent>
         </Card>
         <Card className="border-emerald-200 bg-emerald-50/70">
-          <CardContent className="space-y-3 p-6 text-sm leading-7 text-emerald-950">
+          <CardContent className="space-y-3 p-5 text-sm leading-7 text-emerald-950 sm:p-6">
             <p className="font-semibold">{dictionary.listingForm.firstUseTitle}</p>
             <ul className="space-y-2">
               {dictionary.listingForm.firstUseTips.map((tip) => (
@@ -180,7 +180,7 @@ export default async function SellPage({
         </Card>
         {user.verificationStatus !== "verified" ? (
           <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-700">
+            <CardContent className="space-y-3 p-5 text-sm leading-7 text-slate-700 sm:p-6">
               <div className="flex items-center gap-3">
                 <VerificationStatusBadge status={user.verificationStatus} />
                 <p className="font-semibold text-slate-950">
@@ -193,7 +193,7 @@ export default async function SellPage({
         ) : null}
         {promotionFeedback ? (
           <Card className={promotionFeedback.tone}>
-            <CardContent className="p-6 text-sm font-medium leading-7">
+            <CardContent className="p-5 text-sm font-medium leading-7 sm:p-6">
               {promotionFeedback.body}
             </CardContent>
           </Card>

@@ -14,14 +14,14 @@ export function UserIdentityButton({ user }: UserIdentityButtonProps) {
   return (
     <Link
       href="/app/profile"
-      className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+      className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-3 sm:py-2"
       aria-label="Open your profile"
     >
       <ProfileAvatar
         userId={user.id}
         name={user.profile.fullName}
         src={user.avatar}
-        className="h-10 w-10"
+        className="h-9 w-9 sm:h-10 sm:w-10"
       />
       <span className="hidden text-left sm:block">
         <span className="block text-sm font-semibold text-slate-950">{user.profile.fullName}</span>

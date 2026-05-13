@@ -36,7 +36,7 @@ export function ListingGallery({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-glow">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-glow sm:aspect-[16/10] sm:rounded-[32px]">
         <ListingImage
           src={activeImage?.url}
           alt={activeImage?.alt ?? title}
@@ -52,11 +52,11 @@ export function ListingGallery({
                 {activeIndex + 1} / {galleryImages.length}
               </span>
             </div>
-            <div className="absolute inset-y-0 left-0 flex items-center px-3">
+            <div className="absolute inset-y-0 left-0 flex items-center px-2 sm:px-3">
               <Button
                 type="button"
                 variant="secondary"
-                className="h-11 w-11 rounded-full p-0 shadow-lg"
+                className="h-10 w-10 rounded-full p-0 shadow-lg sm:h-11 sm:w-11"
                 onClick={() =>
                   setActiveIndex((currentIndex) =>
                     currentIndex === 0 ? galleryImages.length - 1 : currentIndex - 1
@@ -67,11 +67,11 @@ export function ListingGallery({
                 <ChevronLeft className="h-5 w-5" />
               </Button>
             </div>
-            <div className="absolute inset-y-0 right-0 flex items-center px-3">
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 sm:px-3">
               <Button
                 type="button"
                 variant="secondary"
-                className="h-11 w-11 rounded-full p-0 shadow-lg"
+                className="h-10 w-10 rounded-full p-0 shadow-lg sm:h-11 sm:w-11"
                 onClick={() =>
                   setActiveIndex((currentIndex) =>
                     currentIndex === galleryImages.length - 1 ? 0 : currentIndex + 1
@@ -87,14 +87,14 @@ export function ListingGallery({
       </div>
 
       {canBrowse ? (
-        <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3">
           {galleryImages.map((image, index) => (
             <button
               key={image.id}
               type="button"
               onClick={() => setActiveIndex(index)}
               className={cn(
-                "relative aspect-[4/3] overflow-hidden rounded-[22px] border bg-white transition",
+                "relative aspect-[4/3] overflow-hidden rounded-[18px] border bg-white transition sm:rounded-[22px]",
                 activeIndex === index
                   ? "border-slate-950 shadow-sm"
                   : "border-slate-200 hover:border-slate-300"

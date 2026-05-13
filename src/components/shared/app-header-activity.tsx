@@ -48,7 +48,7 @@ const HeaderIconButton = memo(function HeaderIconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-white text-slate-700 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950"
+      className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-white text-slate-700 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950 sm:h-10 sm:w-10"
     >
       {icon}
     </button>

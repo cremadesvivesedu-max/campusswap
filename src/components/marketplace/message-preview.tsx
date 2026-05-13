@@ -50,19 +50,19 @@ function MessagePreviewComponent({ preview }: { preview: ConversationPreview }) 
     <button
       type="button"
       onClick={() => router.push(`/app/messages/${preview.conversation.id}`)}
-      className="group block rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+      className="group block w-full rounded-[26px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 sm:rounded-[30px]"
     >
       <Card className="border-slate-200/80 bg-white/96 shadow-[0_18px_48px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_24px_56px_rgba(15,23,42,0.14)]">
-        <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+        <CardHeader className="flex flex-col items-start justify-between gap-3 pb-4 sm:flex-row sm:gap-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar
               userId={preview.counterpart.id}
               name={counterpartName}
               src={preview.counterpart.avatar}
-              className="h-12 w-12"
+              className="h-10 w-10 sm:h-12 sm:w-12"
             />
             <div>
-              <p className="font-display text-xl font-semibold text-slate-950">
+              <p className="font-display text-lg font-semibold leading-6 text-slate-950 sm:text-xl">
                 {listingTitle}
               </p>
               <p className="text-sm text-slate-500">
@@ -74,7 +74,7 @@ function MessagePreviewComponent({ preview }: { preview: ConversationPreview }) 
             </div>
           </div>
           {preview.unreadCount ? (
-            <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white sm:self-start">
               {preview.unreadCount} {dictionary.messages.actions.unread}
             </span>
           ) : null}

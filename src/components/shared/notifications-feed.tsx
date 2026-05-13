@@ -99,7 +99,7 @@ export function NotificationsFeed({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-[30px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.84))] px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.84))] px-4 py-4 shadow-sm sm:rounded-[30px] sm:px-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-slate-950 p-2.5 text-white shadow-sm">
             <Bell className="h-4 w-4" />
@@ -128,6 +128,7 @@ export function NotificationsFeed({
             })
           }
           disabled={isPending || !unreadCount}
+          className="w-full sm:w-auto"
         >
           <CheckCheck className="mr-2 h-4 w-4" />
           {dictionary.notifications.markAllRead}
@@ -145,7 +146,7 @@ export function NotificationsFeed({
           <article
             key={notification.id}
             className={cn(
-              "rounded-[32px] border px-5 py-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.09)]",
+              "rounded-[24px] border px-4 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.09)] sm:rounded-[32px] sm:px-5 sm:py-5",
               notification.read
                 ? "border-slate-200/80 bg-white"
                 : "border-emerald-200 bg-emerald-50/60"
@@ -155,7 +156,7 @@ export function NotificationsFeed({
               <button
                 type="button"
                 onClick={() => router.push(destination.href)}
-                className="group flex-1 space-y-3 rounded-[22px] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                className="group w-full flex-1 space-y-3 rounded-[22px] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={notificationTone(notification.type)}>
@@ -178,7 +179,7 @@ export function NotificationsFeed({
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <h2 className="font-display text-2xl font-semibold text-slate-950">
+                  <h2 className="font-display text-xl font-semibold text-slate-950 sm:text-2xl">
                     {notification.title}
                   </h2>
                   <p className="text-sm leading-7 text-slate-600">
@@ -186,7 +187,7 @@ export function NotificationsFeed({
                   </p>
                 </div>
               </button>
-              <div className="flex flex-col items-start gap-3 sm:items-end">
+              <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
                   {formatNotificationDate(notification.createdAt)}
                 </p>
@@ -206,6 +207,7 @@ export function NotificationsFeed({
                       });
                     }}
                     disabled={isPending}
+                    className="w-full sm:w-auto"
                   >
                     {dictionary.notifications.markRead}
                   </Button>

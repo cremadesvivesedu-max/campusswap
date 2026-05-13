@@ -56,7 +56,7 @@ export function SupportEntryForm({
   return (
     <form
       action={formAction}
-      className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/96 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
+      className="space-y-5 rounded-[24px] border border-slate-200/80 bg-white/96 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:rounded-[30px] sm:p-7"
     >
       <input type="hidden" name="type" value={type} />
       {listingId ? <input type="hidden" name="listingId" value={listingId} /> : null}
@@ -99,7 +99,7 @@ export function SupportEntryForm({
       </label>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-2">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           {pending ? submittingLabel : submitLabel}
         </Button>
         {state.message ? (

@@ -23,7 +23,7 @@ export function EmptyState({
       <CardContent className="space-y-4">
         <p className="max-w-2xl text-sm leading-7 text-slate-600">{description}</p>
         {actionHref && actionLabel ? (
-          <Button asChild variant="secondary">
+          <Button asChild variant="secondary" className="w-full sm:w-auto">
             <Link href={actionHref}>{actionLabel}</Link>
           </Button>
         ) : null}

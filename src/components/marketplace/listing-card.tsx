@@ -30,7 +30,7 @@ const DeferredMessageSellerButton = dynamic(
   {
     ssr: false,
     loading: () => (
-      <Button className="sm:flex-1" type="button" variant="outline" disabled>
+      <Button className="w-full sm:flex-1" type="button" variant="outline" disabled>
         ...
       </Button>
     )
@@ -49,13 +49,13 @@ function ListingCardComponent({
   const listingHref = `/app/listings/${listing.id}`;
 
   return (
-    <Card className="group relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-white/96 shadow-sm transition duration-150 hover:border-slate-300 hover:shadow-md">
+    <Card className="group relative overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/96 shadow-sm transition duration-150 hover:border-slate-300 hover:shadow-md sm:rounded-[24px]">
       <Link
         href={listingHref}
         aria-label={`Open listing: ${listing.title}`}
         className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
       />
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-[22px] bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-t-[20px] bg-slate-100 sm:rounded-t-[22px]">
         <ListingImage
           src={listing.images[0]?.url}
           alt={listing.images[0]?.alt ?? listing.title}
@@ -84,13 +84,13 @@ function ListingCardComponent({
           ) : null}
         </div>
       </div>
-      <div className="space-y-4 p-4 sm:p-5">
+      <div className="space-y-3.5 p-4 sm:space-y-4 sm:p-5">
         <div className="space-y-3">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
             <p className="line-clamp-2 font-display text-lg font-semibold leading-6 text-slate-950">
               {listing.title}
             </p>
-            <p className="shrink-0 rounded-full border border-slate-200/80 bg-slate-950 px-3 py-1 text-sm font-semibold text-white">
+            <p className="shrink-0 rounded-full border border-slate-200/80 bg-slate-950 px-3 py-1 text-sm font-semibold text-white sm:self-start">
               {formatCurrency(listing.price)}
             </p>
           </div>
@@ -123,7 +123,7 @@ function ListingCardComponent({
           </p>
         ) : null}
         <div className="relative z-20 flex flex-col gap-3 border-t border-slate-200/80 pt-4 sm:flex-row sm:flex-wrap">
-          <Button asChild className="sm:flex-1" variant="secondary">
+          <Button asChild className="w-full sm:flex-1" variant="secondary">
             <Link href={listingHref}>{dictionary.common.actions.viewListing}</Link>
           </Button>
           {showChatAction ? (
@@ -132,7 +132,7 @@ function ListingCardComponent({
               sellerId={listing.sellerId}
               listingStatus={listing.status}
               mode={messageActionMode}
-              className="sm:flex-1"
+              className="w-full sm:flex-1"
             />
           ) : null}
         </div>
