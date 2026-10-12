@@ -724,13 +724,13 @@ export const dictionaries = {
         outletDescription: "Damaged-but-usable and urgent sell-off items deserve a dedicated experience, not a buried filter.",
         outletBody: "CampusSwap treats Outlet as a strategic differentiator for lower budgets, urgent move-outs, and practical reuse. That makes the marketplace more useful and more honest.",
         outletCta: "Explore Outlet",
-        testimonialsEyebrow: "Demo testimonials",
-        testimonialsTitle: "Seeded proof points for launch storytelling.",
-        testimonialsDescription: "These are demo testimonials included to help shape launch-ready content and layout. Replace them with real student feedback after launch.",
+        testimonialsEyebrow: "What students told us",
+        testimonialsTitle: "Second-hand is easy. It is just scattered everywhere.",
+        testimonialsDescription: "Findings from our pilot survey with students in Maastricht, which shaped what CampusSwap focuses on.",
         testimonials: [
-          "Demo testimonial: I arrived in Maastricht on a Thursday and had a desk, lamp, and bike by Sunday.",
-          "Demo testimonial: Selling my studio essentials in one place was much calmer than juggling group chats.",
-          "Demo testimonial: The outlet section helped me furnish a room without blowing my first-month budget."
+          "2.6 apps on average: students juggle Facebook Marketplace, WhatsApp groups, and more just to buy and sell basics.",
+          "Every international student we asked relies on Facebook Marketplace, a city-wide channel that was never built for students.",
+          "Search, filters, ratings, and student verification were the features students asked for most, so they come first here."
         ],
         faqEyebrow: "FAQ",
         faqTitle: "Questions students usually ask before they trust a new marketplace.",
@@ -1300,13 +1300,13 @@ mutableDictionaries.es = {
       outletDescription: "Los articulos urgentes o muy usados merecen una experiencia propia, no un filtro escondido.",
       outletBody: "CampusSwap trata Outlet como un diferenciador real para presupuestos bajos, mudanzas urgentes y reutilizacion practica.",
       outletCta: "Explorar Outlet",
-      testimonialsEyebrow: "Testimonios demo",
-      testimonialsTitle: "Pruebas sembradas para la narrativa de lanzamiento.",
-      testimonialsDescription: "Estos testimonios son demo y ayudan a preparar contenido y estructura de lanzamiento. Sustituyelos por opiniones reales tras el lanzamiento.",
+      testimonialsEyebrow: "Lo que nos dijeron los estudiantes",
+      testimonialsTitle: "Comprar de segunda mano es fácil. El problema es que está disperso.",
+      testimonialsDescription: "Resultados de nuestra encuesta piloto con estudiantes en Maastricht, que marcan en qué se centra CampusSwap.",
       testimonials: [
-        "Testimonio demo: llegue a Maastricht un jueves y el domingo ya tenia escritorio, lampara y bici.",
-        "Testimonio demo: vender lo de mi estudio en un solo sitio fue mucho mas tranquilo que saltar entre grupos.",
-        "Testimonio demo: la seccion outlet me ayudo a amueblar una habitacion sin disparar el presupuesto del primer mes."
+        "2,6 apps de media: los estudiantes saltan entre Facebook Marketplace, grupos de WhatsApp y más solo para comprar y vender lo básico.",
+        "Todos los estudiantes internacionales que encuestamos usan Facebook Marketplace, un canal para toda la ciudad que no está pensado para estudiantes.",
+        "Búsqueda, filtros, valoraciones y verificación de estudiante fueron lo más pedido, así que aquí van primero."
       ],
       faqEyebrow: "FAQ",
       faqTitle: "Preguntas que los estudiantes suelen hacer antes de confiar en un marketplace nuevo.",
@@ -1750,13 +1750,13 @@ mutableDictionaries.nl = {
       outletDescription: "Beschadigde maar bruikbare en urgente uitverkoopitems verdienen een eigen ervaring, geen verborgen filter.",
       outletBody: "CampusSwap behandelt Outlet als een echte onderscheidende laag voor lage budgetten, snelle uitverkoop en praktische hergebruik.",
       outletCta: "Bekijk Outlet",
-      testimonialsEyebrow: "Demo-testimonials",
-      testimonialsTitle: "Gezaaide proof points voor launchverhaal.",
-      testimonialsDescription: "Deze testimonials zijn demo-content om de launchstructuur te helpen vormgeven. Vervang ze na launch door echte studentfeedback.",
+      testimonialsEyebrow: "Wat studenten ons vertelden",
+      testimonialsTitle: "Tweedehands kopen is makkelijk. Het is alleen overal verspreid.",
+      testimonialsDescription: "Resultaten van onze pilot-enquête onder studenten in Maastricht, die bepalen waar CampusSwap zich op richt.",
       testimonials: [
-        "Demo-testimonial: ik kwam donderdag in Maastricht aan en had zondag al een bureau, lamp en fiets.",
-        "Demo-testimonial: mijn studio-spullen op een plek verkopen was veel rustiger dan schakelen tussen groepschats.",
-        "Demo-testimonial: de outlet-sectie hielp me een kamer inrichten zonder mijn eerste-maandbudget op te blazen."
+        "Gemiddeld 2,6 apps: studenten schakelen tussen Facebook Marketplace, WhatsApp-groepen en meer om basisspullen te kopen en verkopen.",
+        "Alle internationale studenten die we spraken gebruiken Facebook Marketplace, een stadsbreed kanaal dat niet voor studenten is gemaakt.",
+        "Zoeken, filters, beoordelingen en studentverificatie werden het vaakst gevraagd, dus die staan hier voorop."
       ],
       faqEyebrow: "FAQ",
       faqTitle: "Vragen die studenten meestal stellen voordat ze een nieuwe marktplaats vertrouwen.",

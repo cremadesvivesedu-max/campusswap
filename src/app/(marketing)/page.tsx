@@ -19,17 +19,17 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-28 pb-24">
-      <section className="mx-auto max-w-7xl px-6 pt-8">
-        <div className="grid gap-12 overflow-hidden rounded-[44px] bg-hero-grid px-8 py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
+      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-8">
+        <div className="grid gap-12 overflow-hidden rounded-[32px] bg-hero-grid px-6 py-10 sm:rounded-[44px] sm:px-8 sm:py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
           <div className="space-y-8">
             <Badge className="border-white/20 bg-white/10 text-white">
               {dictionary.marketing.home.heroBadge}
             </Badge>
             <div className="space-y-5">
-              <h1 className="max-w-3xl font-display text-5xl font-semibold tracking-tight sm:text-6xl">
+              <h1 className="max-w-3xl font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
                 {dictionary.marketing.home.heroTitle}
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-slate-200">
+              <p className="max-w-2xl text-base leading-7 text-slate-200 sm:text-lg sm:leading-8">
                 {dictionary.marketing.home.heroBody}
               </p>
             </div>
@@ -131,7 +131,7 @@ export default async function HomePage() {
           title={dictionary.marketing.home.featuredTitle}
           description={dictionary.marketing.home.featuredDescription}
         />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featured.slice(0, 3).map((listing) => (
             <ListingCard
               key={listing.id}

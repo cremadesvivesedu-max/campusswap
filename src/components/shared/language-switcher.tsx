@@ -17,7 +17,7 @@ export function LanguageSwitcher({ tone = "light" }: { tone?: "light" | "dark" }
           : "border-slate-200 bg-white text-slate-700"
       }`}
     >
-      <span className="hidden text-xs font-semibold uppercase tracking-[0.16em] md:inline">
+      <span className="hidden text-xs font-semibold uppercase tracking-[0.16em] xl:inline">
         {dictionary.languageSwitcher.label}
       </span>
       <select

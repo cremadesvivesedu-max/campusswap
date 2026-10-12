@@ -9,6 +9,7 @@ import { VerificationPromptCard } from "@/components/shared/verification-prompt-
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { FloatingSellButton } from "@/components/shared/floating-sell-button";
 import { AppHeaderActivityShell } from "@/components/shared/app-header-activity-shell";
+import { MobileAppNav } from "@/components/shared/mobile-app-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function AppLayout({
                 {dictionary.site.publicTagline}
               </p>
             </div>
-            <nav className="-mx-1 flex w-[calc(100%+0.5rem)] max-w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200/80 bg-white/75 p-1 text-xs text-slate-600 shadow-sm [scrollbar-width:none] sm:mx-0 sm:w-auto sm:text-sm [&::-webkit-scrollbar]:hidden">
+            <nav className="-mx-1 hidden w-[calc(100%+0.5rem)] max-w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200/80 bg-white/75 p-1 text-xs text-slate-600 shadow-sm [scrollbar-width:none] sm:mx-0 sm:w-auto sm:text-sm sm:flex [&::-webkit-scrollbar]:hidden">
               {appNav.map((item) => (
                 <Link
                   key={item.href}
@@ -51,11 +52,12 @@ export default async function AppLayout({
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 pb-28 pt-6 sm:px-6 sm:py-10">
           <VerificationPromptCard user={user} />
           {children}
         </main>
         <FloatingSellButton />
+        <MobileAppNav />
       </div>
     </CurrentUserProvider>
   );
