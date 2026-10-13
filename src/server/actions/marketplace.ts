@@ -4088,3 +4088,43 @@ export async function markAllNotificationsReadAction(): Promise<ActionResult> {
     };
   }
 }
+
+export async function toggleConversationBlockAction(
+  conversationId: string
+): Promise<ActionResult & { blockedBy?: string | null }> {
+  if (!isLiveMode) {
+    return { success: false, message: "Switch to live mode to block a conversation." };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: conversation, error } = await supabase
+    .from("conversations")
+    .select("id, buyer_id, seller_id, blocked_by")
+    .eq("id", conversationId)
+    .maybeSingle();
+
+  if (error || !conversation) {
+    return { success: false, message: error?.message ?? "That conversation could not be found." };
+  }
+
+  if (conversation.buyer_id !== user.id && conversation.seller_id !== user.id) {
+    return { success: false, message: "Only people in this conversation can block it." };
+  }
+
+  if (conversation.blocked_by && conversation.blocked_by !== user.id) {
+    return { success: false, message: "Only the person who blocked this conversation can unblock it." };
+  }
+
+  const blockedBy = conversation.blocked_by ? null : user.id;
+  const { error: updateError } = await supabase
+    .from("conversations")
+    .update({ blocked_by: blockedBy })
+    .eq("id", conversationId);
+
+  if (updateError) {
+    return { success: false, message: updateError.message };
+  }
+
+  revalidatePath("/app/messages");
+  return { success: true, message: blockedBy ? "Conversation blocked." : "Conversation unblocked.", blockedBy };
+}

@@ -35,7 +35,8 @@ import {
   cancelTransactionAction,
   completeTransactionAction,
   releaseReservationAction,
-  reserveConversationBuyerAction
+  reserveConversationBuyerAction,
+  toggleConversationBlockAction
 } from "@/server/actions/marketplace";
 import type { ListingOffer, Transaction, User } from "@/types/domain";
 
@@ -70,6 +71,8 @@ interface ConversationShellProps {
   supportsAttachments: boolean;
   threadPanel?: ReactNode;
   sidebar?: ReactNode;
+  blockedBy?: string | null;
+  onToggleBlock?: () => void;
 }
 
 function formatDateTime(value?: string) {
@@ -285,7 +288,9 @@ function ConversationShell({
   isPending,
   supportsAttachments,
   threadPanel,
-  sidebar
+  sidebar,
+  blockedBy,
+  onToggleBlock
 }: ConversationShellProps) {
   const { dictionary } = useLocale();
   const [composerValue, setComposerValue] = useState("");
@@ -418,6 +423,20 @@ function ConversationShell({
             </div>
 
             <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
+              {blockedBy ? (
+                <div className="space-y-3 rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <p>
+                    {blockedBy === currentUserId
+                      ? dictionary.blocking.blockedByYou
+                      : dictionary.blocking.blockedByOther}
+                  </p>
+                  {blockedBy === currentUserId && onToggleBlock ? (
+                    <Button type="button" variant="outline" onClick={onToggleBlock} disabled={isPending}>
+                      {dictionary.blocking.unblock}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -540,7 +559,18 @@ function ConversationShell({
                 </div>
 
                 {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+                {onToggleBlock ? (
+                  <button
+                    type="button"
+                    onClick={onToggleBlock}
+                    disabled={isPending}
+                    className="text-xs font-medium text-slate-500 underline underline-offset-2 hover:text-rose-700"
+                  >
+                    {dictionary.blocking.block}
+                  </button>
+                ) : null}
               </div>
+              )}
             </div>
           </div>
         </Card>
@@ -691,6 +721,7 @@ function LiveConversationThread({
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [blockedOverride, setBlockedOverride] = useState<string | null | undefined>(undefined);
 
   if (!thread) {
     return (
@@ -757,6 +788,18 @@ function LiveConversationThread({
       sidebar={
         null
       }
+      blockedBy={blockedOverride !== undefined ? blockedOverride : thread.conversation.blockedBy ?? null}
+      onToggleBlock={() => {
+        startTransition(async () => {
+          setError(null);
+          const result = await toggleConversationBlockAction(conversationId);
+          if (!result.success) {
+            setError(result.message);
+            return;
+          }
+          setBlockedOverride(result.blockedBy ?? null);
+        });
+      }}
     />
   );
 }
