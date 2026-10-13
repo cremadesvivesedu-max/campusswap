@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Leaf, ShieldCheck, Sparkles } from "lucide-react";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
@@ -10,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories, getFeaturedListings } from "@/server/queries/marketplace";
 
+const audienceImages = [
+  "/images/home/incoming-student.jpg",
+  "/images/home/outgoing-boxes.jpg",
+  "/images/home/budget-market.jpg",
+  "/images/home/community.jpg"
+];
+
 export default async function HomePage() {
   const [featured, categories, dictionary] = await Promise.all([
     getFeaturedListings(),
@@ -20,7 +28,19 @@ export default async function HomePage() {
   return (
     <div className="space-y-28 pb-24">
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-8">
-        <div className="grid gap-12 overflow-hidden rounded-[32px] bg-hero-grid px-6 py-10 sm:rounded-[44px] sm:px-8 sm:py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
+        <div className="relative isolate grid gap-12 overflow-hidden rounded-[32px] bg-hero-grid px-6 py-10 sm:rounded-[44px] sm:px-8 sm:py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
+          <Image
+            src="/images/home/hero-move-in.jpg"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            className="-z-20 object-cover object-[center_35%]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(10,22,44,0.94)_0%,rgba(10,22,44,0.82)_45%,rgba(10,22,44,0.45)_100%)]"
+          />
           <div className="space-y-8">
             <Badge className="border-white/20 bg-white/10 text-white">
               {dictionary.marketing.home.heroBadge}
@@ -68,8 +88,19 @@ export default async function HomePage() {
           description={dictionary.marketing.home.whyDescription}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          {dictionary.marketing.home.audiences.map((item) => (
-            <Card key={item.title} className="bg-white/96">
+          {dictionary.marketing.home.audiences.map((item, index) => (
+            <Card key={item.title} className="overflow-hidden bg-white/96">
+              {audienceImages.at(index) ? (
+                <div className="relative aspect-[16/9] bg-slate-100">
+                  <Image
+                    src={audienceImages.at(index) ?? ""}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
               <CardHeader>
                 <h3 className="font-display text-xl font-semibold text-slate-950">
                   {item.title}
@@ -144,11 +175,22 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.trustEyebrow}
-          title={dictionary.marketing.home.trustTitle}
-          description={dictionary.marketing.home.trustDescription}
-        />
+        <div className="space-y-6">
+          <SectionHeading
+            eyebrow={dictionary.marketing.home.trustEyebrow}
+            title={dictionary.marketing.home.trustTitle}
+            description={dictionary.marketing.home.trustDescription}
+          />
+          <div className="relative aspect-[3/2] overflow-hidden rounded-[28px] bg-slate-100 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+            <Image
+              src="/images/home/trust-exchange.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="object-cover"
+            />
+          </div>
+        </div>
         <div className="grid gap-4">
           {dictionary.marketing.home.trustSignals.map((signal) => (
             <Card key={signal} className="bg-white/96">

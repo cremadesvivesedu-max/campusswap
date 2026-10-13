@@ -12,7 +12,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/12 bg-slate-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 sm:py-4">
-        <BrandLogo href="/" tone="light" imageClassName="h-8 sm:h-10" />
+        <BrandLogo href="/" tone="light" imageClassName="h-9 sm:h-11" />
         <nav className="hidden items-center gap-1 rounded-full border border-white/12 bg-white/[0.07] p-1 lg:flex">
           {publicNav.map((item) => (
             <Link

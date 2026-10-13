@@ -1,19 +1,33 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getCategoryBrowseHref } from "@/lib/category-links";
+import { getCategoryImage } from "@/lib/category-images";
 import type { Category } from "@/types/domain";
 
 export function CategoryLinkCard({ category }: { category: Category }) {
   const { dictionary } = useLocale();
   const href = getCategoryBrowseHref(category.slug);
+  const image = getCategoryImage(category.slug);
 
   return (
     <Link href={href} className="group block h-full">
-      <Card className="h-full bg-white transition group-hover:-translate-y-0.5 group-hover:border-slate-300 group-hover:shadow-glow">
+      <Card className="h-full overflow-hidden bg-white transition group-hover:-translate-y-0.5 group-hover:border-slate-300 group-hover:shadow-glow">
+        {image ? (
+          <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+            <Image
+              src={image}
+              alt=""
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover transition duration-500 group-hover:scale-105"
+            />
+          </div>
+        ) : null}
         <CardHeader className="space-y-3">
           <div
             className="h-2 w-14 rounded-full"

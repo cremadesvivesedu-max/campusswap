@@ -18,8 +18,8 @@ export function BrandLogo({
 }: BrandLogoProps) {
   const src =
     tone === "light"
-      ? "/brand/campusswap-logo-light.svg"
-      : "/brand/campusswap-logo-dark.svg";
+      ? "/brand/campusswap-logo-light.png"
+      : "/brand/campusswap-logo-dark.png";
 
   return (
     <Link
