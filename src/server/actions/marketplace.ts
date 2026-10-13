@@ -931,6 +931,9 @@ async function hardDeleteListingIfSafe(listingId: string) {
   const imageUrls = (((imageRows as { url: string }[] | null) ?? []).map((row) => row.url));
 
   await Promise.all([
+    // Analytics rows keep the event but drop the link (app_events.listing_id has no
+    // ON DELETE rule, so leaving it would block the delete).
+    db.from("app_events").update({ listing_id: null }).eq("listing_id", listingId),
     db.from("favorites").delete().eq("listing_id", listingId),
     db.from("view_events").delete().eq("listing_id", listingId),
     db.from("recommendation_events").delete().eq("listing_id", listingId),
@@ -944,7 +947,12 @@ async function hardDeleteListingIfSafe(listingId: string) {
     .eq("id", listingId);
 
   if (listingDeleteError) {
-    throw new Error(listingDeleteError.message);
+    // Something else still points at this listing: hide it instead of failing.
+    console.error("Hard delete failed, hiding listing instead:", listingDeleteError.message);
+    return {
+      hardDeleted: false,
+      historyFlags
+    };
   }
 
   const storagePaths = imageUrls
