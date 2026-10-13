@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
+import { notifySavedSearchMatchesForListingId } from "@/server/services/saved-search-alerts";
 import type { ListingStatus, ReportStatus, SupportTicketStatus } from "@/types/domain";
 
 interface AdminActionResult {
@@ -40,6 +41,11 @@ export async function updateAdminListingAction(
   }
 
   const { supabase } = await requireAdminActionContext();
+  const { data: previous } = await supabase
+    .from("listings")
+    .select("status")
+    .eq("id", listingId)
+    .maybeSingle();
   const { error } = await supabase
     .from("listings")
     .update({
@@ -52,6 +58,11 @@ export async function updateAdminListingAction(
 
   if (error) {
     return;
+  }
+
+  // Approving a listing from moderation is when it first becomes visible.
+  if (status === "active" && previous?.status !== "active") {
+    await notifySavedSearchMatchesForListingId(listingId);
   }
 
   revalidatePath("/admin/listings");

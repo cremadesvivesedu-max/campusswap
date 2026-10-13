@@ -29,7 +29,18 @@ export function wantsEmail(preferences: unknown, preference: EmailPreference | n
   return preferences.includes(preference);
 }
 
-export function preferenceForNotificationType(type: string): EmailPreference | null {
+/** Saved-search alerts are stored as "listing" notifications; their titles tell them apart. */
+export const SAVED_SEARCH_ALERT_TITLES = {
+  newMatch: "New listing for a saved search",
+  priceDrop: "Price drop for a saved search"
+} as const;
+
+const savedSearchAlertTitles = new Set<string>(Object.values(SAVED_SEARCH_ALERT_TITLES));
+
+export function preferenceForNotificationType(type: string, title = ""): EmailPreference | null {
+  if (type === "listing" && savedSearchAlertTitles.has(title)) {
+    return "saved_searches";
+  }
   return type in notificationTypePreference ? notificationTypePreference[type] : "listing_updates";
 }
 

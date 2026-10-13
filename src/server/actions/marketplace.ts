@@ -3645,12 +3645,33 @@ export async function saveSearchAction(
     };
   }
 
+  // Saving a search is an explicit request for alerts, so switch them on.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("notification_preferences")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const preferences =
+    ((profile as { notification_preferences?: string[] | null } | null)
+      ?.notification_preferences ?? []) as string[];
+  const alertsWereOff = !preferences.includes("saved_searches");
+
+  if (alertsWereOff) {
+    await supabase
+      .from("profiles")
+      .update({ notification_preferences: [...preferences, "saved_searches"] })
+      .eq("user_id", user.id);
+    revalidatePath("/app/settings");
+  }
+
   revalidatePath("/app/search");
   revalidatePath("/app/saved");
 
   return {
     success: true,
-    message: "Search saved. CampusSwap will watch for matching listings."
+    message: alertsWereOff
+      ? "Search saved and alerts turned on. We'll notify you when a matching listing appears."
+      : "Search saved. We'll notify you when a matching listing appears."
   };
 }
 

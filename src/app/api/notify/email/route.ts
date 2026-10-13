@@ -114,7 +114,10 @@ export async function POST(request: Request) {
 
     if (payload.type === "INSERT" && payload.table === "notifications") {
       const recipient = await loadRecipient(admin, String(record.user_id ?? ""));
-      const preference = preferenceForNotificationType(String(record.type ?? ""));
+      const preference = preferenceForNotificationType(
+        String(record.type ?? ""),
+        String(record.title ?? "")
+      );
       if (!recipient.email || !wantsEmail(recipient.preferences, preference)) {
         return NextResponse.json({ skipped: "opted-out" });
       }
