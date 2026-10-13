@@ -25,6 +25,7 @@ import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-button";
+import { ShareListingButtons } from "@/components/marketplace/share-listing-buttons";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { Button } from "@/components/ui/button";
 
@@ -187,6 +188,7 @@ export default async function ListingDetailPage({
                   />
                 ) : null}
               </div>
+              <ShareListingButtons listingId={listing.id} title={listing.title} />
               {!isOwnListing ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Button asChild variant="outline" className="w-full">

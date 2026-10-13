@@ -2,9 +2,15 @@ import { redirectIfAuthenticated } from "@/lib/auth/server";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { LoginForm } from "@/components/forms/login-form";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { sanitizeInternalPath } from "@/lib/site-url";
 
-export default async function LoginPage() {
-  await redirectIfAuthenticated("/app");
+export default async function LoginPage({
+  searchParams
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  await redirectIfAuthenticated(sanitizeInternalPath(next, "/app"));
   const dictionary = await getDictionaryForRequest();
 
   return (
