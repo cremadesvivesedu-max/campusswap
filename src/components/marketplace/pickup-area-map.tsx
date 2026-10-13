@@ -37,7 +37,7 @@ export function PickupAreaMap({
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-          <div className="relative min-h-[360px] overflow-hidden border-b border-slate-100 bg-[radial-gradient(circle_at_top,#f7f4ee,white_58%,#d7f6ec)] lg:min-h-[430px] lg:border-b-0 lg:border-r">
+          <div className="relative min-h-[360px] overflow-hidden border-b border-slate-100 bg-[radial-gradient(circle_at_top,#f7f4ee,white_58%,#d9f1e3)] lg:min-h-[430px] lg:border-b-0 lg:border-r">
             <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] [background-size:32px_32px]" />
 
             <svg

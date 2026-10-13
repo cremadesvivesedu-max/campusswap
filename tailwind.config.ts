@@ -11,6 +11,8 @@ const config: Config = {
         border: "var(--border)",
         muted: "var(--muted)",
         primary: "var(--primary)",
+        "brand-blue": "var(--brand-blue)",
+        "brand-navy": "var(--brand-navy)",
         secondary: "var(--secondary)",
         accent: "var(--accent)",
         success: "var(--success)",
@@ -25,7 +27,7 @@ const config: Config = {
         glow: "0 20px 80px rgba(17, 24, 39, 0.12)"
       },
       backgroundImage: {
-        "hero-grid": "radial-gradient(circle at top left, rgba(111, 255, 214, 0.22), transparent 35%), radial-gradient(circle at top right, rgba(254, 226, 164, 0.28), transparent 28%), linear-gradient(135deg, rgba(12, 29, 56, 0.96), rgba(16, 42, 66, 0.9))"
+        "hero-grid": "radial-gradient(circle at top left, rgba(0, 160, 232, 0.28), transparent 38%), radial-gradient(circle at top right, rgba(61, 176, 112, 0.24), transparent 30%), linear-gradient(135deg, rgba(20, 36, 70, 0.97), rgba(32, 56, 96, 0.92))"
       }
     }
   },
