@@ -30,6 +30,7 @@ import {
 } from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
+import { compressImages } from "@/lib/image-compression";
 import {
   cancelTransactionAction,
   completeTransactionAction,
@@ -490,10 +491,12 @@ function ConversationShell({
                             accept="image/*"
                             multiple
                             className="hidden"
-                            onChange={(event) =>
+                            onChange={async (event) =>
                               setPendingAttachments(
-                                Array.from(event.target.files ?? []).filter((file) =>
-                                  file.type.startsWith("image/")
+                                await compressImages(
+                                  Array.from(event.target.files ?? []).filter((file) =>
+                                    file.type.startsWith("image/")
+                                  )
                                 )
                               )
                             }

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ListingImage } from "@/components/marketplace/listing-image";
+import { compressFileInput } from "@/lib/image-compression";
 import type { Category, Listing } from "@/types/domain";
 
 interface ListingFormProps {
@@ -43,6 +44,7 @@ export function ListingForm({
   const [pickupEnabled, setPickupEnabled] = useState(
     initialListing?.pickupAvailable ?? true
   );
+  const [compressingPhotos, setCompressingPhotos] = useState(false);
   const [shippingEnabled, setShippingEnabled] = useState(
     initialListing?.shippingAvailable ?? false
   );
@@ -172,7 +174,21 @@ export function ListingForm({
             ? dictionary.listingForm.addMorePhotos
             : dictionary.listingForm.listingPhotos}
         </span>
-        <input name="images" type="file" accept="image/*" multiple className="w-full text-sm" />
+        <input
+          name="images"
+          type="file"
+          accept="image/*"
+          multiple
+          className="w-full text-sm"
+          onChange={async (event) => {
+            setCompressingPhotos(true);
+            try {
+              await compressFileInput(event.currentTarget);
+            } finally {
+              setCompressingPhotos(false);
+            }
+          }}
+        />
       </label>
       {isEditing && initialListing?.images.length ? (
         <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm text-slate-700">
@@ -261,8 +277,10 @@ export function ListingForm({
           )
         ) : null}
       </div>
-      <Button className="w-full" type="submit">
-        {isEditing
+      <Button className="w-full" type="submit" disabled={compressingPhotos}>
+        {compressingPhotos
+          ? dictionary.common.actions.updating
+          : isEditing
           ? dictionary.listingForm.saveChanges
           : dictionary.listingForm.publishListing}
       </Button>

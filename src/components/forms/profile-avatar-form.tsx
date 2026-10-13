@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, RotateCcw } from "lucide-react";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { Button } from "@/components/ui/button";
+import { compressFileInput } from "@/lib/image-compression";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   clearProfileAvatarAction,
@@ -69,11 +70,13 @@ export function ProfileAvatarForm({ user }: ProfileAvatarFormProps) {
             accept="image/*"
             className="hidden"
             name="avatar"
-            onChange={() => {
-              const form = inputRef.current?.form;
-              if (form) {
-                form.requestSubmit();
+            onChange={async () => {
+              const input = inputRef.current;
+              if (!input?.form) {
+                return;
               }
+              await compressFileInput(input);
+              input.form.requestSubmit();
             }}
           />
 
