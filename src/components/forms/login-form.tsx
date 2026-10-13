@@ -9,6 +9,7 @@ import { hasSupabaseBrowserConfig, isLiveClientMode } from "@/lib/public-env";
 import { sanitizeInternalPath } from "@/lib/site-url";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/forms/google-sign-in-button";
 import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
@@ -62,6 +63,7 @@ export function LoginForm() {
         });
       }}
     >
+      <GoogleSignInButton />
       <div className="grid gap-4">
         <Input
           type="email"

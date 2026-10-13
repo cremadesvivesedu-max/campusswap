@@ -10,6 +10,7 @@ import { buildSiteUrl, sanitizeInternalPath } from "@/lib/site-url";
 import { getEmailDomain } from "@/lib/verification";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/forms/google-sign-in-button";
 import { Input } from "@/components/ui/input";
 
 interface SignupFormProps {
@@ -106,6 +107,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
         });
       }}
     >
+      <GoogleSignInButton />
       <div className="grid gap-4">
         <Input
           name="name"
