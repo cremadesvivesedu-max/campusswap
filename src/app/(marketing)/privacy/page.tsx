@@ -6,7 +6,7 @@ export default function PrivacyPage() {
       eyebrow="Privacy Policy"
       title="CampusSwap handles marketplace data with a practical student-safety mindset."
       description="This policy explains what CampusSwap collects, why it is used, how payment and support data are handled, and how users can contact us about privacy questions."
-      lastUpdated="April 22, 2026"
+      lastUpdated="October 13, 2026"
       quickLinks={[
         { href: "/terms", label: "Terms" },
         { href: "/refund-policy", label: "Refunds & disputes" },
@@ -42,6 +42,39 @@ export default function PrivacyPage() {
           paragraphs: [
             "If you report a user, report a listing, open a dispute, or contact support, CampusSwap stores the details you submit together with any relevant listing, conversation, order, or account context. This helps us review the issue fairly and keep a record of actions taken.",
             "Moderation and safety records may be retained longer than ordinary browsing data when necessary to investigate abuse, repeat misconduct, payment risk, chargebacks, fraud, or community safety concerns."
+          ]
+        },
+        {
+          title: "Emails we send",
+          paragraphs: [
+            "CampusSwap sends account emails (sign-up confirmation, password reset) and activity emails when something needs your attention: the first new message in a conversation, an offer, a sale, or an update about your listing or order. Email delivery is handled by Resend.",
+            "You can switch activity emails off per type in Settings. Safety and account notices are always sent."
+          ]
+        },
+        {
+          title: "Cookies and similar technologies",
+          paragraphs: [
+            "CampusSwap only uses cookies that the service needs to work: a login session cookie so you stay signed in, and a language cookie that is set when you choose a language. We do not use advertising or third-party tracking cookies, so there is no cookie banner.",
+            "To improve the product we record a small set of in-app events on our own servers (for example sign-up, listing created, checkout completed), linked to your account. These events do not use cookies and are never shared with advertisers."
+          ]
+        },
+        {
+          title: "Who processes data for us",
+          paragraphs: [
+            "CampusSwap relies on a few service providers that process data on our behalf: Supabase (database, login and file storage), Vercel (website hosting), Stripe (payments and seller payouts) and Resend (email delivery). Each only receives what it needs to provide its part of the service."
+          ]
+        },
+        {
+          title: "Anti-abuse protection",
+          paragraphs: [
+            "To keep the marketplace free of spam, CampusSwap limits how many messages, listings, offers and reports one account can create in a short period. These limits are checked automatically and are not used for anything else."
+          ]
+        },
+        {
+          title: "Your rights, downloads and account deletion",
+          paragraphs: [
+            "You can download a copy of your data and delete your account yourself in Settings. Deleting your account erases your name, email address, photo and bio, takes your listings offline and ends your access. Messages you already sent stay in the other person's chat history without your name, and order records are kept where the law or open disputes require it.",
+            "You also have the right to ask for access, correction, restriction or objection, and to complain to the Dutch Data Protection Authority (Autoriteit Persoonsgegevens)."
           ]
         },
         {

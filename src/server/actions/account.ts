@@ -27,7 +27,8 @@ const personalData: [table: string, column: string][] = [
   ["saved_searches", "user_id"],
   ["notifications", "user_id"],
   ["reports", "reporter_id"],
-  ["support_tickets", "user_id"]
+  ["support_tickets", "user_id"],
+  ["app_events", "actor_user_id"]
 ];
 
 export async function exportMyDataAction(): Promise<AccountResult> {
