@@ -88,9 +88,19 @@ export default async function ProfilePage({
             </div>
           </div>
           {isOwnProfile ? (
-            <Button asChild>
-              <Link href="/app/profile/edit">{dictionary.profile.editProfile}</Link>
-            </Button>
+            // On phones the bottom bar has no Settings or My listings, so the
+            // profile (reached from the avatar) is the way in.
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <Link href="/app/profile/edit">{dictionary.profile.editProfile}</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/app/my-listings">{dictionary.myListings.eyebrow}</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/app/settings">{dictionary.nav.app.settings}</Link>
+              </Button>
+            </div>
           ) : (
             <Button asChild variant="outline">
               <Link href={`/app/support?type=report-user&targetUserId=${profileUser.id}`}>
