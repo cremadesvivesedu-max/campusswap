@@ -1,5 +1,6 @@
 import { SettingsStripeConnectCard } from "@/components/forms/settings-stripe-connect-card";
 import { SettingsNotificationPreferencesForm } from "@/components/forms/settings-notification-preferences-form";
+import { AccountDataCard } from "@/components/forms/account-data-card";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -53,10 +54,9 @@ export default async function SettingsPage({
             </h2>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
-            <p>{dictionary.settings.requestDataExport}</p>
-            <p>{dictionary.settings.requestAccountDeletion}</p>
             <p>{dictionary.settings.reviewVerification}</p>
             <LogoutButton />
+            <AccountDataCard />
           </CardContent>
         </Card>
         <Card className="bg-white">
