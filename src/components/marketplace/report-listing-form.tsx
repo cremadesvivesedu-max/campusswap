@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useLocale } from "@/components/providers/locale-provider";
+import { friendlyError } from "@/lib/friendly-error";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { submitListingReportAction } from "@/server/actions/marketplace";
@@ -12,6 +14,7 @@ const initialState = {
 };
 
 export function ReportListingForm({ listingId }: { listingId: string }) {
+  const { dictionary } = useLocale();
   const [state, formAction, pending] = useActionState(
     submitListingReportAction,
     initialState
@@ -34,7 +37,7 @@ export function ReportListingForm({ listingId }: { listingId: string }) {
       </Button>
       {state.message ? (
         <p className={`text-xs ${state.success ? "text-emerald-700" : "text-rose-700"}`}>
-          {state.message}
+          {friendlyError(state.message, dictionary)}
         </p>
       ) : null}
     </form>

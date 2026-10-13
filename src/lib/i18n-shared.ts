@@ -14,6 +14,7 @@ export const dictionaries = {
   en: {
     localeLabel: "English",
     languageSwitcher: { label: "Language" },
+    limits: { tooFast: "You are going a bit fast. Wait a few minutes and try again." },
     blocking: { block: "Block this person", unblock: "Unblock", blockedByYou: "You blocked this conversation. Neither of you can send messages until you unblock it.", blockedByOther: "This conversation was closed by the other person. You can no longer send messages here." },
     sharePage: { eyebrow: "Shared from CampusSwap", cta: "See it on CampusSwap", ctaHint: "Log in or create a free account to message the seller.", signup: "Create a free account", pickup: "Pickup area", condition: "Condition", notFoundTitle: "This listing is no longer available", notFoundBody: "It may have been sold or removed. Browse similar items on CampusSwap.", browse: "Browse items", share: "Share", copied: "Link copied", shareWhatsapp: "Send on WhatsApp", copyLink: "Copy link", shareText: "Look what I found on CampusSwap:" },
     nav: {
@@ -951,6 +952,7 @@ mutableDictionaries.es = {
   ...mutableDictionaries.en,
   localeLabel: "Espanol",
   languageSwitcher: { label: "Idioma" },
+  limits: { tooFast: "Vas un poco rápido. Espera unos minutos y vuelve a intentarlo." },
   blocking: { block: "Bloquear a esta persona", unblock: "Desbloquear", blockedByYou: "Has bloqueado esta conversación. Nadie puede enviar mensajes hasta que la desbloquees.", blockedByOther: "La otra persona ha cerrado esta conversación. Ya no puedes enviar mensajes aquí." },
   sharePage: { eyebrow: "Compartido desde CampusSwap", cta: "Verlo en CampusSwap", ctaHint: "Entra o crea una cuenta gratis para escribir al vendedor.", signup: "Crear cuenta gratis", pickup: "Zona de recogida", condition: "Estado", notFoundTitle: "Este anuncio ya no está disponible", notFoundBody: "Puede que se haya vendido o retirado. Mira artículos parecidos en CampusSwap.", browse: "Ver artículos", share: "Compartir", copied: "Enlace copiado", shareWhatsapp: "Enviar por WhatsApp", copyLink: "Copiar enlace", shareText: "Mira lo que he encontrado en CampusSwap:" },
   nav: {
@@ -1410,6 +1412,7 @@ mutableDictionaries.nl = {
   ...mutableDictionaries.en,
   localeLabel: "Nederlands",
   languageSwitcher: { label: "Taal" },
+  limits: { tooFast: "Je gaat iets te snel. Wacht een paar minuten en probeer het opnieuw." },
   blocking: { block: "Deze persoon blokkeren", unblock: "Deblokkeren", blockedByYou: "Je hebt dit gesprek geblokkeerd. Niemand kan berichten sturen tot je het deblokkeert.", blockedByOther: "De ander heeft dit gesprek gesloten. Je kunt hier geen berichten meer sturen." },
   sharePage: { eyebrow: "Gedeeld via CampusSwap", cta: "Bekijk op CampusSwap", ctaHint: "Log in of maak gratis een account aan om de verkoper te berichten.", signup: "Gratis account maken", pickup: "Ophaalzone", condition: "Staat", notFoundTitle: "Deze advertentie is niet meer beschikbaar", notFoundBody: "Misschien is het verkocht of verwijderd. Bekijk vergelijkbare spullen op CampusSwap.", browse: "Spullen bekijken", share: "Delen", copied: "Link gekopieerd", shareWhatsapp: "Versturen via WhatsApp", copyLink: "Link kopiëren", shareText: "Kijk wat ik vond op CampusSwap:" },
   nav: {

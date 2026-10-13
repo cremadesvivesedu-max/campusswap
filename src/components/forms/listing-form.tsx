@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { compressFileInput } from "@/lib/image-compression";
+import { friendlyError } from "@/lib/friendly-error";
 import type { Category, Listing } from "@/types/domain";
 
 interface ListingFormProps {
@@ -286,7 +287,7 @@ export function ListingForm({
       </Button>
       {state.message ? (
         <p className={`text-sm ${state.success ? "text-slate-600" : "text-rose-700"}`}>
-          {state.message}
+          {friendlyError(state.message, dictionary)}
         </p>
       ) : null}
     </form>

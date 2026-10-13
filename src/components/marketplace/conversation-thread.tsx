@@ -31,6 +31,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
 import { compressImages } from "@/lib/image-compression";
+import { friendlyError } from "@/lib/friendly-error";
 import {
   cancelTransactionAction,
   completeTransactionAction,
@@ -558,7 +559,7 @@ function ConversationShell({
                   </div>
                 </div>
 
-                {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+                {error ? <p className="text-sm font-medium text-rose-700">{friendlyError(error, dictionary)}</p> : null}
                 {onToggleBlock ? (
                   <button
                     type="button"

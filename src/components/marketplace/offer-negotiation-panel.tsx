@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/providers/locale-provider";
+import { friendlyError } from "@/lib/friendly-error";
 import {
   acceptOfferAction,
   counterOfferAction,
@@ -276,7 +277,7 @@ export function OfferNegotiationPanel({
       ) : null}
 
       {feedback ? <p className="text-sm font-medium text-emerald-700">{feedback}</p> : null}
-      {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-rose-700">{friendlyError(error, dictionary)}</p> : null}
     </div>
   );
 }

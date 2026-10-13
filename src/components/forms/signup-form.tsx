@@ -24,6 +24,8 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Honeypot: hidden from people, filled in by most form bots.
+  const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,6 +35,11 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
       className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
       onSubmit={(event) => {
         event.preventDefault();
+
+        if (website) {
+          setStatus("Account created. Check your inbox.");
+          return;
+        }
 
         if (!acceptedTerms) {
           setError(dictionary.auth.signup.acceptTermsRequired);
@@ -121,6 +128,16 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
       </div>
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={website}
+        onChange={(event) => setWebsite(event.target.value)}
+        className="absolute -left-[9999px] h-0 w-0 opacity-0"
+      />
       <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           name="acceptTerms"

@@ -8,6 +8,7 @@ import { useOptionalCurrentUser } from "@/components/providers/current-user-prov
 import { useLocale } from "@/components/providers/locale-provider";
 import { getVerificationStatusLabel } from "@/lib/verification";
 import { cn } from "@/lib/utils";
+import { friendlyError } from "@/lib/friendly-error";
 import { isLiveClientMode } from "@/lib/public-env";
 import { ensureConversationForListing } from "@/features/messaging/demo-messaging-store";
 import { ensureLiveConversationForListing } from "@/features/messaging/live-messaging";
@@ -113,7 +114,7 @@ export function MessageSellerButton({
       {verificationNotice && !compact ? (
         <p className="text-xs font-medium text-slate-600">{verificationNotice}</p>
       ) : null}
-      {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
+      {error ? <p className="text-xs font-medium text-rose-700">{friendlyError(error, dictionary)}</p> : null}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "@/components/providers/locale-provider";
+import { friendlyError } from "@/lib/friendly-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +49,7 @@ export function SupportEntryForm({
   transactionId,
   targetUserId
 }: SupportEntryFormProps) {
+  const { dictionary } = useLocale();
   const [state, formAction, pending] = useActionState(
     submitSupportEntryAction,
     initialState
@@ -104,7 +107,7 @@ export function SupportEntryForm({
         </Button>
         {state.message ? (
           <p className={`text-sm ${state.success ? "text-emerald-700" : "text-rose-700"}`}>
-            {state.message}
+            {friendlyError(state.message, dictionary)}
           </p>
         ) : null}
       </div>
