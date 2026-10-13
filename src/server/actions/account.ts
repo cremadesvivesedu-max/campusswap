@@ -1,6 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { isLiveMode } from "@/lib/env";
+import { MOVE_OUT_METADATA_KEY, parseMoveOutDate } from "@/features/profile/moving-sale";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/server/queries/marketplace";
@@ -119,4 +121,39 @@ export async function deleteMyAccountAction(confirmation: string, expectedWord: 
   await supabase?.auth.signOut();
 
   return { ok: true };
+}
+
+type MoveOutResult = { success: boolean; message: string; moveOutDate?: string | null };
+
+/** Save or clear the seller's moving day (kept in auth user metadata, no schema change). */
+export async function updateMoveOutDateAction(
+  _: MoveOutResult,
+  formData: FormData
+): Promise<MoveOutResult> {
+  const clearing = formData.get("intent") === "clear";
+  const moveOutDate = clearing ? null : parseMoveOutDate(formData.get("moveOutDate"));
+
+  if (!clearing && !moveOutDate) {
+    return { success: false, message: "invalid-date" };
+  }
+
+  if (!isLiveMode) {
+    return { success: true, message: clearing ? "cleared" : "saved", moveOutDate };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  if (!supabase) {
+    return { success: false, message: "Supabase is not configured." };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    data: { [MOVE_OUT_METADATA_KEY]: moveOutDate }
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  revalidatePath("/app/my-listings");
+  return { success: true, message: clearing ? "cleared" : "saved", moveOutDate };
 }

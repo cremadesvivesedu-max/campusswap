@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { ListingStatusActions } from "@/components/marketplace/listing-status-actions";
+import { MovingSaleCard } from "@/components/marketplace/moving-sale-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -12,13 +13,15 @@ import {
   getListingsForSeller,
   getSellerListingTransactions
 } from "@/server/queries/marketplace";
+import { getMyMoveOutDate } from "@/server/queries/moving-sale";
 
 export default async function MyListingsPage() {
   const user = await getCurrentUser();
-  const [listings, transactionsByListing, dictionary] = await Promise.all([
+  const [listings, transactionsByListing, dictionary, moveOutDate] = await Promise.all([
     getListingsForSeller(user.id),
     getSellerListingTransactions(user.id),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getMyMoveOutDate()
   ]);
 
   return (
@@ -28,6 +31,9 @@ export default async function MyListingsPage() {
         title={dictionary.myListings.title}
         description={dictionary.myListings.description}
       />
+      {listings.length ? (
+        <MovingSaleCard sellerId={user.id} initialMoveOutDate={moveOutDate} />
+      ) : null}
       {listings.length ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {listings.map((listing) => (
