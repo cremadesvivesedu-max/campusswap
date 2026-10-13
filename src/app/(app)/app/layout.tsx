@@ -8,6 +8,7 @@ import { CurrentUserProvider } from "@/components/providers/current-user-provide
 import { VerificationPromptCard } from "@/components/shared/verification-prompt-card";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { FloatingSellButton } from "@/components/shared/floating-sell-button";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { AppHeaderActivityShell } from "@/components/shared/app-header-activity-shell";
 import { MobileAppNav } from "@/components/shared/mobile-app-nav";
 
@@ -58,6 +59,7 @@ export default async function AppLayout({
         </main>
         <FloatingSellButton />
         <MobileAppNav />
+        <InstallPrompt />
       </div>
     </CurrentUserProvider>
   );

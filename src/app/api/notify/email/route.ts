@@ -11,9 +11,11 @@ import {
   shouldEmailForMessage,
   wantsEmail
 } from "@/server/services/email-notifications";
+import { sendPushToUser } from "@/server/services/push";
 
 // Called by two Supabase database webhooks (INSERT on public.messages and on
-// public.notifications). Sends the matching email through Resend.
+// public.notifications). Sends a push notification to the person's devices (if they
+// turned it on) and the matching email through Resend.
 
 export const runtime = "nodejs";
 
@@ -86,12 +88,9 @@ export async function POST(request: Request) {
       const recipientIsSeller = senderId === conversation.buyer_id;
       const recipientId = String(recipientIsSeller ? conversation.seller_id : conversation.buyer_id);
       const unread = Number(recipientIsSeller ? conversation.seller_unread_count : conversation.buyer_unread_count) || 0;
-      if (!shouldEmailForMessage(unread)) {
-        return NextResponse.json({ skipped: "already-notified" });
-      }
 
       const recipient = await loadRecipient(admin, recipientId);
-      if (!recipient.email || !wantsEmail(recipient.preferences, "messages")) {
+      if (!wantsEmail(recipient.preferences, "messages")) {
         return NextResponse.json({ skipped: "opted-out" });
       }
 
@@ -102,6 +101,19 @@ export async function POST(request: Request) {
       const senderName = sender.name.split(" ")[0] || "Someone";
       const listingTitle = (listing?.title as string | undefined) ?? "your listing";
       const preview = messagePreview(String(record.text ?? ""), Boolean(record.attachment_url));
+
+      // Push goes out for every message (one notification per chat, replaced in place);
+      // email only for the first unread message of a burst.
+      const push = await sendPushToUser(recipientId, {
+        title: `${senderName} · ${listingTitle}`,
+        body: preview || "Sent you a message.",
+        url: `/app/messages/${conversation.id}`,
+        tag: `conversation-${conversation.id}`
+      });
+      if (!recipient.email || !shouldEmailForMessage(unread)) {
+        return NextResponse.json({ push, email: "skipped" });
+      }
+
       const email = renderNotificationEmail({
         heading: `${senderName} sent you a message about ${listingTitle}`,
         body: preview || "Open the chat to read it.",
@@ -109,7 +121,7 @@ export async function POST(request: Request) {
         ctaUrl: `${siteUrl}/app/messages/${conversation.id}`,
         siteUrl
       });
-      return NextResponse.json(await send(recipient.email, `New message about ${listingTitle}`, email));
+      return NextResponse.json({ push, email: await send(recipient.email, `New message about ${listingTitle}`, email) });
     }
 
     if (payload.type === "INSERT" && payload.table === "notifications") {
@@ -118,12 +130,20 @@ export async function POST(request: Request) {
         String(record.type ?? ""),
         String(record.title ?? "")
       );
-      if (!recipient.email || !wantsEmail(recipient.preferences, preference)) {
+      if (!wantsEmail(recipient.preferences, preference)) {
         return NextResponse.json({ skipped: "opted-out" });
       }
 
       const title = String(record.title ?? "CampusSwap update");
       const href = String(record.destination_href ?? "") || "/app/notifications";
+      const push = await sendPushToUser(String(record.user_id ?? ""), {
+        title,
+        body: String(record.body ?? ""),
+        url: href.startsWith("/") ? href : "/app/notifications"
+      });
+      if (!recipient.email) {
+        return NextResponse.json({ push, email: "skipped" });
+      }
       const email = renderNotificationEmail({
         heading: title,
         body: String(record.body ?? ""),
@@ -131,7 +151,7 @@ export async function POST(request: Request) {
         ctaUrl: href.startsWith("/") ? `${siteUrl}${href}` : `${siteUrl}/app/notifications`,
         siteUrl
       });
-      return NextResponse.json(await send(recipient.email, title, email));
+      return NextResponse.json({ push, email: await send(recipient.email, title, email) });
     }
 
     return NextResponse.json({ skipped: "ignored-event" });

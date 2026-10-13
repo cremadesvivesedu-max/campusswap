@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "@/app/globals.css";
 import { LocaleProvider } from "@/components/providers/locale-provider";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { getDictionaryForRequest, getRequestLocale } from "@/lib/i18n";
 import { defaultMetadata } from "@/lib/seo";
 
@@ -33,6 +34,7 @@ export default async function RootLayout({
         <LocaleProvider locale={locale} dictionary={dictionary}>
           {children}
         </LocaleProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

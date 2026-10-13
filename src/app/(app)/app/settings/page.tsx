@@ -2,6 +2,8 @@ import { SettingsStripeConnectCard } from "@/components/forms/settings-stripe-co
 import { SettingsNotificationPreferencesForm } from "@/components/forms/settings-notification-preferences-form";
 import { AccountDataCard } from "@/components/forms/account-data-card";
 import { LogoutButton } from "@/components/shared/logout-button";
+import { PushToggle } from "@/components/pwa/push-toggle";
+import { env } from "@/lib/env";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
@@ -41,7 +43,10 @@ export default async function SettingsPage({
               {dictionary.settings.notificationsTitle}
             </h2>
           </CardHeader>
-          <CardContent className="text-sm leading-7 text-slate-600">
+          <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
+            {env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
+              <PushToggle vapidPublicKey={env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
+            ) : null}
             <SettingsNotificationPreferencesForm
               initialPreferences={user.profile.notificationPreferences}
             />

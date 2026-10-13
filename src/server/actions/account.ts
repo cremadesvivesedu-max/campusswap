@@ -27,6 +27,7 @@ const personalData: [table: string, column: string][] = [
   ["reviews", "target_user_id"],
   ["favorites", "user_id"],
   ["saved_searches", "user_id"],
+  ["push_subscriptions", "user_id"],
   ["notifications", "user_id"],
   ["reports", "reporter_id"],
   ["support_tickets", "user_id"],
@@ -53,6 +54,10 @@ export async function exportMyDataAction(): Promise<AccountResult> {
     }
     exported[`${table}.${column}`] = data ?? [];
   }
+
+  // Profile details kept on the auth account itself (for example the moving day).
+  const { data: authData } = await admin.auth.admin.getUserById(user.id);
+  exported["auth.user_metadata"] = authData?.user ? [authData.user.user_metadata ?? {}] : [];
 
   return {
     ok: true,
