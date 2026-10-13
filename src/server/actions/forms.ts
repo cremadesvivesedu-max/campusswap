@@ -78,10 +78,12 @@ async function insertNotificationSafely(
 }
 
 function readListingFormValues(formData: FormData): ListingFormValues {
+  const title = String(formData.get("title") ?? "").trim();
   return {
     listingId: String(formData.get("listingId") ?? "").trim() || undefined,
-    title: String(formData.get("title") ?? "").trim(),
-    description: String(formData.get("description") ?? "").trim(),
+    title,
+    // The description is optional in the quick sell flow; the title stands in for it.
+    description: String(formData.get("description") ?? "").trim() || title,
     pickupArea: String(formData.get("pickupArea") ?? "").trim(),
     pickupAvailable: formData.get("pickupAvailable") === "on",
     shippingAvailable: formData.get("shippingAvailable") === "on",

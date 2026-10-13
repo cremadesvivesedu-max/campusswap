@@ -158,14 +158,15 @@ export default async function SellPage({
               : dictionary.listingForm.createDescription
           }
         />
-        <Card className="bg-white">
+        {/* On phones the form itself carries the essentials; these explainers would push it off-screen. */}
+        <Card className="hidden bg-white lg:block">
           <CardContent className="space-y-3 p-5 text-sm leading-7 text-slate-600 sm:p-8">
             <p>{dictionary.listingForm.requirementsBody}</p>
             <p>{dictionary.listingForm.optionalControlsBody}</p>
             <p>{dictionary.listingForm.moderationBody}</p>
           </CardContent>
         </Card>
-        <Card className="border-emerald-200 bg-emerald-50/70">
+        <Card className="hidden border-emerald-200 bg-emerald-50/70 lg:block">
           <CardContent className="space-y-3 p-5 text-sm leading-7 text-emerald-950 sm:p-6">
             <p className="font-semibold">{dictionary.listingForm.firstUseTitle}</p>
             <ul className="space-y-2">
@@ -205,6 +206,7 @@ export default async function SellPage({
         featuredPrice={featuredPrice}
         promotionState={listingToEdit?.featured ? "active" : promotionState.state}
         paymentConfigured={paymentConfigured}
+        defaultPickupArea={user.profile.neighborhood}
       />
     </div>
   );
