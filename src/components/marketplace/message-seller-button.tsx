@@ -19,6 +19,8 @@ interface MessageSellerButtonProps {
   listingStatus?: ListingStatus;
   mode?: "chat" | "signup";
   className?: string;
+  /** Filled button without the verification note, for the sticky mobile bar. */
+  compact?: boolean;
 }
 
 export function MessageSellerButton({
@@ -26,7 +28,8 @@ export function MessageSellerButton({
   sellerId,
   listingStatus,
   mode = "chat",
-  className
+  className,
+  compact = false
 }: MessageSellerButtonProps) {
   const router = useRouter();
   const { dictionary } = useLocale();
@@ -74,7 +77,7 @@ export function MessageSellerButton({
       <Button
         className="w-full"
         type="button"
-        variant="outline"
+        variant={compact ? "primary" : "outline"}
         onClick={() => {
           setError(null);
           startTransition(async () => {
@@ -107,7 +110,7 @@ export function MessageSellerButton({
             ? dictionary.messages.actions.signUpToMessage
             : dictionary.messages.actions.messageSeller}
       </Button>
-      {verificationNotice ? (
+      {verificationNotice && !compact ? (
         <p className="text-xs font-medium text-slate-600">{verificationNotice}</p>
       ) : null}
       {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}

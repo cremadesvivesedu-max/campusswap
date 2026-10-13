@@ -344,6 +344,34 @@ export default async function ListingDetailPage({
           </CardContent>
         </Card>
       </div>
+      {/* Phones: keep price and the main action in reach, just above the bottom tab bar. */}
+      <div className="h-16 sm:hidden" aria-hidden="true" />
+      <div className="fixed inset-x-0 bottom-[calc(3.9rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200/80 bg-white/95 px-4 py-2.5 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-xl font-semibold leading-tight text-slate-950">
+              {formatCurrency(listing.price)}
+            </p>
+            <p className="truncate text-xs text-slate-500">{listing.title}</p>
+          </div>
+          <div className="w-[55%] shrink-0">
+            {isOwnListing ? (
+              <Button asChild variant="secondary" className="w-full">
+                <Link href={`/app/sell?listingId=${listing.id}`}>
+                  {dictionary.listing.editListing}
+                </Link>
+              </Button>
+            ) : (
+              <MessageSellerButton
+                listingId={listing.id}
+                sellerId={listing.sellerId}
+                listingStatus={listing.status}
+                compact
+              />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
