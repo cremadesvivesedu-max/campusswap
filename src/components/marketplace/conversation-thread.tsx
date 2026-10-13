@@ -63,6 +63,8 @@ interface ConversationShellProps {
     sentAt: string;
     attachmentName?: string;
     attachmentUrl?: string;
+    /** Shown straight away while it is still being sent. */
+    pending?: boolean;
   }[];
   quickActions: string[];
   currentUserId: string;
@@ -300,6 +302,19 @@ function ConversationShell({
   const messageListRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
 
+  function submitComposer() {
+    if (!composerValue.trim() && !pendingAttachments.length) {
+      return;
+    }
+
+    onSend(composerValue, pendingAttachments);
+    setComposerValue("");
+    setPendingAttachments([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
   useEffect(() => {
     const container = messageListRef.current;
 
@@ -323,11 +338,11 @@ function ConversationShell({
   }, [messages.length]);
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(300px,0.28fr)]">
-      <div className="space-y-4">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(300px,0.28fr)]">
+      <div className="min-w-0 space-y-4">
         <Card className="overflow-hidden bg-white">
-          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-            <div className="relative h-24 w-full overflow-hidden rounded-3xl bg-slate-100 sm:w-28">
+          <CardContent className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-slate-100 sm:h-24 sm:w-28 sm:rounded-3xl">
               <ListingImage
                 src={listingImageSrc}
                 alt={listingImageAlt}
@@ -335,32 +350,32 @@ function ConversationShell({
                 sizes="160px"
               />
             </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-1 sm:space-y-2">
               <Link
                 href={listingHref}
-                className="font-display text-2xl font-semibold text-slate-950"
+                className="block truncate font-display text-lg font-semibold text-slate-950 sm:text-2xl"
               >
                 {listingTitle}
               </Link>
               <Link
                 href={`/app/profile?userId=${sellerId}`}
-                className="inline-flex items-center gap-3 text-sm text-slate-600"
+                className="inline-flex items-center gap-2 text-sm text-slate-600"
               >
                 <ProfileAvatar
                   userId={sellerId}
                   name={sellerName}
                   src={sellerAvatar}
-                  className="h-10 w-10"
+                  className="h-6 w-6 sm:h-10 sm:w-10"
                 />
-                {sellerName}
+                <span className="truncate">{sellerName}</span>
+                <span className="hidden text-slate-400 sm:inline">· {listingPickupArea}</span>
               </Link>
-              <p className="text-sm leading-6 text-slate-500">{listingPickupArea}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="overflow-hidden bg-white">
-          <div className="flex min-h-[min(78dvh,760px)] flex-col">
+          <div className="flex h-[min(72dvh,760px)] flex-col">
             <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -372,7 +387,7 @@ function ConversationShell({
 
             <div
               ref={messageListRef}
-              className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6"
+              className="flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:px-6"
             >
               {messages.map((message) => {
                 const isOwnMessage = message.senderId === currentUserId;
@@ -382,13 +397,13 @@ function ConversationShell({
                     className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[88%] rounded-[28px] px-4 py-3 text-sm leading-7 shadow-sm sm:max-w-[78%] ${
+                      className={`max-w-[85%] rounded-[22px] px-4 py-2.5 text-[15px] leading-6 shadow-sm sm:max-w-[75%] ${
                         isOwnMessage
                           ? "bg-slate-950 text-white"
-                          : "border border-slate-200 bg-slate-100 text-slate-700"
-                      }`}
+                          : "border border-slate-200 bg-slate-100 text-slate-800"
+                      } ${message.pending ? "opacity-60" : ""}`}
                     >
-                      {message.text ? <p>{message.text}</p> : null}
+                      {message.text ? <p className="whitespace-pre-wrap break-words">{message.text}</p> : null}
                       {message.attachmentUrl && message.attachmentName ? (
                         <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -401,26 +416,23 @@ function ConversationShell({
                         </div>
                       ) : null}
                       <p
-                        className={`mt-2 text-xs ${
-                          isOwnMessage ? "text-slate-300" : "text-slate-500"
+                        className={`mt-1 text-right text-[11px] ${
+                          isOwnMessage ? "text-slate-400" : "text-slate-500"
                         }`}
                       >
-                        {new Date(message.sentAt).toLocaleString("en-GB", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
+                        {message.pending
+                          ? dictionary.messages.thread.sending
+                          : new Date(message.sentAt).toLocaleString("en-GB", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
                       </p>
                     </div>
                   </div>
                 );
               })}
-              {threadPanel ? (
-                <div className="pt-2">
-                  <div className="mx-auto max-w-3xl">{threadPanel}</div>
-                </div>
-              ) : null}
             </div>
 
             <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
@@ -439,16 +451,14 @@ function ConversationShell({
                 </div>
               ) : (
               <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {dictionary.messages.thread.quickReplies}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
+                  <p className="sr-only">{dictionary.messages.thread.quickReplies}</p>
+                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {quickActions.map((action) => (
                       <button
                         key={action}
                         type="button"
-                        className="rounded-full bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                        className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
                         onClick={() => onSend(action, [])}
                         disabled={isPending}
                       >
@@ -498,8 +508,18 @@ function ConversationShell({
                   <Textarea
                     value={composerValue}
                     onChange={(event) => setComposerValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      // Enter sends, Shift+Enter adds a line (never while an accented
+                      // character or emoji is still being composed).
+                      if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                        event.preventDefault();
+                        submitComposer();
+                      }
+                    }}
+                    rows={1}
+                    enterKeyHint="send"
                     placeholder={dictionary.messages.thread.messagePlaceholder}
-                    className="min-h-[112px] resize-none"
+                    className="max-h-40 min-h-[48px] resize-none py-3"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
@@ -537,24 +557,9 @@ function ConversationShell({
                         </Button>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (!composerValue.trim() && !pendingAttachments.length) {
-                          return;
-                        }
-
-                        onSend(composerValue, pendingAttachments);
-                        setComposerValue("");
-                        setPendingAttachments([]);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = "";
-                        }
-                      }}
-                      disabled={isPending}
-                    >
+                    <Button type="button" onClick={submitComposer}>
                       <Send className="mr-2 h-4 w-4" />
-                      {isPending ? dictionary.messages.thread.sending : dictionary.messages.thread.send}
+                      {dictionary.messages.thread.send}
                     </Button>
                   </div>
                 </div>
@@ -577,7 +582,8 @@ function ConversationShell({
         </Card>
       </div>
 
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
+        {threadPanel}
         <Card className="bg-white">
           <CardContent className="space-y-3 p-6 text-sm leading-7 text-slate-600">
             <p className="font-display text-xl font-semibold text-slate-950">
@@ -716,12 +722,15 @@ function LiveConversationThread({
   currentUserId
 }: ConversationThreadProps) {
   const { dictionary } = useLocale();
-  const { thread, error: threadError } = useLiveConversationThread(
+  const { thread, error: threadError, addMessages } = useLiveConversationThread(
     conversationId,
     currentUserId
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [outbox, setOutbox] = useState<
+    { id: string; senderId: string; text: string; sentAt: string; pending: true }[]
+  >([]);
   const [blockedOverride, setBlockedOverride] = useState<string | null | undefined>(undefined);
 
   if (!thread) {
@@ -746,29 +755,43 @@ function LiveConversationThread({
       sellerName={thread.seller.profile.fullName}
       sellerAvatar={thread.seller.avatar}
       sellerId={thread.seller.id}
-      messages={thread.messages.map((message) => ({
-        id: message.id,
-        senderId: message.senderId,
-        text: message.text,
-        sentAt: message.sentAt,
-        attachmentName: message.attachment?.name,
-        attachmentUrl: message.attachment?.url
-      }))}
+      messages={[
+        ...thread.messages.map((message) => ({
+          id: message.id,
+          senderId: message.senderId,
+          text: message.text,
+          sentAt: message.sentAt,
+          attachmentName: message.attachment?.name,
+          attachmentUrl: message.attachment?.url
+        })),
+        ...outbox
+      ]}
       quickActions={thread.conversation.quickActions}
       currentUserId={currentUserId}
       onSend={(text, files) => {
-        startTransition(async () => {
-          try {
-            setError(null);
-            await sendLiveConversationMessage(conversationId, currentUserId, text, files);
-          } catch (caughtError) {
+        // Show the text straight away and swap it for the saved message when the
+        // insert returns. Several messages can be in flight at once.
+        const cleanText = text.trim();
+        const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        if (cleanText) {
+          setOutbox((current) => [
+            ...current,
+            { id: tempId, senderId: currentUserId, text: cleanText, sentAt: new Date().toISOString(), pending: true }
+          ]);
+        }
+        setError(null);
+        void sendLiveConversationMessage(conversationId, currentUserId, text, files)
+          .then((sent) => addMessages(sent))
+          .catch((caughtError: unknown) => {
             setError(
               caughtError instanceof Error
                 ? caughtError.message
                 : dictionary.messages.inbox.loadErrorTitle
             );
-          }
-        });
+          })
+          .finally(() => {
+            setOutbox((current) => current.filter((message) => message.id !== tempId));
+          });
       }}
       error={error ?? threadError}
       isPending={isPending}

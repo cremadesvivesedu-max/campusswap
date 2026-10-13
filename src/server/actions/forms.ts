@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -837,6 +838,21 @@ export async function createListingAction(_: unknown, formData: FormData) {
     } satisfies ActionState;
   }
 
+  // A slow connection makes people tap "Publish" twice: the same title from the
+  // same seller within two minutes is treated as the same listing.
+  const { data: recentDuplicate } = await supabase
+    .from("listings")
+    .select("id")
+    .eq("seller_id", user.id)
+    .eq("title", title)
+    .gte("created_at", new Date(Date.now() - 2 * 60 * 1000).toISOString())
+    .limit(1)
+    .maybeSingle();
+
+  if (recentDuplicate?.id) {
+    redirect("/app/my-listings?created=live");
+  }
+
   const { data: listing, error: listingError } = await supabase
     .from("listings")
     .insert({
@@ -956,42 +972,45 @@ export async function createListingAction(_: unknown, formData: FormData) {
     destination_href: `/app/listings/${listing.id}`
   });
 
-  if (!needsReview) {
-    await notifySavedSearchMatchesForListing({
-      listing: buildAlertListing({
-        listingId: listing.id,
-        sellerId: user.id,
-        title,
-        description,
-        categorySlug,
-        condition,
-        price,
-        negotiable,
-        outlet,
-        urgent,
-        pickupArea,
-        pickupAvailable,
-        shippingAvailable,
-        shippingCost: shippingAvailable ? shippingCost : 0,
-        location: user.profile.neighborhood,
-        status: "active",
-        seller: user
-      }),
-      sellerId: user.id
-    });
-  }
-
-  await recordAppEvent({
-    eventName: "listing_created",
-    actorUserId: user.id,
+  // Alerts and analytics run after the response so publishing feels instant.
+  const alertListingInput = {
     listingId: listing.id,
-    metadata: {
-      categorySlug,
-      requestFeatured,
-      needsReview,
-      pickupAvailable,
-      shippingAvailable
+    sellerId: user.id,
+    title,
+    description,
+    categorySlug,
+    condition,
+    price,
+    negotiable,
+    outlet,
+    urgent,
+    pickupArea,
+    pickupAvailable,
+    shippingAvailable,
+    shippingCost: shippingAvailable ? shippingCost : 0,
+    location: user.profile.neighborhood,
+    status: "active" as const,
+    seller: user
+  };
+  after(async () => {
+    if (!needsReview) {
+      await notifySavedSearchMatchesForListing({
+        listing: buildAlertListing(alertListingInput),
+        sellerId: user.id
+      });
     }
+    await recordAppEvent({
+      eventName: "listing_created",
+      actorUserId: user.id,
+      listingId: listing.id,
+      metadata: {
+        categorySlug,
+        requestFeatured,
+        needsReview,
+        pickupAvailable,
+        shippingAvailable
+      }
+    });
   });
 
   revalidatePath("/app");
@@ -1000,6 +1019,12 @@ export async function createListingAction(_: unknown, formData: FormData) {
 
   if (checkoutUrl) {
     redirect(checkoutUrl);
+  }
+
+  // Leave the form so a second tap cannot publish it again. Only stay when a
+  // featured payment is still waiting (the form holds the pay button).
+  if (!(requestFeatured && promotionState === "pending")) {
+    redirect(`/app/my-listings?created=${needsReview ? "review" : "live"}`);
   }
 
   return {

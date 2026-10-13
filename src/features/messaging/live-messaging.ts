@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   messageAttachmentsBucket,
   uploadPublicFile
@@ -413,6 +413,9 @@ function mapPreviewListing(row: DbPreviewListingRow): Listing {
     }))
   };
 }
+
+const messageColumns =
+  "id, conversation_id, sender_id, text, sent_at, read, attachment_url, attachment_name, attachment_mime_type";
 
 function mapMessage(row: DbMessageRow): Message {
   return {
@@ -977,17 +980,24 @@ export async function sendLiveConversationMessage(
     }
   }
 
+  const sent: Message[] = [];
+
   if (cleanText) {
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      text: cleanText,
-      read: false
-    });
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        text: cleanText,
+        read: false
+      })
+      .select(messageColumns)
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+    sent.push(mapMessage(data as DbMessageRow));
   }
 
   for (const file of imageFiles) {
@@ -998,20 +1008,27 @@ export async function sendLiveConversationMessage(
       file
     );
 
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      text: "",
-      read: false,
-      attachment_url: upload.publicUrl,
-      attachment_name: file.name,
-      attachment_mime_type: file.type || "image/jpeg"
-    });
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        text: "",
+        read: false,
+        attachment_url: upload.publicUrl,
+        attachment_name: file.name,
+        attachment_mime_type: file.type || "image/jpeg"
+      })
+      .select(messageColumns)
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+    sent.push(mapMessage(data as DbMessageRow));
   }
+
+  return sent;
 }
 
 async function markConversationRead(conversationId: string, currentUserId: string) {
@@ -1277,6 +1294,27 @@ export function useLiveConversationThread(
   const supabase = useMemo(() => createClient(), []);
   const listingId = thread?.listing.id;
 
+  /** Merge messages into the open thread (deduped by id, kept in time order). */
+  const addMessages = useCallback((incoming: Message[]) => {
+    if (!incoming.length) {
+      return;
+    }
+    setThread((current) => {
+      if (!current) {
+        return current;
+      }
+      const known = new Set(current.messages.map((message) => message.id));
+      const fresh = incoming.filter((message) => !known.has(message.id));
+      if (!fresh.length) {
+        return current;
+      }
+      const messages = [...current.messages, ...fresh].sort(
+        (a, b) => Date.parse(a.sentAt) - Date.parse(b.sentAt)
+      );
+      return { ...current, messages };
+    });
+  }, []);
+
   useEffect(() => {
     let active = true;
 
@@ -1311,18 +1349,39 @@ export function useLiveConversationThread(
       };
     }
 
+    // Safety net if the realtime socket drops (phone sleeping, flaky Wi-Fi).
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void sync();
+      }
+    }, 20000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void sync();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     const channel = supabase
       .channel(createRealtimeChannelName(`conversation-thread-${conversationId}`))
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`
         },
-        () => {
-          void sync();
+        (payload) => {
+          // New messages arrive in the payload: show them at once instead of
+          // reloading the whole conversation.
+          const message = mapMessage(payload.new as DbMessageRow);
+          if (active) {
+            addMessages([message]);
+          }
+          if (message.senderId !== currentUserId) {
+            void markConversationRead(conversationId, currentUserId);
+          }
         }
       )
       .on(
@@ -1381,10 +1440,12 @@ export function useLiveConversationThread(
 
     return () => {
       active = false;
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
       void activeChannel.unsubscribe();
       void supabase.removeChannel(activeChannel);
     };
-  }, [conversationId, currentUserId, listingId, supabase]);
+  }, [addMessages, conversationId, currentUserId, listingId, supabase]);
 
-  return { thread, error };
+  return { thread, error, addMessages };
 }

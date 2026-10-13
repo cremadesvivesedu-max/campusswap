@@ -15,12 +15,15 @@ export default async function ConversationPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <SectionHeading
-        eyebrow={dictionary.messages.conversationEyebrow}
-        title={dictionary.messages.conversationTitle}
-        description={dictionary.messages.conversationDescription}
-      />
+    <div className="space-y-4 sm:space-y-6">
+      {/* On phones the chat itself should be on the first screen. */}
+      <div className="hidden sm:block">
+        <SectionHeading
+          eyebrow={dictionary.messages.conversationEyebrow}
+          title={dictionary.messages.conversationTitle}
+          description={dictionary.messages.conversationDescription}
+        />
+      </div>
       <ConversationThread conversationId={conversationId} currentUserId={user.id} />
     </div>
   );

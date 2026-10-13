@@ -15,7 +15,12 @@ import {
 } from "@/server/queries/marketplace";
 import { getMyMoveOutDate } from "@/server/queries/moving-sale";
 
-export default async function MyListingsPage() {
+export default async function MyListingsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ created?: string }>;
+}) {
+  const created = (await searchParams)?.created;
   const user = await getCurrentUser();
   const [listings, transactionsByListing, dictionary, moveOutDate] = await Promise.all([
     getListingsForSeller(user.id),
@@ -31,6 +36,16 @@ export default async function MyListingsPage() {
         title={dictionary.myListings.title}
         description={dictionary.myListings.description}
       />
+      {created === "live" || created === "review" ? (
+        <p
+          role="status"
+          className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-900"
+        >
+          {created === "live"
+            ? dictionary.listingForm.createdLive
+            : dictionary.listingForm.createdReview}
+        </p>
+      ) : null}
       {listings.length ? (
         <MovingSaleCard sellerId={user.id} initialMoveOutDate={moveOutDate} />
       ) : null}

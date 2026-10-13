@@ -37,7 +37,7 @@ export function ListingForm({
 }: ListingFormProps) {
   const { dictionary } = useLocale();
   const formActionHandler = initialListing ? updateListingAction : createListingAction;
-  const [state, action] = useActionState(formActionHandler, {
+  const [state, action, isSubmitting] = useActionState(formActionHandler, {
     success: false,
     message: "",
     promotionStatus: undefined,
@@ -386,9 +386,16 @@ export function ListingForm({
           </div>
         </div>
       </details>
-      <Button className="w-full" type="submit" disabled={compressingPhotos}>
+      <Button
+        className="w-full"
+        type="submit"
+        disabled={compressingPhotos || isSubmitting}
+        aria-busy={isSubmitting}
+      >
         {compressingPhotos
           ? dictionary.common.actions.updating
+          : isSubmitting
+          ? dictionary.listingForm.publishing
           : isEditing
           ? dictionary.listingForm.saveChanges
           : dictionary.listingForm.publishListing}
