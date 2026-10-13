@@ -2012,10 +2012,6 @@ function normalizeSpanishTypographySafe(input: string) {
   );
 }
 
-mutableDictionaries.es = normalizeLocaleDictionary(
-  mutableDictionaries.es,
-  (value) => normalizeSpanishTypographySafe(normalizeSpanishTypography(value))
-);
 (mutableDictionaries.nl.map as any).description =
   "CampusSwap toont een benaderde buurtzone in plaats van een privéadres.";
 (mutableDictionaries.nl.map as any).privacyBody =
@@ -3316,6 +3312,116 @@ mutableDictionaries.nl = {
   export function getConditionLabel(dictionary: Dictionary, condition: ListingCondition) {
   return dictionary.common.conditionLabels[condition] ?? condition;
 }
+
+// Final pass over every Spanish string, run after all Spanish blocks above are merged:
+// adds missing accents, fixes words whose accent depends on meaning, and opens questions with "¿".
+const spanishAccentWords: Record<string, string> = {
+  anadido: "añadido",
+  anadir: "añadir",
+  aparecera: "aparecerá",
+  apareceran: "aparecerán",
+  aqui: "aquí",
+  area: "área",
+  areas: "áreas",
+  automaticamente: "automáticamente",
+  basico: "básico",
+  caotico: "caótico",
+  categoria: "categoría",
+  circulacion: "circulación",
+  coincidia: "coincidía",
+  contrasenas: "contraseñas",
+  conversacion: "conversación",
+  creible: "creíble",
+  deberian: "deberían",
+  descripcion: "descripción",
+  despues: "después",
+  destacara: "destacará",
+  dia: "día",
+  economicos: "económicos",
+  electronica: "electrónica",
+  envian: "envían",
+  envio: "envío",
+  estan: "están",
+  friccion: "fricción",
+  imagenes: "imágenes",
+  intentalo: "inténtalo",
+  leida: "leída",
+  leidas: "leídas",
+  marcala: "márcala",
+  marcara: "marcará",
+  mayoria: "mayoría",
+  mensajeria: "mensajería",
+  minima: "mínima",
+  moderacion: "moderación",
+  monetizacion: "monetización",
+  ningun: "ningún",
+  notificacion: "notificación",
+  podras: "podrás",
+  publicos: "públicos",
+  rapidas: "rápidas",
+  rapido: "rápido",
+  rapidos: "rápidos",
+  recuperacion: "recuperación",
+  registrate: "regístrate",
+  reintentalo: "reinténtalo",
+  reutilizacion: "reutilización",
+  seguira: "seguirá",
+  segun: "según",
+  subcategoria: "subcategoría",
+  subcategorias: "subcategorías",
+  titulo: "título",
+  unete: "únete",
+  util: "útil",
+  utiles: "útiles",
+  valido: "válido",
+  valoracion: "valoración"
+};
+
+const spanishPhraseFixes: [RegExp, string][] = [
+  [/\besta (reservad|list|activ|ocult|optimizad|verificad|complet|configurad|confirmando|pensad)/g, "está $1"],
+  [/\bEsta (reservad|list|activ|ocult|optimizad|verificad|complet|configurad|confirmando|pensad)/g, "Está $1"],
+  [/\beste disponible\b/g, "esté disponible"],
+  [/\bEstas escribiendo\b/g, "Estás escribiendo"],
+  [/\bse completo\b/g, "se completó"],
+  [/\bse cancelo\b/g, "se canceló"],
+  [/\b([Ss]e) acordara\b/g, "$1 acordará"],
+  [/\bLa web publica\b/g, "La web pública"],
+  [/\bentender que es (\w+), como funciona\b/g, "entender qué es $1, cómo funciona"],
+  [/\breutilización practica\b/g, "reutilización práctica"]
+];
+
+function polishSpanish(input: string) {
+  let output = input.replace(/[A-Za-zÀ-ÿ]+/g, (word) => {
+    const fixed = spanishAccentWords[word.toLowerCase()];
+    if (!fixed) {
+      return word;
+    }
+    return word[0] === word[0].toUpperCase() ? fixed[0].toUpperCase() + fixed.slice(1) : fixed;
+  });
+  for (const [pattern, replacement] of spanishPhraseFixes) {
+    output = output.replace(pattern, replacement as string);
+  }
+  if (output.trimEnd().endsWith("?") && !output.includes("¿")) {
+    const lastSentence = Math.max(output.lastIndexOf(". "), output.lastIndexOf("! "));
+    const start = lastSentence === -1 ? 0 : lastSentence + 2;
+    // Untranslated English strings also live in this dictionary; leave them alone.
+    if (!/^(Is|Can|Do|Does|What|How|Are|Will|Could|Would)\b/.test(output.slice(start))) {
+      output = output.slice(0, start) + "¿" + output.slice(start);
+    }
+  }
+  return output
+    .replace(/¿Como\b/g, "¿Cómo")
+    .replace(/¿Que\b/g, "¿Qué")
+    .replace(/¿Cual\b/g, "¿Cuál")
+    .replace(/¿Donde\b/g, "¿Dónde")
+    .replace(/¿Cuando\b/g, "¿Cuándo")
+    .replace(/¿Quien\b/g, "¿Quién");
+}
+
+mutableDictionaries.es = normalizeLocaleDictionary(
+  mutableDictionaries.es,
+  (value) => polishSpanish(normalizeSpanishTypographySafe(normalizeSpanishTypography(value)))
+);
 
 export function getListingStatusLabel(dictionary: Dictionary, status: ListingStatus) {
   return dictionary.common.listingStatusLabels[status] ?? status;
