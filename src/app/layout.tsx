@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Figtree } from "next/font/google";
 import "@/app/globals.css";
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { getDictionaryForRequest, getRequestLocale } from "@/lib/i18n";
 import { defaultMetadata } from "@/lib/seo";
 
-const bodyFont = Manrope({
-  subsets: ["latin"],
+// One friendly, rounded sans for everything (closer to Wallapop than the old
+// techy Space Grotesk headings). Headings just use heavier weights.
+const bodyFont = Figtree({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-body"
-});
-
-const displayFont = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display"
 });
 
 export const metadata: Metadata = defaultMetadata;
@@ -30,7 +28,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+      <body className={`${bodyFont.variable} font-body`}>
         <LocaleProvider locale={locale} dictionary={dictionary}>
           {children}
         </LocaleProvider>

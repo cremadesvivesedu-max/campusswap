@@ -29,7 +29,7 @@ export function SavedListingsWorkspace({
 
   return (
     <div className="space-y-7 sm:space-y-9">
-      <div className="grid gap-5 sm:gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 xl:grid-cols-4">
         {listings.map((listing) => {
           const selected = selectedIds.includes(listing.id);
           const maxed = !selected && selectedIds.length >= maxComparedListings;

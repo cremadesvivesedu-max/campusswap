@@ -16,7 +16,7 @@ export default async function OutletPage() {
         title={dictionary.marketing.outlet.title}
         description={dictionary.marketing.outlet.description}
       />
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
         {listings.map((listing) => (
           <ListingCard
             key={listing.id}

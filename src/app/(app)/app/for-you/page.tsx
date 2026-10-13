@@ -13,7 +13,7 @@ export default async function ForYouPage() {
         title="Deterministic recommendations, not vague AI."
         description="CampusSwap ranks listings using category affinity, saves, views, search patterns, freshness, seller quality, featured boosts, and outlet affinity."
       />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
         {results.map((result) => (
           <ListingCard
             key={result.listing.id}

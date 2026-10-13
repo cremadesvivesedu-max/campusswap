@@ -162,7 +162,7 @@ export default async function HomePage() {
           title={dictionary.marketing.home.featuredTitle}
           description={dictionary.marketing.home.featuredDescription}
         />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 lg:grid-cols-3">
           {featured.slice(0, 3).map((listing) => (
             <ListingCard
               key={listing.id}

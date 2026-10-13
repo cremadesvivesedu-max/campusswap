@@ -182,7 +182,7 @@ export default async function ProfilePage({
           description={dictionary.profile.activeInventoryDescription}
         />
         {activeListings.length ? (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {activeListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -206,7 +206,7 @@ export default async function ProfilePage({
           description={dictionary.profile.reservedDescription}
         />
         {reservedListings.length ? (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {reservedListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -230,7 +230,7 @@ export default async function ProfilePage({
           description={dictionary.profile.soldDescription}
         />
         {soldListings.length ? (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {soldListings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
@@ -250,7 +250,7 @@ export default async function ProfilePage({
             title={dictionary.profile.archivedTitle}
             description={dictionary.profile.archivedDescription}
           />
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {archivedListings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}

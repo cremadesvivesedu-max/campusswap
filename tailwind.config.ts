@@ -20,7 +20,7 @@ const config: Config = {
         danger: "var(--danger)"
       },
       fontFamily: {
-        display: ["var(--font-display)"],
+        display: ["var(--font-body)"],
         body: ["var(--font-body)"]
       },
       boxShadow: {

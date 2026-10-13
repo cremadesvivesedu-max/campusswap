@@ -837,7 +837,7 @@ export function SearchExperience({
         </div>
 
         {results.length ? (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3">
             {results.map((listing) => (
               <ListingCard
                 key={listing.id}

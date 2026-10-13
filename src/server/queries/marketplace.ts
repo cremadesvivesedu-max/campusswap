@@ -1028,6 +1028,7 @@ async function fetchListingRows(
   input: ListingSearchInput & {
     includeStatuses?: Listing["status"][];
     includeRemoved?: boolean;
+    sellerId?: string;
   } = {}
 ) {
   const supabase = await getSupabaseClient();
@@ -1036,6 +1037,10 @@ async function fetchListingRows(
   }
 
   let query = supabase.from("listings").select(listingSelect);
+
+  if (input.sellerId) {
+    query = query.eq("seller_id", input.sellerId);
+  }
   const visibleStatuses =
     input.includeStatuses ?? ["active", "reserved"];
 
@@ -2142,12 +2147,14 @@ export async function getListingsForSeller(userId: string) {
     );
   }
 
-  const rows = await fetchListingRows({
+  // Filter by seller in the database: fetching the newest 60 listings of everyone
+  // and filtering here was slow and hid older listings.
+  const sellerRows = await fetchListingRows({
     includeStatuses: ["active", "reserved", "sold", "archived", "pending-review", "hidden"],
-    includeRemoved: false
+    includeRemoved: false,
+    sellerId: userId,
+    limit: 200
   });
-
-  const sellerRows = rows.filter((row) => row.seller_id === userId);
   const sellerMetricsByUserId = await fetchSellerMetricsMap([userId]);
   const listingAnalyticsByListingId = await fetchListingAnalyticsMap(
     sellerRows.map((row) => row.id)

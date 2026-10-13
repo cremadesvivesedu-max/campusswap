@@ -1,163 +1,101 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
-import { SectionHeading } from "@/components/shared/section-heading";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import {
-  getCurrentUser,
+  getAllCategories,
   getFeaturedListings,
   getHomeFeed
 } from "@/server/queries/marketplace";
 
+// Marketplace home in the Wallapop/Vinted mould: search first, categories as chips,
+// then products. Explanations live on the public pages, not here.
 export default async function AppHomePage() {
-  const [
-    user,
-    dictionary,
-    feed,
-    featuredListings
-  ] = await Promise.all([
-    getCurrentUser(),
+  const [dictionary, categories, feed, featuredListings] = await Promise.all([
     getDictionaryForRequest(),
-    getHomeFeed(4),
-    getFeaturedListings(2)
+    getAllCategories(),
+    getHomeFeed(24),
+    getFeaturedListings(4)
   ]);
+  const copy = dictionary.home;
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <Card className="overflow-hidden border-slate-900 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.28),_transparent_38%),linear-gradient(135deg,_#020617,_#0f172a_62%,_#1e293b)] text-white shadow-[0_28px_90px_rgba(15,23,42,0.24)]">
-          <CardContent className="space-y-6 p-5 sm:space-y-7 sm:p-9">
-            <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-                {dictionary.appHome.featuredEyebrow}
-              </p>
-              <p className="font-display text-3xl font-semibold leading-tight sm:text-[2.7rem]">
-                {dictionary.appHome.welcomeBack}, {user.profile.fullName.split(" ")[0]}.
-              </p>
-              <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                {dictionary.appHome.feedDescription}
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild className="w-full sm:w-auto">
-                <Link href="/app/sell">{dictionary.appHome.sellUpload}</Link>
-              </Button>
-              <Button asChild variant="ghost" className="w-full sm:w-auto">
-                <Link href="/app/search">{dictionary.appHome.searchAllListings}</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-200/80 bg-white/92 shadow-sm">
-          <CardContent className="flex h-full flex-col justify-between gap-5 p-5 sm:p-6">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                {dictionary.appHome.sellerMomentumEyebrow}
-              </p>
-              <p className="font-display text-2xl font-semibold text-slate-950">
-                {dictionary.appHome.sellerMomentumTitle}
-              </p>
-              <p className="text-sm leading-6 text-slate-600">
-                {dictionary.appHome.sellerMomentumDescription}
-              </p>
-            </div>
-            <Button asChild variant="secondary" className="w-full sm:w-auto">
-              <Link href="/app/sell">{dictionary.common.actions.startSelling}</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-7">
+      <form action="/app/search" role="search" className="relative">
+        <Search
+          className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+          aria-hidden="true"
+        />
+        <input
+          type="search"
+          name="q"
+          placeholder={copy.searchPlaceholder}
+          aria-label={copy.searchPlaceholder}
+          className="h-12 w-full rounded-full border border-slate-200 bg-white pl-12 pr-4 text-base text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+        />
+      </form>
 
-      <HomeSection>
-        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              {dictionary.appHome.firstUseEyebrow}
-            </p>
-            <h2 className="font-display text-2xl font-semibold text-slate-950">
-              {dictionary.appHome.firstUseTitle}
-            </h2>
-            <p className="text-sm leading-7 text-slate-600">
-              {dictionary.appHome.firstUseDescription}
-            </p>
-            <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link href="/app/support">{dictionary.appHome.feedbackCta}</Link>
-            </Button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {dictionary.appHome.firstUseSteps.map((step) => (
-              <Link
-                key={step.href}
-                href={step.href}
-                className="rounded-[24px] border border-slate-200 bg-white/90 p-4 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
-              >
-                <p className="font-semibold text-slate-950">{step.title}</p>
-                <p className="mt-2 leading-6 text-slate-600">{step.body}</p>
-              </Link>
+      {categories.length ? (
+        <nav aria-label={dictionary.nav.public.categories}>
+          <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+            {categories.map((category) => (
+              <li key={category.id} className="shrink-0">
+                <Link
+                  href={`/app/search?category=${encodeURIComponent(category.slug)}`}
+                  className="inline-flex h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  {category.name}
+                </Link>
+              </li>
             ))}
-          </div>
-        </div>
-      </HomeSection>
-
-      {featuredListings.length ? (
-        <HomeSection tone="featured">
-          <SectionHeading
-            eyebrow={dictionary.appHome.featuredEyebrow}
-            title={dictionary.appHome.featuredTitle}
-            description={dictionary.appHome.featuredDescription}
-          />
-          <div className="grid gap-5 lg:grid-cols-2">
-            {featuredListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} compact />
-            ))}
-          </div>
-        </HomeSection>
+          </ul>
+        </nav>
       ) : null}
 
-      <HomeSection>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <SectionHeading
-            eyebrow={dictionary.appHome.homeFeedEyebrow}
-            title={dictionary.appHome.homeFeedTitle}
-            description={dictionary.appHome.homeFeedDescription}
-          />
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/app/search">
-              {dictionary.common.actions.browseEveryCategory}
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-        <div className="grid gap-5 lg:grid-cols-4">
-          {feed.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} compact />
-          ))}
-        </div>
-      </HomeSection>
-    </div>
-  );
-}
+      {featuredListings.length ? (
+        <section className="space-y-3">
+          <h2 className="text-xl font-extrabold text-slate-950">{copy.featured}</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+            {featuredListings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-function HomeSection({
-  children,
-  tone = "default"
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "featured";
-}) {
-  return (
-    <section
-      className={cn(
-        "space-y-5 rounded-[24px] border p-4 shadow-sm backdrop-blur-sm sm:space-y-6 sm:rounded-[28px] sm:p-6",
-        tone === "featured"
-          ? "border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]"
-          : "border-slate-200/80 bg-white/76"
-      )}
-    >
-      {children}
-    </section>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-extrabold text-slate-950">{copy.newest}</h2>
+          <Link
+            href="/app/search?sort=newest"
+            className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:underline"
+          >
+            {copy.seeAll}
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+        {feed.length ? (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+            {feed.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState title={copy.emptyTitle} description={copy.emptyBody} />
+        )}
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-3xl bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-lg font-extrabold text-slate-950">{copy.sellTitle}</p>
+          <p className="text-sm text-slate-600">{copy.sellBody}</p>
+        </div>
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/app/sell">{copy.sellCta}</Link>
+        </Button>
+      </section>
+    </div>
   );
 }
