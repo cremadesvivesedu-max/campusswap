@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackClientEvent } from "@/lib/client-instrumentation";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +23,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -31,6 +33,11 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
       className="space-y-5 rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7"
       onSubmit={(event) => {
         event.preventDefault();
+
+        if (!acceptedTerms) {
+          setError(dictionary.auth.signup.acceptTermsRequired);
+          return;
+        }
 
         startTransition(async () => {
           const supabase = createClient();
@@ -55,7 +62,8 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
               emailRedirectTo: buildSiteUrl("/auth/callback?next=/onboarding"),
               data: {
                 full_name: name.trim(),
-                university_email_domain: emailDomain
+                university_email_domain: emailDomain,
+                terms_accepted_at: new Date().toISOString()
               }
             }
           });
@@ -113,6 +121,27 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
       </div>
+      <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+        <input
+          name="acceptTerms"
+          type="checkbox"
+          required
+          checked={acceptedTerms}
+          onChange={(event) => setAcceptedTerms(event.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-slate-950"
+        />
+        <span>
+          {dictionary.auth.signup.acceptTermsPrefix}{" "}
+          <Link href="/terms" target="_blank" className="font-semibold underline underline-offset-2">
+            {dictionary.auth.signup.acceptTermsTerms}
+          </Link>{" "}
+          {dictionary.auth.signup.acceptTermsJoin}{" "}
+          <Link href="/privacy" target="_blank" className="font-semibold underline underline-offset-2">
+            {dictionary.auth.signup.acceptTermsPrivacy}
+          </Link>
+          .
+        </span>
+      </label>
       <Button className="w-full" type="submit" disabled={isPending}>
         {isPending
           ? dictionary.auth.signup.submitting
