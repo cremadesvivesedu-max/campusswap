@@ -1310,7 +1310,7 @@ mutableDictionaries.es = {
     searchAllListings: "Buscar todos los anuncios",
     sellerMomentumEyebrow: "Impulso de vendedor",
     sellerMomentumTitle: "Necesitas vender antes de mudarte?",
-    sellerMomentumDescription: "Publica tu anuncio, marcala como urgente y solicita promocion si vas justo de tiempo.",
+    sellerMomentumDescription: "Publica tu anuncio, márcalo como urgente y pide promoción si vas justo de tiempo.",
     featuredEyebrow: "Destacado ahora",
     featuredTitle: "Inventario de alta intencion en toda la ciudad.",
     featuredDescription: "Una mezcla de anuncios impulsados, rapidos y relevantes para estudiantes.",
@@ -3504,6 +3504,38 @@ function polishSpanish(input: string) {
     .replace(/¿Cuando\b/g, "¿Cuándo")
     .replace(/¿Quien\b/g, "¿Quién");
 }
+
+// Strings that were still falling back to English in Spanish.
+mutableDictionaries.es = {
+  ...mutableDictionaries.es,
+  auth: {
+    ...mutableDictionaries.es.auth,
+    onboarding: {
+      ...mutableDictionaries.es.auth.onboarding,
+      title: "Adapta tu feed a lo que de verdad necesitas en Maastricht.",
+      description:
+        "Tus categorías favoritas, tu situación como estudiante y tu zona de recogida ayudan a CampusSwap a enseñarte anuncios útiles desde el primer día. La verificación de estudiante es opcional y va aparte.",
+      notice:
+        "Puedes terminar ahora y entrar al marketplace. La verificación de estudiante es una señal de confianza extra, no un requisito para usar CampusSwap.",
+      fullName: "Tu nombre completo",
+      bio: "Cuenta a compradores y vendedores qué buscas",
+      buyerIntent: "Quiero comprar",
+      sellerIntent: "Quiero vender"
+    }
+  },
+  messages: {
+    ...mutableDictionaries.es.messages,
+    conversationTitle: "Recogida, precio y disponibilidad en un solo chat.",
+    conversationDescription:
+      "Cada mensaje queda unido al anuncio, así los dos podéis quedar sin perder el contexto.",
+    quickActions: {
+      available: "¿Sigue disponible?",
+      reserve: "¿Me lo puedes reservar?",
+      campusMeet: "¿Quedamos en el campus?",
+      negotiable: "¿El precio es negociable?"
+    }
+  }
+};
 
 mutableDictionaries.es = normalizeLocaleDictionary(
   mutableDictionaries.es,
