@@ -10,8 +10,9 @@ export default async function MessagesPage() {
   ]);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="rounded-[28px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] p-4 shadow-sm sm:rounded-[36px] sm:p-7">
+    <div className="space-y-4 sm:space-y-8">
+      <h1 className="text-2xl font-extrabold text-slate-950 sm:hidden">{dictionary.nav.app.messages}</h1>
+      <div className="hidden rounded-[36px] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.82))] p-7 shadow-sm sm:block">
         <SectionHeading
           eyebrow={dictionary.messages.eyebrow}
           title={dictionary.messages.title}

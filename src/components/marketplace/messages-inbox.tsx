@@ -70,11 +70,11 @@ function DemoMessagesInbox({ currentUserId }: { currentUserId: string }) {
   }
 
   return (
-    <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+    <ul className="divide-y divide-slate-200/70">
       {previews.map((preview) =>
         preview ? <MessagePreview key={preview.conversation.id} preview={preview} /> : null
       )}
-    </div>
+    </ul>
   );
 }
 
@@ -124,10 +124,10 @@ function LiveMessagesInbox({ currentUserId }: { currentUserId: string }) {
   }
 
   return (
-    <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+    <ul className="divide-y divide-slate-200/70">
       {safePreviews.map((preview) => (
         <MessagePreview key={preview.conversation.id} preview={preview} />
       ))}
-    </div>
+    </ul>
   );
 }
