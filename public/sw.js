@@ -1,6 +1,6 @@
 // CampusSwap service worker: makes the site installable, shows an offline page when
 // there is no connection, and displays push notifications (new messages).
-const CACHE = "campusswap-v1";
+const CACHE = "campusswap-v2";
 const OFFLINE_URL = "/offline";
 const OFFLINE_ASSETS = ["/icons/icon-192.png"];
 
