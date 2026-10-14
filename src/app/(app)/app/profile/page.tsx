@@ -3,14 +3,11 @@ import { notFound } from "next/navigation";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { ReviewCard } from "@/components/marketplace/review-card";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { StarRating } from "@/components/shared/star-rating";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
-import { getDictionaryForRequest } from "@/lib/i18n";
-import { getRequestLocale } from "@/lib/i18n";
+import { getDictionaryForRequest, getRequestLocale } from "@/lib/i18n";
 import {
   getCurrentUser,
   getListingsForSeller,
@@ -18,220 +15,170 @@ import {
   getUserById
 } from "@/server/queries/marketplace";
 
+type Tab = "sale" | "sold" | "reviews";
+
+// Profile in marketplace style: who they are in one block, then tabs for what they
+// sell, what they sold and what people say about them.
 export default async function ProfilePage({
   searchParams
 }: {
-  searchParams: Promise<{ userId?: string }>;
+  searchParams: Promise<{ userId?: string; tab?: string }>;
 }) {
-  const { userId } = await searchParams;
-  const currentUser = await getCurrentUser();
-  const profileUser = userId ? await getUserById(userId) : currentUser;
+  const { userId, tab: rawTab } = await searchParams;
+  const tab: Tab = rawTab === "sold" || rawTab === "reviews" ? rawTab : "sale";
+  const [currentUser, dictionary, locale] = await Promise.all([
+    getCurrentUser(),
+    getDictionaryForRequest(),
+    getRequestLocale()
+  ]);
+  const profileUser = userId && userId !== currentUser.id ? await getUserById(userId) : currentUser;
 
   if (!profileUser) {
     notFound();
   }
 
   const isOwnProfile = profileUser.id === currentUser.id;
-  const [receivedReviews, sellerListings, dictionary, locale] = await Promise.all([
+  const copy = dictionary.profilePage;
+  const [receivedReviews, sellerListings] = await Promise.all([
     getReviewsForUser(profileUser.id),
-    getListingsForSeller(profileUser.id),
-    getDictionaryForRequest(),
-    getRequestLocale()
+    getListingsForSeller(profileUser.id)
   ]);
-  const filteredReviews = receivedReviews.filter(
-    (review) => review.targetUserId === profileUser.id
+  const reviews = receivedReviews.filter((review) => review.targetUserId === profileUser.id);
+  const onSale = sellerListings.filter(
+    (listing) => listing.status === "active" || listing.status === "reserved"
   );
-  const activeListings = sellerListings.filter((listing) => listing.status === "active");
-  const reservedListings = sellerListings.filter((listing) => listing.status === "reserved");
-  const soldListings = sellerListings.filter((listing) => listing.status === "sold");
-  const archivedListings = sellerListings.filter((listing) => listing.status === "archived");
-  const memberSince = new Intl.DateTimeFormat(locale, {
-    month: "short",
-    year: "numeric"
-  }).format(new Date(profileUser.joinedAt));
+  const sold = sellerListings.filter((listing) => listing.status === "sold");
+  const paused = isOwnProfile ? sellerListings.filter((listing) => listing.status === "archived") : [];
+  const memberSince = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(
+    new Date(profileUser.joinedAt)
+  );
+  const responseRate = Math.round(
+    (profileUser.sellerMetrics?.responseRate ?? profileUser.profile.responseRate) * 100
+  );
+  const tabHref = (next: Tab) => {
+    const params = new URLSearchParams();
+    if (!isOwnProfile) {
+      params.set("userId", profileUser.id);
+    }
+    if (next !== "sale") {
+      params.set("tab", next);
+    }
+    const query = params.toString();
+    return `/app/profile${query ? `?${query}` : ""}`;
+  };
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "sale", label: copy.onSale, count: onSale.length },
+    { id: "sold", label: copy.sold, count: sold.length },
+    { id: "reviews", label: copy.reviews, count: reviews.length }
+  ];
 
   return (
-    <div className="space-y-10">
-      <section className="rounded-[32px] bg-white p-8 shadow-glow">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <ProfileAvatar
-              userId={profileUser.id}
-              name={profileUser.profile.fullName}
-              src={profileUser.avatar}
-              className="h-24 w-24 text-2xl"
+    <div className="space-y-6">
+      <section className="space-y-4 rounded-3xl bg-white p-5 sm:p-7">
+        <div className="flex items-center gap-4">
+          <ProfileAvatar
+            userId={profileUser.id}
+            name={profileUser.profile.fullName}
+            src={profileUser.avatar}
+            className="h-20 w-20 shrink-0 text-xl sm:h-24 sm:w-24"
+          />
+          <div className="min-w-0 space-y-1">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-extrabold text-slate-950 sm:text-3xl">
+              <span className="truncate">{profileUser.profile.fullName}</span>
+              <VerificationStatusBadge status={profileUser.verificationStatus} />
+            </h1>
+            <StarRating
+              rating={profileUser.profile.ratingAverage}
+              reviewCount={profileUser.profile.reviewCount}
             />
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-4xl font-semibold text-slate-950">
-                  {profileUser.profile.fullName}
-                </h1>
-                <VerificationStatusBadge status={profileUser.verificationStatus} />
-              </div>
-              <p className="text-sm font-medium text-slate-600">
-                {profileUser.profile.university} - {profileUser.profile.neighborhood}
-              </p>
-              <p className="text-sm leading-6 text-slate-600">
-                {profileUser.verificationStatus === "verified"
-                  ? dictionary.profile.verificationDescriptions.verified
-                  : profileUser.verificationStatus === "pending"
-                    ? dictionary.profile.verificationDescriptions.pending
-                    : dictionary.profile.verificationDescriptions.unverified}
-              </p>
-              <StarRating
-                rating={profileUser.profile.ratingAverage}
-                reviewCount={profileUser.profile.reviewCount}
-              />
-              <p className="max-w-2xl text-sm leading-7 text-slate-600">
-                {profileUser.profile.bio}
-              </p>
-            </div>
+            <p className="text-sm text-slate-500">
+              {profileUser.profile.university} · {profileUser.profile.neighborhood}
+            </p>
           </div>
-          {isOwnProfile ? (
-            // On phones the bottom bar has no Settings or My listings, so the
-            // profile (reached from the avatar) is the way in.
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href="/app/profile/edit">{dictionary.profile.editProfile}</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/app/my-listings">{dictionary.myListings.eyebrow}</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/app/settings">{dictionary.nav.app.settings}</Link>
-              </Button>
-            </div>
-          ) : (
-            <Button asChild variant="outline">
-              <Link href={`/app/support?type=report-user&targetUserId=${profileUser.id}`}>
-                {dictionary.support.reportUserCta}
-              </Link>
-            </Button>
-          )}
         </div>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+          <span>
+            <strong className="text-slate-950">{profileUser.sellerMetrics?.salesCount ?? 0}</strong>{" "}
+            {copy.sales}
+          </span>
+          <span>
+            {copy.responds} <strong className="text-slate-950">{responseRate}%</strong>
+          </span>
+          <span>
+            {copy.memberSince} <strong className="text-slate-950">{memberSince}</strong>
+          </span>
+        </p>
+        {profileUser.profile.bio ? (
+          <p className="text-sm leading-6 text-slate-600">{profileUser.profile.bio}</p>
+        ) : null}
+        {isOwnProfile ? (
+          // On phones the bottom bar has no Settings or My listings, so the profile
+          // (reached from the avatar) is the way in.
+          <div className="grid grid-cols-3 gap-2">
+            <Button asChild size="sm">
+              <Link href="/app/profile/edit">{copy.edit}</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/app/my-listings">{copy.myListings}</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/app/settings">{copy.settings}</Link>
+            </Button>
+          </div>
+        ) : null}
       </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.memberSince}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {memberSince}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.salesCount}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {profileUser.sellerMetrics?.salesCount ?? 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.responseRate}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {Math.round(
-                (profileUser.sellerMetrics?.responseRate ?? profileUser.profile.responseRate) * 100
-              )}%
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.averageRating}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {profileUser.profile.ratingAverage.toFixed(1)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <nav aria-label={copy.onSale} className="flex border-b border-slate-200">
+        {tabs.map((item) => (
+          <Link
+            key={item.id}
+            href={tabHref(item.id)}
+            scroll={false}
+            aria-current={tab === item.id ? "page" : undefined}
+            className={`flex-1 border-b-2 px-2 pb-3 text-center text-sm font-bold transition ${
+              tab === item.id
+                ? "border-emerald-600 text-slate-950"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            {item.label} <span className="font-semibold text-slate-400">{item.count}</span>
+          </Link>
+        ))}
+      </nav>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.activeListings}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {activeListings.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.reserved}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {reservedListings.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="space-y-2 p-6">
-            <p className="text-sm text-slate-500">{dictionary.profile.soldItems}</p>
-            <p className="font-display text-2xl font-semibold text-slate-950">
-              {soldListings.length}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <section className="space-y-6">
-        <SectionHeading
-          eyebrow={dictionary.profile.activeInventoryEyebrow}
-          title={dictionary.profile.activeInventoryTitle}
-          description={dictionary.profile.activeInventoryDescription}
-        />
-        {activeListings.length ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-            {activeListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                showMessageAction={!isOwnProfile}
-              />
-            ))}
+      {tab === "sale" ? (
+        onSale.length || paused.length ? (
+          <div className="space-y-6">
+            {onSale.length ? (
+              <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+                {onSale.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            ) : null}
+            {paused.length ? (
+              <section className="space-y-3">
+                <h2 className="text-base font-bold text-slate-500">{copy.paused}</h2>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-6 opacity-70 sm:grid-cols-3 lg:grid-cols-4">
+                  {paused.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         ) : (
           <EmptyState
             title={dictionary.profile.emptyStates.activeTitle}
             description={dictionary.profile.emptyStates.activeDescription}
           />
-        )}
-      </section>
+        )
+      ) : null}
 
-      <section className="space-y-6">
-        <SectionHeading
-          eyebrow={dictionary.profile.reservedEyebrow}
-          title={dictionary.profile.reservedTitle}
-          description={dictionary.profile.reservedDescription}
-        />
-        {reservedListings.length ? (
+      {tab === "sold" ? (
+        sold.length ? (
           <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-            {reservedListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                showMessageAction={!isOwnProfile}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title={dictionary.profile.emptyStates.reservedTitle}
-            description={dictionary.profile.emptyStates.reservedDescription}
-          />
-        )}
-      </section>
-
-      <section className="space-y-6">
-        <SectionHeading
-          eyebrow={dictionary.profile.soldEyebrow}
-          title={dictionary.profile.soldTitle}
-          description={dictionary.profile.soldDescription}
-        />
-        {soldListings.length ? (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-            {soldListings.map((listing) => (
+            {sold.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
@@ -240,33 +187,13 @@ export default async function ProfilePage({
             title={dictionary.profile.emptyStates.soldTitle}
             description={dictionary.profile.emptyStates.soldDescription}
           />
-        )}
-      </section>
-
-      {archivedListings.length ? (
-        <section className="space-y-6">
-          <SectionHeading
-            eyebrow={dictionary.profile.archivedEyebrow}
-            title={dictionary.profile.archivedTitle}
-            description={dictionary.profile.archivedDescription}
-          />
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
-            {archivedListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        </section>
+        )
       ) : null}
 
-      <section className="space-y-6">
-        <SectionHeading
-          eyebrow={dictionary.profile.reviewsEyebrow}
-          title={dictionary.profile.reviewsTitle}
-          description={dictionary.profile.reviewsDescription}
-        />
-        {filteredReviews.length ? (
+      {tab === "reviews" ? (
+        reviews.length ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            {filteredReviews.map((review) => (
+            {reviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}
           </div>
@@ -275,8 +202,19 @@ export default async function ProfilePage({
             title={dictionary.profile.emptyStates.reviewsTitle}
             description={dictionary.profile.emptyStates.reviewsDescription}
           />
-        )}
-      </section>
+        )
+      ) : null}
+
+      {!isOwnProfile ? (
+        <p className="px-1 text-xs">
+          <Link
+            href={`/app/support?type=report-user&targetUserId=${profileUser.id}`}
+            className="text-slate-500 underline-offset-2 hover:text-rose-700 hover:underline"
+          >
+            {copy.report}
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }
