@@ -170,6 +170,8 @@ export function SearchExperience({
   const [sort, setSort] = useState<DiscoveryFilters["sort"]>(
     (searchParams.get("sort") as DiscoveryFilters["sort"]) ?? "recommended"
   );
+  // Phones hide the filter panel behind a button; large screens always show it.
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (lockedCategorySlug) {
@@ -441,28 +443,43 @@ export function SearchExperience({
   const saveFeedback = saveState.message || deleteState.message;
 
   return (
+    <div className="space-y-4">
+      {/* Phones: search box and a Filters button first, results right below. */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="h-12 rounded-full pl-12 text-base"
+            placeholder={dictionary.search.queryPlaceholder}
+            aria-label={dictionary.search.query}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowFilters((current) => !current)}
+          aria-expanded={showFilters}
+          className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold lg:hidden ${
+            showFilters || activeFilterChips.length
+              ? "border-slate-950 bg-slate-950 text-white"
+              : "border-slate-200 bg-white text-slate-800"
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {activeFilterChips.length ? activeFilterChips.length : null}
+          <span className="sr-only">{dictionary.search.controls}</span>
+        </button>
+      </div>
     <div className="grid gap-6 lg:grid-cols-[0.34fr_0.66fr]">
-      <div className="space-y-6">
-        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
+      <div className={`space-y-6 ${showFilters ? "" : "hidden lg:block"}`}>
+        <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-glow sm:p-6">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <SlidersHorizontal className="h-4 w-4" />
             {dictionary.search.controls}
           </div>
           <div className="mt-4 space-y-4">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                {dictionary.search.query}
-              </span>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="pl-10"
-                  placeholder={dictionary.search.queryPlaceholder}
-                />
-              </div>
-            </label>
 
             {!lockedCategorySlug ? (
               <div className="space-y-2">
@@ -755,17 +772,12 @@ export function SearchExperience({
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-glow">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-display text-2xl font-semibold text-slate-950">
-                {results.length} {dictionary.search.results}
-              </p>
-              <p className="text-sm leading-6 text-slate-600">
-                {dictionary.search.resultsDescription}
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-lg font-extrabold text-slate-950">
+              {results.length} {dictionary.search.results}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
               <form action={saveAction}>
                 <input type="hidden" name="query" value={query} />
                 <input type="hidden" name="categorySlug" value={categorySlug} />
@@ -811,7 +823,7 @@ export function SearchExperience({
 
           {saveFeedback ? (
             <p
-              className={`mt-4 text-sm font-medium ${
+              className={`text-sm font-medium ${
                 saveState.success || deleteState.success ? "text-emerald-700" : "text-rose-700"
               }`}
             >
@@ -820,7 +832,7 @@ export function SearchExperience({
           ) : null}
 
           {activeFilterChips.length ? (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {activeFilterChips.map((chip) => (
                 <button
                   key={chip.key}
@@ -855,6 +867,7 @@ export function SearchExperience({
           />
         )}
       </div>
+    </div>
     </div>
   );
 }

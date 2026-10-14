@@ -60,12 +60,14 @@ export default async function SearchPage({
   ]);
 
   return (
-    <div className="space-y-8">
-      <SectionHeading
-        eyebrow={dictionary.search.eyebrow}
-        title={dictionary.search.title}
-        description={dictionary.search.description}
-      />
+    <div className="space-y-4 sm:space-y-8">
+      <div className="hidden sm:block">
+        <SectionHeading
+          eyebrow={dictionary.search.eyebrow}
+          title={dictionary.search.title}
+          description={dictionary.search.description}
+        />
+      </div>
       <SearchExperience
         listings={listings}
         categories={categories}
