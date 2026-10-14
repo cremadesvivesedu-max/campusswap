@@ -8,6 +8,7 @@ import { getListingStatusLabel } from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 import { ListingImage } from "@/components/marketplace/listing-image";
+import { CardHeartButton } from "@/components/marketplace/card-heart-button";
 
 interface ListingCardProps {
   listing: Listing;
@@ -36,6 +37,7 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
           : null;
 
   return (
+    <div className="relative">
     <Link
       href={publicLink ? `/l/${listing.id}` : `/app/listings/${listing.id}`}
       className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
@@ -71,6 +73,13 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
         ) : null}
       </div>
     </Link>
+    {/* Outside the link: a button inside an <a> is invalid and would open the listing. */}
+    <CardHeartButton
+      listingId={listing.id}
+      initialSaved={listing.isSaved}
+      className="absolute right-2 top-2"
+    />
+    </div>
   );
 }
 

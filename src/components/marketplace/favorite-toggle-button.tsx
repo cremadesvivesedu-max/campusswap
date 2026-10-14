@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toggleFavoriteAction } from "@/server/actions/marketplace";
 import { useOptionalCurrentUser } from "@/components/providers/current-user-provider";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/providers/locale-provider";
 
 interface FavoriteToggleButtonProps {
   listingId: string;
@@ -22,6 +23,7 @@ export function FavoriteToggleButton({
   const router = useRouter();
   const pathname = usePathname();
   const currentUser = useOptionalCurrentUser();
+  const { dictionary } = useLocale();
   const [isSaved, setIsSaved] = useState(initialSaved);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -51,7 +53,7 @@ export function FavoriteToggleButton({
         disabled={isPending}
       >
         <Heart className={cn("mr-2 h-4 w-4", isSaved ? "fill-current" : "")} />
-        {isPending ? "Saving..." : isSaved ? "Saved" : "Save listing"}
+        {isPending ? dictionary.favorites.saving : isSaved ? dictionary.favorites.saved : dictionary.favorites.save}
       </Button>
       {feedback ? <p className="text-xs text-slate-500">{feedback}</p> : null}
     </div>
