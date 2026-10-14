@@ -1,7 +1,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { requireAuthUser } from "@/lib/auth/server";
+import { getOptionalAuthUser, requireAuthUser } from "@/lib/auth/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
@@ -1126,7 +1126,7 @@ async function fetchActiveListings(
     data: { user: authUser }
   } =
     includeSavedState && supabase
-      ? await supabase.auth.getUser()
+      ? { data: { user: await getOptionalAuthUser() } }
       : { data: { user: null } };
   let savedListingIds = new Set<string>();
 
@@ -1177,20 +1177,31 @@ export async function searchMarketplaceListings(input: ListingSearchInput = {}) 
 
 async function ensurePublicUserRecord() {
   const authUser = await requireAuthUser("/app");
-  const existing = await fetchUserRowById(authUser.id);
   const admin = createAdminSupabaseClient();
+  const email = authUser.email?.trim().toLowerCase() ?? "";
+  const domain = getEmailDomain(email);
+  // Runs on every page: fetch the row and the domain rule together, and skip the
+  // rule entirely once someone is verified (verification never goes back).
+  const [existing, allowedDomainResult] = await Promise.all([
+    fetchUserRowById(authUser.id),
+    admin
+      ? admin
+          .from("allowed_email_domains")
+          .select("id, domain, university_id, auto_verify")
+          .eq("domain", domain)
+          .maybeSingle()
+      : Promise.resolve({ data: null })
+  ]);
 
   if (!admin) {
     return existing;
   }
 
-  const email = authUser.email?.trim().toLowerCase() ?? "";
-  const domain = getEmailDomain(email);
-  const { data: allowedDomain } = await admin
-    .from("allowed_email_domains")
-    .select("id, domain, university_id, auto_verify")
-    .eq("domain", domain)
-    .maybeSingle();
+  if (existing?.verification_status === "verified" && existing.profile?.verified_badge) {
+    return existing;
+  }
+
+  const allowedDomain = allowedDomainResult.data;
 
   const verificationStatus = resolveVerificationStatus(
     email,
@@ -1539,9 +1550,7 @@ export async function getListingById(
     return undefined;
   }
 
-  const {
-    data: { user: authUser }
-  } = await supabase.auth.getUser();
+  const authUser = await getOptionalAuthUser();
   const [favoriteResult, sellerMetricsByUserId, listingAnalyticsByListingId] =
     await Promise.all([
       authUser?.id
