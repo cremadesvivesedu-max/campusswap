@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import { Paperclip, Send, X } from "lucide-react";
+import { MapPin, Paperclip, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,37 @@ import {
   toggleConversationBlockAction
 } from "@/server/actions/marketplace";
 import type { ListingOffer, Transaction, User } from "@/types/domain";
+import { maastrichtPickupAreas } from "@/lib/maastricht-pickup-areas";
+
+/** Turns https:// links in a chat message into tappable links (text stays text). */
+function linkify(text: string) {
+  return text.split(/(https:\/\/[^\s]+)/g).map((part, index) =>
+    part.startsWith("https://") ? (
+      <a
+        key={index}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        className="underline underline-offset-2"
+      >
+        {part.includes("google.com/maps") ? "Google Maps ↗" : part}
+      </a>
+    ) : (
+      part
+    )
+  );
+}
+
+// Well-known public places from the Maastricht pickup-area data, proposed in one tap.
+const safeMeetupPoints = maastrichtPickupAreas.map((area) => {
+  const label = area.publicMeetupPointLabel.replace(/ (public )?meetup point$/i, "");
+  return {
+    id: area.id,
+    label,
+    area: area.label,
+    mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label}, Maastricht`)}`
+  };
+});
 
 interface ConversationThreadProps {
   conversationId: string;
@@ -298,6 +329,7 @@ function ConversationShell({
   const { dictionary } = useLocale();
   const [composerValue, setComposerValue] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
+  const [showMeetups, setShowMeetups] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
@@ -403,7 +435,7 @@ function ConversationShell({
                           : "border border-slate-200 bg-slate-100 text-slate-800"
                       } ${message.pending ? "opacity-60" : ""}`}
                     >
-                      {message.text ? <p className="whitespace-pre-wrap break-words">{message.text}</p> : null}
+                      {message.text ? <p className="whitespace-pre-wrap break-words">{linkify(message.text)}</p> : null}
                       {message.attachmentUrl && message.attachmentName ? (
                         <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -504,6 +536,36 @@ function ConversationShell({
                   </div>
                 ) : null}
 
+                {showMeetups ? (
+                  <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                    <p className="text-sm font-semibold text-slate-900">{dictionary.chatMeetup.title}</p>
+                    <p className="text-xs text-slate-600">{dictionary.chatMeetup.hint}</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {safeMeetupPoints.map((point) => (
+                        <button
+                          key={point.id}
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => {
+                            onSend(
+                              dictionary.chatMeetup.message
+                                .replace("{point}", point.label)
+                                .replace("{area}", point.area)
+                                .replace("{link}", point.mapUrl),
+                              []
+                            );
+                            setShowMeetups(false);
+                          }}
+                          className="rounded-xl border border-white bg-white px-3 py-2 text-left text-sm shadow-sm transition hover:border-emerald-300"
+                        >
+                          <span className="block font-semibold text-slate-900">{point.label}</span>
+                          <span className="block text-xs text-slate-500">{point.area}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="flex flex-col gap-3">
                   <Textarea
                     value={composerValue}
@@ -522,7 +584,16 @@ function ConversationShell({
                     className="max-h-40 min-h-[48px] resize-none py-3"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        aria-expanded={showMeetups}
+                        onClick={() => setShowMeetups((current) => !current)}
+                      >
+                        <MapPin className="mr-2 h-4 w-4" />
+                        {dictionary.chatMeetup.button}
+                      </Button>
                       {supportsAttachments ? (
                         <>
                           <input
