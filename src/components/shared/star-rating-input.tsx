@@ -7,11 +7,16 @@ import { cn } from "@/lib/utils";
 export function StarRatingInput({
   name,
   defaultValue = 5,
-  className
+  className,
+  size = "md",
+  labels
 }: {
   name: string;
   defaultValue?: number;
   className?: string;
+  size?: "md" | "lg";
+  /** One word per star ("Bad" … "Excellent"), shown under the stars instead of "4 / 5". */
+  labels?: readonly string[];
 }) {
   const groupId = useId();
   const [value, setValue] = useState(defaultValue);
@@ -45,7 +50,7 @@ export function StarRatingInput({
             >
               <Star
                 className={cn(
-                  "h-6 w-6 transition",
+                  size === "lg" ? "h-10 w-10 transition" : "h-6 w-6 transition",
                   active ? "fill-amber-400 text-amber-400" : "text-slate-300"
                 )}
               />
@@ -53,7 +58,9 @@ export function StarRatingInput({
           );
         })}
       </div>
-      <p className="text-xs text-slate-500">{value} / 5</p>
+      <p className={size === "lg" ? "text-sm font-semibold text-slate-700" : "text-xs text-slate-500"}>
+        {labels?.[value - 1] ?? `${value} / 5`}
+      </p>
     </div>
   );
 }

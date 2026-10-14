@@ -69,6 +69,14 @@ const messages: Record<string, Translation> = {
   "Listing removed from your marketplace surfaces while historical activity stays preserved.": { es: "Anuncio eliminado. Los chats y los intercambios se conservan.", nl: "Advertentie verwijderd. Chats en ruilen blijven bewaard." },
   "Search saved and alerts turned on. We'll notify you when a matching listing appears.": { es: "Búsqueda guardada y avisos activados. Te avisaremos cuando salga algo que encaje.", nl: "Zoekopdracht bewaard en meldingen aan. We laten het weten als er iets passends verschijnt." },
   "Search saved. We'll notify you when a matching listing appears.": { es: "Búsqueda guardada. Te avisaremos cuando salga algo que encaje.", nl: "Zoekopdracht bewaard. We laten het weten als er iets passends verschijnt." },
+  "Add the carrier and tracking number before marking the order as shipped.": { es: "Añade el transportista y el número de seguimiento antes de marcarlo como enviado.", nl: "Voeg de vervoerder en het trackingnummer toe voordat je het als verzonden markeert." },
+  "That tracking number does not look right. Check it and try again.": { es: "Ese número de seguimiento no parece correcto. Revísalo y vuelve a intentarlo.", nl: "Dat trackingnummer klopt niet. Controleer het en probeer opnieuw." },
+  "Tracking could not be saved. Try again in a moment.": { es: "No se pudo guardar el seguimiento. Inténtalo de nuevo en un momento.", nl: "Tracking kon niet worden opgeslagen. Probeer het zo opnieuw." },
+  "The buyer confirms when the parcel arrives. You are paid then, or automatically after 14 days.": { es: "El comprador confirma cuando le llega el paquete. Cobras entonces, o automáticamente a los 14 días.", nl: "De koper bevestigt wanneer het pakket aankomt. Dan word je betaald, of automatisch na 14 dagen." },
+  "Listing marked as sold.": { es: "Anuncio marcado como vendido.", nl: "Advertentie gemarkeerd als verkocht." },
+  "This listing has a paid order. Finish it from the order panel on the listing page.": { es: "Este anuncio tiene un pedido pagado. Termínalo desde el panel del pedido en la página del anuncio.", nl: "Deze advertentie heeft een betaalde bestelling. Rond die af via het bestelpaneel op de advertentiepagina." },
+  "That chat is not about this listing.": { es: "Ese chat no es de este anuncio.", nl: "Die chat gaat niet over deze advertentie." },
+  "Only the seller can update this listing.": { es: "Solo el vendedor puede cambiar este anuncio.", nl: "Alleen de verkoper kan deze advertentie wijzigen." },
   "Listing published.": { es: "Anuncio publicado.", nl: "Advertentie gepubliceerd." }
 };
 

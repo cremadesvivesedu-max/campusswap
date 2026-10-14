@@ -314,6 +314,15 @@ export interface Transaction {
   completedAt?: string;
 }
 
+export interface ShipmentDetails {
+  transactionId: string;
+  carrier: string;
+  trackingNumber: string;
+  trackingUrl?: string;
+  shippedAt: string;
+  payoutReleasedAt?: string;
+}
+
 export interface ListingOffer {
   id: string;
   listingId: string;

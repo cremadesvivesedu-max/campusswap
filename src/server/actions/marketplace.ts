@@ -19,6 +19,18 @@ import {
   retrieveSellerConnectedAccount
 } from "@/lib/payments/stripe-connect";
 import { createBuyerCheckoutSession } from "@/lib/payments/stripe";
+import {
+  buildTrackingUrl,
+  carrierLabels,
+  isShippingCarrier,
+  isValidTrackingNumber,
+  normalizeTrackingNumber
+} from "@/lib/shipping/tracking";
+import {
+  releasePayoutForTransaction,
+  saveShipment,
+  sendReviewRequests
+} from "@/server/services/order-protection";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import type {
   ExchangeStatus,
@@ -2972,7 +2984,8 @@ export async function markTransactionReadyForPickupAction(
 }
 
 export async function markTransactionShippedAction(
-  transactionId: string
+  transactionId: string,
+  tracking?: { carrier: string; trackingNumber: string }
 ): Promise<ActionResult> {
   if (!isLiveMode) {
     return {
@@ -2985,7 +2998,7 @@ export async function markTransactionShippedAction(
   const { data: transaction, error } = await supabase
     .from("transactions")
     .select(
-      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at"
+      "id, listing_id, buyer_id, seller_id, state, conversation_id, fulfillment_method, checkout_status, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, shipping_postal_code, shipping_country"
     )
     .eq("id", transactionId)
     .maybeSingle();
@@ -3001,6 +3014,25 @@ export async function markTransactionShippedAction(
     return {
       success: false,
       message: "Only the seller can mark an order as shipped."
+    };
+  }
+
+  const carrier = tracking?.carrier ?? "";
+  const trackingNumber = normalizeTrackingNumber(tracking?.trackingNumber ?? "");
+  const hasTracking = Boolean(carrier || trackingNumber);
+
+  // Paid orders are protected, so the buyer must be able to follow the parcel.
+  if (isStripeBackedTransaction(transaction) && !hasTracking) {
+    return {
+      success: false,
+      message: "Add the carrier and tracking number before marking the order as shipped."
+    };
+  }
+
+  if (hasTracking && (!isShippingCarrier(carrier) || !isValidTrackingNumber(trackingNumber))) {
+    return {
+      success: false,
+      message: "That tracking number does not look right. Check it and try again."
     };
   }
 
@@ -3028,6 +3060,33 @@ export async function markTransactionShippedAction(
   }
 
   const now = new Date().toISOString();
+  const trackingUrl =
+    hasTracking && isShippingCarrier(carrier)
+      ? buildTrackingUrl(carrier, trackingNumber, {
+          postalCode: transaction.shipping_postal_code ?? undefined,
+          country: transaction.shipping_country ?? undefined
+        })
+      : null;
+
+  if (hasTracking) {
+    const admin = createAdminSupabaseClient();
+    const saveError = admin
+      ? await saveShipment(admin, {
+          transactionId: transaction.id,
+          carrier,
+          trackingNumber,
+          trackingUrl
+        })
+      : "Tracking could not be saved.";
+
+    if (saveError) {
+      console.error("Shipment save failed:", saveError);
+      return {
+        success: false,
+        message: "Tracking could not be saved. Try again in a moment."
+      };
+    }
+  }
 
   await supabase
     .from("transactions")
@@ -3050,14 +3109,19 @@ export async function markTransactionShippedAction(
     await supabase.from("messages").insert({
       conversation_id: transaction.conversation_id,
       sender_id: user.id,
-      text: "I marked this order as shipped."
+      text:
+        hasTracking && isShippingCarrier(carrier)
+          ? `📦 Shipped with ${carrierLabels[carrier]} · ${trackingNumber}${trackingUrl ? `\n${trackingUrl}` : ""}`
+          : "I marked this order as shipped."
     });
   }
 
   await notifyUser(
     transaction.buyer_id,
     "Order shipped",
-    "The seller marked your order as shipped.",
+    hasTracking
+      ? "Your parcel is on its way. Open the order to follow it."
+      : "The seller marked your order as shipped.",
     {
       type: "listing",
       preference: "listing_updates",
@@ -3322,6 +3386,10 @@ export async function completeTransactionAction(
   }
 
   const normalizedState = normalizeExchangeStatus(transaction.state);
+  const protectedShipping =
+    transaction.fulfillment_method === "shipping" &&
+    isStripeBackedTransaction(transaction) &&
+    hasRecordedStripePayment(transaction);
 
   if (isStripeBackedTransaction(transaction) && !hasRecordedStripePayment(transaction)) {
     return {
@@ -3331,11 +3399,19 @@ export async function completeTransactionAction(
     };
   }
 
-  if (
-    !["ready-for-pickup", "delivered", "paid", "reserved", "pending"].includes(
-      normalizedState
-    )
-  ) {
+  // Buyer protection: only the buyer says the parcel arrived (or the daily job after 14 days).
+  if (protectedShipping && transaction.buyer_id !== user.id) {
+    return {
+      success: false,
+      message: "The buyer confirms when the parcel arrives. You are paid then, or automatically after 14 days."
+    };
+  }
+
+  const completableStates = protectedShipping
+    ? ["shipped", "delivered"]
+    : ["ready-for-pickup", "delivered", "paid", "reserved", "pending"];
+
+  if (!completableStates.includes(normalizedState)) {
     return {
       success: false,
       message: "This order is not ready to be completed yet."
@@ -3346,6 +3422,9 @@ export async function completeTransactionAction(
     .from("transactions")
     .update({
       state: "completed",
+      ...(protectedShipping && normalizedState === "shipped"
+        ? { delivered_at: new Date().toISOString() }
+        : {}),
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -3376,28 +3455,16 @@ export async function completeTransactionAction(
     "The listing was sold to another buyer."
   );
 
-  await Promise.all([
-    notifyUser(
-      transaction.buyer_id,
-      "Review now available",
-      "Your exchange is complete. You can now leave a review for the seller.",
-      {
-        type: "review",
-        dedupeKey: `review-eligible:${transaction.id}:${transaction.buyer_id}`,
-        href: "/app/my-purchases"
-      }
-    ),
-    notifyUser(
-      transaction.seller_id,
-      "Review now available",
-      "Your exchange is complete. You can now leave a review for the buyer.",
-      {
-        type: "review",
-        dedupeKey: `review-eligible:${transaction.id}:${transaction.seller_id}`,
-        href: "/app/my-purchases"
-      }
-    )
-  ]);
+  const admin = createAdminSupabaseClient();
+
+  if (admin) {
+    if (protectedShipping) {
+      // A failed transfer is retried by the daily job; the order still completes.
+      await releasePayoutForTransaction(admin, transaction.id);
+    }
+
+    await sendReviewRequests(admin, transaction, "now");
+  }
 
   revalidatePath(`/app/listings/${transaction.listing_id}`);
   revalidatePath("/app/messages");
@@ -4156,4 +4223,228 @@ export async function toggleConversationBlockAction(
 
   revalidatePath("/app/messages");
   return { success: true, message: blockedBy ? "Conversation blocked." : "Conversation unblocked.", blockedBy };
+}
+
+export interface SoldCandidate {
+  conversationId: string;
+  buyerId: string;
+  name: string;
+  avatar?: string;
+}
+
+/** People who chatted about a listing, so the seller can say who bought it. */
+export async function getSoldCandidatesAction(
+  listingId: string
+): Promise<ActionResult & { candidates: SoldCandidate[] }> {
+  if (!isLiveMode) {
+    return { success: true, message: "", candidates: [] };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("id, seller_id")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (!listing || listing.seller_id !== user.id) {
+    return { success: false, message: "Only the seller can update this listing.", candidates: [] };
+  }
+
+  const admin = createAdminSupabaseClient() ?? supabase;
+  const { data: conversations } = await admin
+    .from("conversations")
+    .select("id, buyer_id, updated_at")
+    .eq("listing_id", listingId)
+    .eq("seller_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(20);
+  const rows = (conversations as { id: string; buyer_id: string }[] | null) ?? [];
+
+  if (!rows.length) {
+    return { success: true, message: "", candidates: [] };
+  }
+
+  const buyerIds = [...new Set(rows.map((row) => row.buyer_id))];
+  const [{ data: profiles }, { data: users }] = await Promise.all([
+    admin.from("profiles").select("user_id, full_name").in("user_id", buyerIds),
+    admin.from("users").select("id, avatar_url").in("id", buyerIds)
+  ]);
+  const names = new Map(
+    ((profiles as { user_id: string; full_name: string | null }[] | null) ?? []).map((row) => [
+      row.user_id,
+      row.full_name
+    ])
+  );
+  const avatars = new Map(
+    ((users as { id: string; avatar_url: string | null }[] | null) ?? []).map((row) => [
+      row.id,
+      row.avatar_url
+    ])
+  );
+
+  return {
+    success: true,
+    message: "",
+    candidates: rows.map((row) => ({
+      conversationId: row.id,
+      buyerId: row.buyer_id,
+      name: names.get(row.buyer_id) || "CampusSwap student",
+      avatar: avatars.get(row.buyer_id) ?? undefined
+    }))
+  };
+}
+
+/**
+ * Most sales are cash at a meetup. "Mark as sold" records who bought it (if they used
+ * CampusSwap chat) as a completed exchange, which unlocks reviews for both sides.
+ */
+export async function markListingSoldAction(
+  listingId: string,
+  conversationId: string | null
+): Promise<ActionResult & { transactionId?: string }> {
+  if (!isLiveMode) {
+    return {
+      success: false,
+      message: "Switch to live mode to persist listing status changes."
+    };
+  }
+
+  const { user, supabase } = await requireMarketplaceContext();
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    return { success: false, message: "Something went wrong. Please try again." };
+  }
+
+  const { data: listing } = await admin
+    .from("listings")
+    .select("id, seller_id, title, price, status")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (!listing || listing.seller_id !== user.id) {
+    return { success: false, message: "Only the seller can update this listing." };
+  }
+
+  // Paid orders have their own flow (refunds, buyer protection) — never close them from here.
+  const { data: paidOrders } = await admin
+    .from("transactions")
+    .select("id")
+    .eq("listing_id", listingId)
+    .not("paid_at", "is", null)
+    .not("state", "in", "(cancelled,completed)")
+    .limit(1);
+
+  if (paidOrders?.length) {
+    return {
+      success: false,
+      message: "This listing has a paid order. Finish it from the order panel on the listing page."
+    };
+  }
+
+  const now = new Date().toISOString();
+  let transactionId: string | undefined;
+  let buyerId: string | undefined;
+
+  if (conversationId) {
+    const { data: conversation } = await admin
+      .from("conversations")
+      .select("id, listing_id, buyer_id, seller_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (!conversation || conversation.listing_id !== listingId || conversation.seller_id !== user.id) {
+      return { success: false, message: "That chat is not about this listing." };
+    }
+
+    buyerId = conversation.buyer_id;
+    const completedFields = {
+      state: "completed",
+      amount: listing.price,
+      total_amount: listing.price,
+      fulfillment_method: "pickup",
+      completed_at: now,
+      updated_at: now
+    };
+    const { data: existing } = await admin
+      .from("transactions")
+      .select("id")
+      .eq("conversation_id", conversationId)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await admin
+        .from("transactions")
+        .update(completedFields)
+        .eq("id", existing.id);
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      transactionId = existing.id;
+    } else {
+      const { data: created, error } = await admin
+        .from("transactions")
+        .insert({
+          ...completedFields,
+          listing_id: listingId,
+          buyer_id: conversation.buyer_id,
+          seller_id: user.id,
+          conversation_id: conversationId,
+          seller_net_amount: listing.price,
+          meetup_spot: "In person",
+          meetup_window: "Done"
+        })
+        .select("id")
+        .single();
+
+      if (error || !created) {
+        return { success: false, message: error?.message ?? "Something went wrong. Please try again." };
+      }
+
+      transactionId = created.id;
+    }
+  }
+
+  const { error: listingError } = await admin
+    .from("listings")
+    .update({ status: "sold", updated_at: now })
+    .eq("id", listingId);
+
+  if (listingError) {
+    return { success: false, message: listingError.message };
+  }
+
+  await cancelCompetingTransactions(listingId, transactionId, "The listing was sold to another buyer.");
+
+  if (transactionId && buyerId && conversationId) {
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      text: "✅ Sold to you! You can now rate each other."
+    });
+    await sendReviewRequests(
+      admin,
+      { id: transactionId, buyer_id: buyerId, seller_id: user.id },
+      "now"
+    );
+  }
+
+  await recordAppEvent({
+    eventName: "listing_sold",
+    actorUserId: user.id,
+    listingId,
+    transactionId,
+    metadata: { viaChat: Boolean(transactionId) }
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/my-listings");
+  revalidatePath("/app/my-purchases");
+  revalidatePath("/app/profile");
+  revalidatePath(`/app/listings/${listingId}`);
+
+  return { success: true, message: "Listing marked as sold.", transactionId };
 }

@@ -117,7 +117,8 @@ function getBuyerCheckoutMetadata(session: Stripe.Checkout.Session) {
     sellerId: session.metadata?.seller_id ?? "",
     sellerConnectedAccountId:
       session.metadata?.seller_connected_account_id ?? "",
-    fulfillmentMethod: session.metadata?.fulfillment_method ?? "pickup"
+    fulfillmentMethod: session.metadata?.fulfillment_method ?? "pickup",
+    payoutHeld: session.metadata?.payout_mode === "held"
   };
 }
 
@@ -372,7 +373,8 @@ async function handleCompletedBuyerCheckout(
       stripe_checkout_session_id: session.id,
       stripe_payment_intent_id: getPaymentIntentId(session) ?? null,
       seller_stripe_account_id: sellerStripeAccountId,
-      seller_payout_status: "paid_to_connected_account",
+      // Held (shipping) payments stay "ready" until the buyer confirms delivery.
+      seller_payout_status: metadata.payoutHeld ? "ready" : "paid_to_connected_account",
       paid_at: now,
       updated_at: now
     })
@@ -409,7 +411,7 @@ async function handleCompletedBuyerCheckout(
       title: "Payment completed",
       body:
         fulfillmentLabel === "shipping"
-          ? "Your payment went through. The seller can now prepare shipment."
+          ? "Your payment went through. CampusSwap holds it until you confirm the parcel arrived."
           : "Your payment went through. The seller can now prepare pickup.",
       href: "/app/my-purchases"
     }),
@@ -421,7 +423,7 @@ async function handleCompletedBuyerCheckout(
       title: "Buyer payment received",
       body:
         fulfillmentLabel === "shipping"
-          ? "A buyer paid for this item with shipping. You can prepare dispatch now."
+          ? "A buyer paid for this item with shipping. Send it and add the tracking number; you get paid when it arrives."
           : "A buyer paid for this item. You can prepare the pickup handoff now.",
       href: destinationHref
     })

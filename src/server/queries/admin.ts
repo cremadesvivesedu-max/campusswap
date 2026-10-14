@@ -3,6 +3,12 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { demoAdminUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import {
+  getWeekStarts,
+  loadWeeklyMetrics,
+  type WeekMetrics
+} from "@/server/services/weekly-metrics";
 import type {
   AllowedEmailDomain,
   Category,
@@ -739,3 +745,49 @@ export async function getAdminSettingsData() {
     )
   };
 }
+
+/** Week-by-week numbers for the Monday check-in, plus who was active in the last 7 days. */
+export async function getAdminWeeklyMetrics(weeks = 8): Promise<{
+  weeks: WeekMetrics[];
+  activeLast7Days: number;
+  totalUsers: number;
+}> {
+  if (!isLiveMode) {
+    return {
+      weeks: getWeekStarts(new Date(), weeks).map((start) => ({
+        weekStart: start.toISOString(),
+        newUsers: 0,
+        newListings: 0,
+        newChats: 0,
+        messages: 0,
+        sales: 0,
+        salesVolume: 0,
+        reviews: 0,
+        averageRating: null
+      })),
+      activeLast7Days: 0,
+      totalUsers: demoData.users.length
+    };
+  }
+
+  await requireAdminAccess();
+  const admin = createAdminSupabaseClient();
+
+  if (!admin) {
+    throw new Error("Supabase service role is not configured for weekly metrics.");
+  }
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [weekRows, active, total] = await Promise.all([
+    loadWeeklyMetrics(admin, weeks),
+    admin.from("users").select("*", { count: "exact", head: true }).gte("last_seen_at", sevenDaysAgo),
+    admin.from("users").select("*", { count: "exact", head: true })
+  ]);
+
+  return {
+    weeks: weekRows,
+    activeLast7Days: active.count ?? 0,
+    totalUsers: total.count ?? 0
+  };
+}
+

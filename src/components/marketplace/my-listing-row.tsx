@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { removeListingAction, updateListingStatusAction } from "@/server/actions/marketplace";
 import type { Listing, SellerListingTransaction } from "@/types/domain";
 import { friendlyError } from "@/lib/friendly-error";
+import { MarkSoldSheet } from "@/components/marketplace/mark-sold-sheet";
 
 const statusTone: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -36,6 +37,7 @@ export function MyListingRow({
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [removed, setRemoved] = useState(false);
+  const [showSold, setShowSold] = useState(false);
   const cover = listing.images.find((image) => image.isPrimary) ?? listing.images[0];
 
   if (removed) {
@@ -64,6 +66,7 @@ export function MyListingRow({
   };
 
   const canToggle = listing.status === "active" || listing.status === "archived";
+  const canMarkSold = ["active", "reserved", "archived"].includes(listing.status);
 
   return (
     <li className={`rounded-2xl border border-slate-200 bg-white p-3 ${isPending ? "opacity-60" : ""}`}>
@@ -90,6 +93,19 @@ export function MyListingRow({
                 <Link href={`/app/listings/${listing.id}`} className="block px-4 py-2.5 hover:bg-slate-50">
                   {dictionary.common.actions.viewListing}
                 </Link>
+                {canMarkSold ? (
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    className="block w-full px-4 py-2.5 text-left font-semibold text-emerald-700 hover:bg-emerald-50"
+                    onClick={(event) => {
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                      setShowSold(true);
+                    }}
+                  >
+                    {dictionary.soldFlow.markSold}
+                  </button>
+                ) : null}
                 {canToggle ? (
                   <button
                     type="button"
@@ -161,6 +177,9 @@ export function MyListingRow({
             </Link>
           ) : null}
         </div>
+      ) : null}
+      {showSold ? (
+        <MarkSoldSheet listingId={listing.id} onClose={() => setShowSold(false)} />
       ) : null}
       <div className="mt-3">
         <Button asChild size="sm" variant="outline" className="w-full">

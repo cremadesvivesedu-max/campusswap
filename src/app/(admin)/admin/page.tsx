@@ -1,12 +1,14 @@
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getAdminMetrics } from "@/server/queries/admin";
+import { WeeklyMetrics } from "@/components/admin/weekly-metrics";
+import { getAdminMetrics, getAdminWeeklyMetrics } from "@/server/queries/admin";
 
 export default async function AdminDashboardPage() {
-  const metrics = await getAdminMetrics();
+  const [metrics, weekly] = await Promise.all([getAdminMetrics(), getAdminWeeklyMetrics()]);
 
   return (
     <div className="space-y-8">
+      <WeeklyMetrics {...weekly} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           title="Total users"

@@ -37,8 +37,17 @@ import {
 import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
 import { friendlyError } from "@/lib/friendly-error";
+import {
+  carrierLabels,
+  isShippingCarrier,
+  protectionEndsAt,
+  shippingCarriers,
+  type ShippingCarrier
+} from "@/lib/shipping/tracking";
+import { PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import type {
   FulfillmentMethod,
+  ShipmentDetails,
   ListingStatus,
   ListingTransactionContext,
   ShippingAddressDetails,
@@ -446,6 +455,141 @@ function OrderSummary({
   );
 }
 
+/** Paid shipping orders keep the money with CampusSwap until the buyer confirms arrival. */
+function isProtectedShippingOrder(transaction?: Transaction) {
+  return Boolean(
+    transaction &&
+      transaction.fulfillmentMethod === "shipping" &&
+      (transaction.checkoutStatus === "paid" || transaction.paidAt) &&
+      transaction.stripePaymentIntentId
+  );
+}
+
+function formatDay(value: string | Date, localeCode: string) {
+  return new Date(value).toLocaleDateString(localeCode, { day: "numeric", month: "long" });
+}
+
+function ShipmentCard({
+  dictionary,
+  shipment,
+  transaction,
+  viewer
+}: {
+  dictionary: LocaleDictionary;
+  shipment?: ShipmentDetails;
+  transaction: Transaction;
+  viewer: "buyer" | "seller";
+}) {
+  const copy = dictionary.shipping;
+  const shippedAt = shipment?.shippedAt ?? transaction.shippedAt;
+  const isProtected = isProtectedShippingOrder(transaction);
+  const releaseDate = shippedAt ? formatDay(protectionEndsAt(shippedAt), dictionary.localeCode) : "";
+  const carrierName = shipment
+    ? isShippingCarrier(shipment.carrier) && shipment.carrier !== "other"
+      ? carrierLabels[shipment.carrier]
+      : copy.otherCarrier
+    : null;
+
+  return (
+    <div className="space-y-3 rounded-[24px] border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
+      <p className="flex items-center gap-2 font-bold">
+        <Truck className="h-4 w-4" aria-hidden="true" />
+        {copy.trackingTitle}
+      </p>
+      {shipment ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span>
+            {carrierName} · <span className="font-mono">{shipment.trackingNumber}</span>
+          </span>
+          {shipment.trackingUrl ? (
+            <a
+              href={shipment.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center rounded-full bg-sky-700 px-4 text-xs font-bold text-white hover:bg-sky-800"
+            >
+              {copy.trackParcel} ↗
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+      {isProtected && shippedAt && transaction.state !== "completed" ? (
+        <p className="flex gap-2 text-xs leading-5">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {viewer === "buyer"
+            ? copy.heldBuyer.replace("{date}", releaseDate)
+            : copy.heldSeller
+                .replace("{amount}", formatCurrency(transaction.sellerNetAmount))
+                .replace("{date}", releaseDate)}
+        </p>
+      ) : null}
+      {shipment?.payoutReleasedAt ? (
+        <p className="text-xs">{copy.paidOut.replace("{date}", formatDay(shipment.payoutReleasedAt, dictionary.localeCode))}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ShipOrderForm({
+  dictionary,
+  disabled,
+  onShip
+}: {
+  dictionary: LocaleDictionary;
+  disabled: boolean;
+  onShip: (carrier: ShippingCarrier, trackingNumber: string) => void;
+}) {
+  const copy = dictionary.shipping;
+  const [carrier, setCarrier] = useState<ShippingCarrier>("postnl");
+  const [trackingNumber, setTrackingNumber] = useState("");
+
+  return (
+    <form
+      className="space-y-3 rounded-[24px] border border-slate-200 bg-white p-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onShip(carrier, trackingNumber);
+      }}
+    >
+      <p className="flex items-center gap-2 font-bold text-slate-950">
+        <PackageCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+        {copy.sendTitle}
+      </p>
+      <p className="text-xs leading-5 text-slate-500">{copy.sendHint}</p>
+      <div className="grid gap-2 sm:grid-cols-[150px_1fr]">
+        <label className="space-y-1">
+          <span className="text-xs font-semibold text-slate-600">{copy.carrierLabel}</span>
+          <select
+            value={carrier}
+            onChange={(event) => setCarrier(event.target.value as ShippingCarrier)}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"
+          >
+            {shippingCarriers.map((option) => (
+              <option key={option} value={option}>
+                {option === "other" ? copy.otherCarrier : carrierLabels[option]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-semibold text-slate-600">{copy.trackingLabel}</span>
+          <Input
+            value={trackingNumber}
+            onChange={(event) => setTrackingNumber(event.target.value)}
+            placeholder={copy.trackingPlaceholder}
+            autoCapitalize="characters"
+            autoComplete="off"
+            required
+          />
+        </label>
+      </div>
+      <Button type="submit" className="w-full sm:w-auto" disabled={disabled || trackingNumber.trim().length < 6}>
+        {disabled ? dictionary.common.actions.updating : copy.markShipped}
+      </Button>
+    </form>
+  );
+}
+
 export function ListingTransactionPanel({
   listingId,
   listingPrice,
@@ -458,7 +602,8 @@ export function ListingTransactionPanel({
   seller,
   sellerStripeStatus,
   context,
-  isOwnListing
+  isOwnListing,
+  shipment
 }: {
   listingId: string;
   listingPrice: number;
@@ -472,6 +617,7 @@ export function ListingTransactionPanel({
   sellerStripeStatus: SellerStripeConnectStatus;
   context: ListingTransactionContext;
   isOwnListing: boolean;
+  shipment?: ShipmentDetails;
 }) {
   const { dictionary } = useLocale();
   const router = useRouter();
@@ -570,11 +716,14 @@ export function ListingTransactionPanel({
       transactionFulfillment === "shipping" &&
       (!stripeCheckoutOrder || stripePaymentRecorded) &&
       (transactionState ? ["reserved", "paid"].includes(transactionState) : false);
+    const protectedOrder = isProtectedShippingOrder(transaction);
     const canMarkDelivered =
+      !protectedOrder &&
       Boolean(transactionState) &&
       transactionFulfillment === "shipping" &&
       transactionState === "shipped";
     const canComplete =
+      !protectedOrder &&
       Boolean(transactionState) &&
       (transactionState
         ? ["ready-for-pickup", "delivered"].includes(transactionState)
@@ -658,6 +807,36 @@ export function ListingTransactionPanel({
             </div>
           ) : null}
 
+          {protectedOrder && canMarkShipped ? (
+            <p className="flex gap-2 rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-900">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              {dictionary.shipping.heldSellerBeforeShip}
+            </p>
+          ) : null}
+
+          {canMarkShipped && transaction ? (
+            <ShipOrderForm
+              dictionary={dictionary}
+              disabled={isPending}
+              onShip={(carrier, trackingNumber) =>
+                runAction(() =>
+                  markTransactionShippedAction(transaction.id, { carrier, trackingNumber })
+                )
+              }
+            />
+          ) : null}
+
+          {transaction?.fulfillmentMethod === "shipping" &&
+          transaction.shippedAt &&
+          transaction.state !== "cancelled" ? (
+            <ShipmentCard
+              dictionary={dictionary}
+              shipment={shipment}
+              transaction={transaction}
+              viewer="seller"
+            />
+          ) : null}
+
           <div className="flex flex-col gap-2 rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:flex-wrap [&>a]:w-full [&>button]:w-full sm:[&>a]:w-auto sm:[&>button]:w-auto">
             {transaction?.conversationId ? (
               <Button asChild type="button" variant="secondary">
@@ -701,17 +880,6 @@ export function ListingTransactionPanel({
                 {isPending
                   ? dictionary.common.actions.updating
                   : dictionary.messages.exchange.markReadyForPickup}
-              </Button>
-            ) : null}
-            {canMarkShipped && transaction ? (
-              <Button
-                type="button"
-                onClick={() => runAction(() => markTransactionShippedAction(transactionId!))}
-                disabled={isPending}
-              >
-                {isPending
-                  ? dictionary.common.actions.updating
-                  : dictionary.messages.exchange.markShipped}
               </Button>
             ) : null}
             {canMarkDelivered && transaction ? (
@@ -820,11 +988,17 @@ export function ListingTransactionPanel({
     Boolean(viewerTransaction) &&
     viewerFulfillment === "pickup" &&
     viewerTransaction?.state === "ready-for-pickup";
+  const viewerProtectedOrder = isProtectedShippingOrder(viewerTransaction);
+  const canConfirmReceived =
+    viewerProtectedOrder &&
+    (viewerTransaction?.state === "shipped" || viewerTransaction?.state === "delivered");
   const canConfirmDelivered =
+    !viewerProtectedOrder &&
     Boolean(viewerTransaction) &&
     viewerFulfillment === "shipping" &&
     viewerTransaction?.state === "shipped";
   const canCompleteDeliveredOrder =
+    !viewerProtectedOrder &&
     Boolean(viewerTransaction) &&
     viewerFulfillment === "shipping" &&
     viewerTransaction?.state === "delivered";
@@ -884,11 +1058,50 @@ export function ListingTransactionPanel({
           />
         ) : null}
 
+        {viewerTransaction?.fulfillmentMethod === "shipping" &&
+        viewerTransaction.shippedAt &&
+        viewerTransaction.state !== "cancelled" ? (
+          <ShipmentCard
+            dictionary={dictionary}
+            shipment={shipment}
+            transaction={viewerTransaction}
+            viewer="buyer"
+          />
+        ) : null}
+
+        {canConfirmReceived && viewerTransaction ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              onClick={() => {
+                if (!window.confirm(dictionary.shipping.confirmReceived)) {
+                  return;
+                }
+                runAction(() => completeTransactionAction(viewerTransaction.id));
+              }}
+              disabled={isPending}
+            >
+              {isPending ? dictionary.common.actions.updating : dictionary.shipping.receivedOk}
+            </Button>
+            <Button asChild type="button" variant="outline">
+              <Link
+                href={`/app/support?type=shipping-help&transactionId=${viewerTransaction.id}&listingId=${listingId}${viewerTransaction.conversationId ? `&conversationId=${viewerTransaction.conversationId}` : ""}&targetUserId=${seller.id}`}
+              >
+                {dictionary.shipping.reportProblem}
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+
         {listingShippingAvailable &&
         showShippingForm &&
         (canStartPurchase ||
           viewerTransaction?.fulfillmentMethod === "shipping") ? (
           <div className="space-y-3">
+            <p className="flex gap-2 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-900">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              {dictionary.shipping.protectionNote}
+            </p>
             <ShippingAddressForm
               dictionary={dictionary}
               shippingDraft={shippingDraft}

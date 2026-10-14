@@ -30,6 +30,7 @@ import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-b
 import { ShareListingButtons } from "@/components/marketplace/share-listing-buttons";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { Button } from "@/components/ui/button";
+import { getShipmentForTransaction } from "@/server/services/order-protection";
 
 // Listing page in marketplace order (Wallapop-like): photos, price and title, seller,
 // description, a short details list, then buying and the map.
@@ -79,6 +80,14 @@ export default async function ListingDetailPage({
   const chats = listing.analytics?.messagesReceived ?? 0;
   const popular = isPopularListing(listing.viewCount, listing.saveCount);
   const isOwnListing = currentUser.id === listing.sellerId;
+  // Tracking is only loaded for the buyer or seller of the order on screen.
+  const panelTransaction =
+    transactionContext.viewerTransaction ??
+    (isOwnListing ? transactionContext.activeTransaction : undefined);
+  const shipment =
+    panelTransaction?.fulfillmentMethod === "shipping" && panelTransaction.shippedAt
+      ? await getShipmentForTransaction(panelTransaction.id)
+      : undefined;
   const copy = dictionary.listingPage;
   const memberSince = seller
     ? new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(
@@ -221,6 +230,12 @@ export default async function ListingDetailPage({
               <span className="text-slate-500">{copy.delivery}</span>
               <span className="ml-auto text-right font-semibold text-slate-900">{deliveryText}</span>
             </li>
+            {listing.shippingAvailable ? (
+              <li className="flex items-start gap-3 bg-emerald-50/60 px-4 py-3 text-xs leading-5 text-emerald-900">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                {dictionary.shipping.protectionNote}
+              </li>
+            ) : null}
             <li className="flex items-center gap-3 px-4 py-3">
               <MapPin className="h-4 w-4 text-slate-500" aria-hidden="true" />
               <span className="text-slate-500">{dictionary.listing.pickupArea}</span>
@@ -351,6 +366,7 @@ export default async function ListingDetailPage({
             sellerStripeStatus={sellerStripeStatus}
             context={transactionContext}
             isOwnListing={isOwnListing}
+            shipment={shipment}
           />
             </div>
           </details>

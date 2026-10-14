@@ -32,6 +32,15 @@ interface BuyerCheckoutSessionInput {
   sellerNetAmount: number;
 }
 
+/**
+ * Shipped orders are paid to CampusSwap first and handed to the seller once the buyer
+ * confirms the parcel arrived (or the protection window ends). Pickup orders go straight
+ * to the seller as before.
+ */
+export function shouldHoldPayout(fulfillmentMethod: "pickup" | "shipping") {
+  return fulfillmentMethod === "shipping";
+}
+
 function toMinorUnit(amount: number) {
   return Math.round(roundCurrencyAmount(amount) * 100);
 }
@@ -120,15 +129,21 @@ export async function createBuyerCheckoutSession({
       shipping_amount: shippingAmount.toFixed(2),
       platform_fee: platformFee.toFixed(2),
       seller_net_amount: sellerNetAmount.toFixed(2),
-      total_amount: (itemAmount + shippingAmount + platformFee).toFixed(2)
+      total_amount: (itemAmount + shippingAmount + platformFee).toFixed(2),
+      payout_mode: shouldHoldPayout(fulfillmentMethod) ? "held" : "direct"
     },
-    payment_intent_data: {
-      // During the free launch period there is no fee; Stripe wants the field left out then.
-      ...(platformFee > 0 ? { application_fee_amount: toMinorUnit(platformFee) } : {}),
-      transfer_data: {
-        destination: sellerConnectedAccountId
-      }
-    },
+    payment_intent_data: shouldHoldPayout(fulfillmentMethod)
+      ? {
+          // Buyer protection: the money stays with CampusSwap until delivery is confirmed.
+          transfer_group: transactionId
+        }
+      : {
+          // During the free launch period there is no fee; Stripe wants the field left out then.
+          ...(platformFee > 0 ? { application_fee_amount: toMinorUnit(platformFee) } : {}),
+          transfer_data: {
+            destination: sellerConnectedAccountId
+          }
+        },
     line_items: [
       {
         quantity: 1,
@@ -173,4 +188,48 @@ export async function createBuyerCheckoutSession({
         : [])
     ]
   });
+}
+
+/**
+ * Sends a held payment to the seller's connected account. Safe to call twice: the
+ * idempotency key makes Stripe return the first transfer instead of paying again.
+ * Returns null when the payment was a direct charge that already went to the seller.
+ */
+export async function releaseHeldPayout(input: {
+  transactionId: string;
+  paymentIntentId: string;
+  sellerConnectedAccountId: string;
+  sellerNetAmount: number;
+}) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(input.paymentIntentId);
+
+  if (paymentIntent.transfer_data?.destination) {
+    return null;
+  }
+
+  const chargeId =
+    typeof paymentIntent.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : paymentIntent.latest_charge?.id;
+
+  if (!chargeId) {
+    throw new Error("The payment for this order has no charge to release yet.");
+  }
+
+  return stripe.transfers.create(
+    {
+      amount: toMinorUnit(input.sellerNetAmount),
+      currency: "eur",
+      destination: input.sellerConnectedAccountId,
+      transfer_group: input.transactionId,
+      // Ties the transfer to the buyer's charge so it can go out before the funds settle.
+      source_transaction: chargeId,
+      metadata: { transaction_id: input.transactionId }
+    },
+    { idempotencyKey: `campusswap-payout-${input.transactionId}` }
+  );
 }

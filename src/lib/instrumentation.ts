@@ -10,6 +10,7 @@ export type AppEventName =
   | "checkout_started"
   | "checkout_cancelled"
   | "checkout_completed"
+  | "listing_sold"
   | "support_ticket_created";
 
 type JsonValue =

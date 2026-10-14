@@ -43,6 +43,14 @@ import type { ListingOffer, Transaction, User } from "@/types/domain";
 import { maastrichtPickupAreas } from "@/lib/maastricht-pickup-areas";
 
 /** Turns https:// links in a chat message into tappable links (text stays text). */
+const trackingHosts = ["postnl.nl", "dhl.com", "dpd.de", "ups.com", "gls-group.com"];
+
+function linkLabel(url: string) {
+  if (url.includes("google.com/maps")) return "Google Maps ↗";
+  if (trackingHosts.some((host) => url.includes(host))) return "📦 Tracking ↗";
+  return url;
+}
+
 function linkify(text: string) {
   return text.split(/(https:\/\/[^\s]+)/g).map((part, index) =>
     part.startsWith("https://") ? (
@@ -53,7 +61,7 @@ function linkify(text: string) {
         rel="noopener noreferrer nofollow"
         className="underline underline-offset-2"
       >
-        {part.includes("google.com/maps") ? "Google Maps ↗" : part}
+        {linkLabel(part)}
       </a>
     ) : (
       part
