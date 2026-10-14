@@ -14,7 +14,7 @@ export function UserIdentityButton({ user }: UserIdentityButtonProps) {
   return (
     <Link
       href="/app/profile"
-      className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-3 sm:py-2"
+      className="inline-flex items-center gap-3 rounded-full transition hover:bg-slate-50 sm:border sm:border-slate-200 sm:bg-white sm:px-3 sm:py-2 sm:shadow-sm sm:hover:border-slate-300"
       aria-label="Open your profile"
     >
       <ProfileAvatar

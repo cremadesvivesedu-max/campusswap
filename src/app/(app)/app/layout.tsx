@@ -28,9 +28,10 @@ export default async function AppLayout({
     <CurrentUserProvider user={user}>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.82),rgba(247,244,238,1)_42%,rgba(243,238,229,1)_100%)]">
         <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-[#f7f4ee]/92 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:flex-row lg:items-center lg:justify-between">
+          {/* One slim row on phones (logo + icons), like a native marketplace app. */}
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6 sm:py-4">
             <div className="space-y-1">
-              <BrandLogo href="/app" tone="dark" imageClassName="h-8 sm:h-10" />
+              <BrandLogo href="/app" tone="dark" imageClassName="h-7 sm:h-10" />
               <p className="hidden text-sm text-slate-500 sm:block">
                 {dictionary.site.publicTagline}
               </p>
@@ -46,8 +47,10 @@ export default async function AppLayout({
                 </Link>
               ))}
             </nav>
-            <div className="flex w-full items-center justify-between gap-2 rounded-full border border-slate-200/80 bg-white/75 p-1.5 shadow-sm sm:w-auto sm:justify-start">
-              <LanguageSwitcher tone="dark" />
+            <div className="flex items-center gap-1.5 sm:gap-2 sm:rounded-full sm:border sm:border-slate-200/80 sm:bg-white/75 sm:p-1.5 sm:shadow-sm">
+              <div className="hidden sm:block">
+                <LanguageSwitcher tone="dark" />
+              </div>
               <AppHeaderActivityShell />
               <UserIdentityButton user={user} />
             </div>

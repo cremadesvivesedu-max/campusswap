@@ -3,6 +3,7 @@ import { SettingsNotificationPreferencesForm } from "@/components/forms/settings
 import { AccountDataCard } from "@/components/forms/account-data-card";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { PushToggle } from "@/components/pwa/push-toggle";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { env } from "@/lib/env";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -44,6 +45,9 @@ export default async function SettingsPage({
             </h2>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
+            <div className="sm:hidden">
+              <LanguageSwitcher tone="dark" />
+            </div>
             {env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
               <PushToggle vapidPublicKey={env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
             ) : null}
