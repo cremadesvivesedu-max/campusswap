@@ -123,7 +123,8 @@ export async function createBuyerCheckoutSession({
       total_amount: (itemAmount + shippingAmount + platformFee).toFixed(2)
     },
     payment_intent_data: {
-      application_fee_amount: toMinorUnit(platformFee),
+      // During the free launch period there is no fee; Stripe wants the field left out then.
+      ...(platformFee > 0 ? { application_fee_amount: toMinorUnit(platformFee) } : {}),
       transfer_data: {
         destination: sellerConnectedAccountId
       }

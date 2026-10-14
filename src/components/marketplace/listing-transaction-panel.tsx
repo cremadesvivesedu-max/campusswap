@@ -370,7 +370,13 @@ function OrderSummary({
           </div>
           <div className="flex items-center justify-between gap-3">
             <span>{dictionary.messages.exchange.platformFee}</span>
-            <span className="font-medium text-slate-950">{formatCurrency(platformFee)}</span>
+            <span className="font-medium text-slate-950">
+              {platformFee > 0 ? (
+                formatCurrency(platformFee)
+              ) : (
+                <span className="text-emerald-700">{dictionary.listingLive.freeLaunchFee}</span>
+              )}
+            </span>
           </div>
           <div className="flex items-center justify-between gap-3">
             <span>{dictionary.messages.exchange.sellerNetAmount}</span>

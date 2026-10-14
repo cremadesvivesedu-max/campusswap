@@ -2,6 +2,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOptionalAuthUser, requireAuthUser } from "@/lib/auth/server";
+import { after } from "next/server";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
@@ -1195,6 +1196,18 @@ async function ensurePublicUserRecord() {
 
   if (!admin) {
     return existing;
+  }
+
+  // Keep "last seen" fresh for the "active X ago" badge, at most every 10 minutes and
+  // after the response so it never slows a page down.
+  const lastSeen = existing?.last_seen_at ? Date.parse(existing.last_seen_at) : 0;
+  if (existing && Date.now() - lastSeen > 10 * 60 * 1000) {
+    after(async () => {
+      await admin
+        .from("users")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", authUser.id);
+    });
   }
 
   if (existing?.verification_status === "verified" && existing.profile?.verified_badge) {

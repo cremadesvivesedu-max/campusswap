@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { ListingImage } from "@/components/marketplace/listing-image";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ListingImage as ListingImageType } from "@/types/domain";
 
@@ -14,102 +13,88 @@ interface ListingGalleryProps {
   className?: string;
 }
 
-export function ListingGallery({
-  images,
-  title,
-  className
-}: ListingGalleryProps) {
+// Swipeable photo strip (scroll-snap), like marketplace apps: swipe on phones, arrows
+// on desktop, dots show where you are.
+export function ListingGallery({ images, title, className }: ListingGalleryProps) {
   const { dictionary } = useLocale();
   const galleryImages = images.length
     ? images
     : [{ id: "fallback", url: undefined, alt: title, isPrimary: true }];
   const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    setActiveIndex((currentIndex) =>
-      Math.min(currentIndex, Math.max(galleryImages.length - 1, 0))
-    );
-  }, [galleryImages.length]);
-
-  const activeImage = galleryImages[activeIndex];
+  const trackRef = useRef<HTMLDivElement>(null);
   const canBrowse = galleryImages.length > 1;
 
+  const goTo = (index: number) => {
+    const track = trackRef.current;
+    if (!track) {
+      return;
+    }
+    const next = (index + galleryImages.length) % galleryImages.length;
+    track.scrollTo({ left: next * track.clientWidth, behavior: "smooth" });
+  };
+
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-glow sm:aspect-[16/10] sm:rounded-[32px]">
-        <ListingImage
-          src={activeImage?.url}
-          alt={activeImage?.alt ?? title}
-          className="h-full w-full"
-          priority
-          sizes="(max-width: 1024px) 100vw, 66vw"
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950/25 to-transparent" />
-        {canBrowse ? (
-          <>
-            <div className="absolute inset-x-0 top-4 flex items-center justify-between px-4">
-              <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                {activeIndex + 1} / {galleryImages.length}
-              </span>
-            </div>
-            <div className="absolute inset-y-0 left-0 flex items-center px-2 sm:px-3">
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-10 w-10 rounded-full p-0 shadow-lg sm:h-11 sm:w-11"
-                onClick={() =>
-                  setActiveIndex((currentIndex) =>
-                    currentIndex === 0 ? galleryImages.length - 1 : currentIndex - 1
-                  )
-                }
-                aria-label={`${dictionary.common.actions.viewListing}: previous image`}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2 sm:px-3">
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-10 w-10 rounded-full p-0 shadow-lg sm:h-11 sm:w-11"
-                onClick={() =>
-                  setActiveIndex((currentIndex) =>
-                    currentIndex === galleryImages.length - 1 ? 0 : currentIndex + 1
-                  )
-                }
-                aria-label={`${dictionary.common.actions.viewListing}: next image`}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </>
-        ) : null}
+    <div className={cn("relative", className)}>
+      <div
+        ref={trackRef}
+        onScroll={(event) => {
+          const track = event.currentTarget;
+          setActiveIndex(Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)));
+        }}
+        className="flex aspect-square snap-x snap-mandatory overflow-x-auto overflow-y-hidden rounded-3xl bg-slate-100 [scrollbar-width:none] sm:aspect-[4/3] [&::-webkit-scrollbar]:hidden"
+        aria-label={title}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight") goTo(activeIndex + 1);
+          if (event.key === "ArrowLeft") goTo(activeIndex - 1);
+        }}
+      >
+        {galleryImages.map((image, index) => (
+          <div key={image.id} className="relative h-full w-full shrink-0 snap-center">
+            <ListingImage
+              src={image.url}
+              alt={image.alt ?? title}
+              className="h-full w-full"
+              priority={index === 0}
+              sizes="(max-width: 1024px) 100vw, 60vw"
+            />
+          </div>
+        ))}
       </div>
 
       {canBrowse ? (
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3">
-          {galleryImages.map((image, index) => (
-            <button
-              key={image.id}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className={cn(
-                "relative aspect-[4/3] overflow-hidden rounded-[18px] border bg-white transition sm:rounded-[22px]",
-                activeIndex === index
-                  ? "border-slate-950 shadow-sm"
-                  : "border-slate-200 hover:border-slate-300"
-              )}
-              aria-label={`View image ${index + 1}`}
-            >
-              <ListingImage
-                src={image.url}
-                alt={image.alt}
-                className="h-full w-full"
-                sizes="180px"
+        <>
+          <span className="absolute right-3 top-3 rounded-full bg-slate-950/70 px-2.5 py-1 text-xs font-semibold text-white">
+            {activeIndex + 1}/{galleryImages.length}
+          </span>
+          <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5" aria-hidden="true">
+            {galleryImages.map((image, index) => (
+              <span
+                key={image.id}
+                className={cn(
+                  "h-1.5 rounded-full bg-white/90 shadow transition-all",
+                  index === activeIndex ? "w-5" : "w-1.5 opacity-60"
+                )}
               />
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => goTo(activeIndex - 1)}
+            aria-label={`${dictionary.common.actions.viewListing}: previous photo`}
+            className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-lg hover:bg-white sm:flex"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo(activeIndex + 1)}
+            aria-label={`${dictionary.common.actions.viewListing}: next photo`}
+            className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-lg hover:bg-white sm:flex"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
       ) : null}
     </div>
   );
