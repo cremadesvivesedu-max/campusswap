@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, PackageOpen, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,20 @@ export default async function AppHomePage() {
           </ul>
         </nav>
       ) : null}
+
+      <Link
+        href="/app/kit"
+        className="flex items-center gap-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-sky-500 p-4 text-white shadow-sm transition hover:shadow-md"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+          <PackageOpen className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-extrabold">{dictionary.arrivalKit.homeCta}</span>
+          <span className="block truncate text-sm text-white/85">{dictionary.arrivalKit.homeCtaSub}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+      </Link>
 
       {featuredListings.length ? (
         <section className="space-y-3">
