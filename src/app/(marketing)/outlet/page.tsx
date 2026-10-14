@@ -23,6 +23,7 @@ export default async function OutletPage() {
             listing={listing}
             showMessageAction
             messageActionMode="signup"
+            publicLink
           />
         ))}
       </div>

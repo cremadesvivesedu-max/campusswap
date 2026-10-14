@@ -23,6 +23,7 @@ export default async function FeaturedPage() {
             listing={listing}
             showMessageAction
             messageActionMode="signup"
+            publicLink
           />
         ))}
       </div>

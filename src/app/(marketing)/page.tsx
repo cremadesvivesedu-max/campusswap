@@ -1,34 +1,33 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Leaf, ShieldCheck, Sparkles } from "lucide-react";
+import { ChevronRight, MapPin, PackageSearch, Search, ShieldCheck, UserCheck } from "lucide-react";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
-import { CategoryLinkCard } from "@/components/marketplace/category-link-card";
 import { ListingCard } from "@/components/marketplace/listing-card";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { getCategoryBrowseHref } from "@/lib/category-links";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories, getFeaturedListings } from "@/server/queries/marketplace";
 
-const audienceImages = [
-  "/images/home/incoming-student.jpg",
-  "/images/home/outgoing-boxes.jpg",
-  "/images/home/budget-market.jpg",
-  "/images/home/community.jpg"
-];
-
+// Public home in the same marketplace style as the app: say what it is, let people
+// search, show real items, explain the three steps, then the details.
 export default async function HomePage() {
   const [featured, categories, dictionary] = await Promise.all([
-    getFeaturedListings(),
+    getFeaturedListings(8),
     getAllCategories(),
     getDictionaryForRequest()
   ]);
+  const copy = dictionary.landing;
+  const old = dictionary.marketing.home;
+  const steps = [
+    { icon: UserCheck, title: copy.step1Title, body: copy.step1Body },
+    { icon: PackageSearch, title: copy.step2Title, body: copy.step2Body },
+    { icon: MapPin, title: copy.step3Title, body: copy.step3Body }
+  ];
 
   return (
-    <div className="space-y-28 pb-24">
-      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-8">
-        <div className="relative isolate grid gap-12 overflow-hidden rounded-[32px] bg-hero-grid px-6 py-10 sm:rounded-[44px] sm:px-8 sm:py-14 text-white shadow-[0_34px_90px_rgba(15,23,42,0.22)] lg:grid-cols-[1.2fr_0.8fr] lg:px-12 lg:py-16">
+    <div className="space-y-14 pb-20 sm:space-y-20">
+      <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 sm:pt-8">
+        <div className="relative isolate overflow-hidden rounded-[28px] px-5 py-10 text-white sm:rounded-[40px] sm:px-10 sm:py-16">
           <Image
             src="/images/home/hero-move-in.jpg"
             alt=""
@@ -39,227 +38,135 @@ export default async function HomePage() {
           />
           <div
             aria-hidden
-            className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(10,22,44,0.94)_0%,rgba(10,22,44,0.82)_45%,rgba(10,22,44,0.45)_100%)]"
+            className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(10,22,44,0.92)_0%,rgba(10,22,44,0.78)_55%,rgba(10,22,44,0.4)_100%)]"
           />
-          <div className="space-y-8">
-            <Badge className="border-white/20 bg-white/10 text-white">
-              {dictionary.marketing.home.heroBadge}
-            </Badge>
-            <div className="space-y-5">
-              <h1 className="max-w-3xl font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-                {dictionary.marketing.home.heroTitle}
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-200 sm:text-lg sm:leading-8">
-                {dictionary.marketing.home.heroBody}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4">
+          <div className="max-w-2xl space-y-6">
+            <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">{copy.heroTitle}</h1>
+            <p className="text-base leading-7 text-slate-200 sm:text-lg">{copy.heroBody}</p>
+            <form action="/app/search" role="search" className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input
+                type="search"
+                name="q"
+                placeholder={copy.searchPlaceholder}
+                aria-label={copy.searchPlaceholder}
+                className="h-14 w-full rounded-full border-0 bg-white pl-12 pr-4 text-base text-slate-900 shadow-lg outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-400"
+              />
+            </form>
+            <div className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/featured">{dictionary.marketing.home.browseItems}</Link>
+                <Link href="/featured">{copy.explore}</Link>
               </Button>
-              <Button asChild variant="ghost">
-                <Link href="/signup">{dictionary.marketing.home.sellUpload}</Link>
+              <Button asChild variant="ghost" className="border border-white/30 text-white hover:bg-white/10">
+                <Link href="/signup">{copy.sell}</Link>
               </Button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {dictionary.marketing.home.valueCards.map((card) => (
-                <Card
-                  key={card.title}
-                  className="border-white/10 bg-white/10 text-white shadow-none"
-                >
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-slate-200">{card.eyebrow}</p>
-                    <p className="mt-2 font-display text-2xl font-semibold">
-                      {card.title}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </div>
+        </div>
+        {categories.length ? (
+          <ul className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+            {categories.map((category) => (
+              <li key={category.id} className="shrink-0">
+                <Link
+                  href={getCategoryBrowseHref(category.slug)}
+                  className="inline-flex h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  {category.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      {featured.length ? (
+        <section className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-extrabold text-slate-950">{copy.featuredTitle}</h2>
+            <Link href="/featured" className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:underline">
+              {dictionary.home.seeAll}
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+            {featured.slice(0, 8).map((listing) => (
+              <ListingCard key={listing.id} listing={listing} publicLink />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
+        <h2 className="text-2xl font-extrabold text-slate-950">{copy.howTitle}</h2>
+        <ol className="grid gap-4 md:grid-cols-3">
+          {steps.map((step, index) => (
+            <li key={step.title} className="flex gap-4 rounded-3xl bg-white p-5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <step.icon className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="space-y-1">
+                <span className="block text-xs font-bold text-emerald-700">{index + 1}</span>
+                <span className="block font-bold text-slate-950">{step.title}</span>
+                <span className="block text-sm leading-6 text-slate-600">{step.body}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
+        <h2 className="text-2xl font-extrabold text-slate-950">{copy.surveyTitle}</h2>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {old.testimonials.map((line) => (
+            <p key={line} className="rounded-3xl bg-white p-5 text-sm leading-6 text-slate-700">
+              {line}
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-2">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-[28px] bg-slate-100">
+          <Image
+            src="/images/home/trust-exchange.jpg"
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover"
+          />
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-extrabold text-slate-950">{copy.trustTitle}</h2>
+          <ul className="space-y-3">
+            {old.trustSignals.map((signal) => (
+              <li key={signal} className="flex gap-3 text-sm leading-6 text-slate-700">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true" />
+                {signal}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-3xl space-y-4 px-4 text-center sm:px-6">
+        <h2 className="text-2xl font-extrabold text-slate-950">{copy.waitlistTitle}</h2>
+        <p className="text-sm text-slate-600">{copy.waitlistBody}</p>
+        <div className="mx-auto max-w-md text-left">
           <WaitlistForm />
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-2">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.whyEyebrow}
-          title={dictionary.marketing.home.whyTitle}
-          description={dictionary.marketing.home.whyDescription}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {dictionary.marketing.home.audiences.map((item, index) => (
-            <Card key={item.title} className="overflow-hidden bg-white/96">
-              {audienceImages.at(index) ? (
-                <div className="relative aspect-[16/9] bg-slate-100">
-                  <Image
-                    src={audienceImages.at(index) ?? ""}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : null}
-              <CardHeader>
-                <h3 className="font-display text-xl font-semibold text-slate-950">
-                  {item.title}
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-slate-600">{item.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.howEyebrow}
-          title={dictionary.marketing.home.howTitle}
-          description={dictionary.marketing.home.howDescription}
-        />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { icon: ShieldCheck, ...dictionary.marketing.home.steps[0] },
-            { icon: Sparkles, ...dictionary.marketing.home.steps[1] },
-            { icon: Leaf, ...dictionary.marketing.home.steps[2] }
-          ].map((step) => (
-            <Card key={step.title} className="bg-white/96">
-              <CardHeader className="space-y-4">
-                <step.icon className="h-9 w-9 text-slate-950" />
-                <h3 className="font-display text-2xl font-semibold text-slate-950">
-                  {step.title}
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-slate-600">{step.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.categoriesEyebrow}
-          title={dictionary.marketing.home.categoriesTitle}
-          description={dictionary.marketing.home.categoriesDescription}
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories
-            .filter((category) => category.slug !== "outlet")
-            .map((category) => (
-              <CategoryLinkCard key={category.id} category={category} />
-            ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.featuredEyebrow}
-          title={dictionary.marketing.home.featuredTitle}
-          description={dictionary.marketing.home.featuredDescription}
-        />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-6 lg:grid-cols-3">
-          {featured.slice(0, 3).map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              showMessageAction
-              messageActionMode="signup"
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-6">
-          <SectionHeading
-            eyebrow={dictionary.marketing.home.trustEyebrow}
-            title={dictionary.marketing.home.trustTitle}
-            description={dictionary.marketing.home.trustDescription}
-          />
-          <div className="relative aspect-[3/2] overflow-hidden rounded-[28px] bg-slate-100 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
-            <Image
-              src="/images/home/trust-exchange.jpg"
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 40vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
-        <div className="grid gap-4">
-          {dictionary.marketing.home.trustSignals.map((signal) => (
-            <Card key={signal} className="bg-white/96">
-              <CardContent className="pt-6">
-                <p className="text-sm leading-6 text-slate-700">{signal}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.outletEyebrow}
-          title={dictionary.marketing.home.outletTitle}
-          description={dictionary.marketing.home.outletDescription}
-        />
-        <Card className="overflow-hidden border-slate-900 bg-slate-950 text-white">
-          <CardContent className="grid gap-6 p-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="space-y-3">
-              <p className="font-display text-3xl font-semibold">
-                {dictionary.marketing.home.outletTitle}
-              </p>
-              <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                {dictionary.marketing.home.outletBody}
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/outlet">{dictionary.marketing.home.outletCta}</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="mx-auto max-w-7xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.testimonialsEyebrow}
-          title={dictionary.marketing.home.testimonialsTitle}
-          description={dictionary.marketing.home.testimonialsDescription}
-        />
-        <div className="grid gap-4 lg:grid-cols-3">
-          {dictionary.marketing.home.testimonials.map((testimonial) => (
-            <Card key={testimonial} className="bg-white/96">
-              <CardContent className="pt-6">
-                <p className="text-sm leading-7 text-slate-700">{testimonial}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl space-y-8 px-6">
-        <SectionHeading
-          eyebrow={dictionary.marketing.home.faqEyebrow}
-          title={dictionary.marketing.home.faqTitle}
-          description={dictionary.marketing.home.faqDescription}
-        />
-        <div className="space-y-4">
+      <section className="mx-auto max-w-3xl space-y-4 px-4 sm:px-6">
+        <h2 className="text-2xl font-extrabold text-slate-950">{copy.faqTitle}</h2>
+        <div className="divide-y divide-slate-200 rounded-3xl bg-white">
           {dictionary.marketing.faq.items.map((faq) => (
-            <Card key={faq.question} className="bg-white/96">
-              <CardHeader>
-                <h3 className="font-display text-xl font-semibold text-slate-950">
-                  {faq.question}
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-7 text-slate-600">{faq.answer}</p>
-              </CardContent>
-            </Card>
+            <details key={faq.question} className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+                {faq.question}
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition group-open:rotate-90" aria-hidden="true" />
+              </summary>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{faq.answer}</p>
+            </details>
           ))}
         </div>
       </section>

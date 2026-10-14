@@ -16,11 +16,13 @@ interface ListingCardProps {
   /** Kept for existing callers; the whole card now opens the listing, where the chat button lives. */
   showMessageAction?: boolean;
   messageActionMode?: "chat" | "signup";
+  /** Public pages link to the shareable /l/<id> page, which works without an account. */
+  publicLink?: boolean;
 }
 
 // Marketplace-style card (think Wallapop/Vinted): the photo does the talking, then
 // the price, then a one-line title. Everything else lives on the listing page.
-function ListingCardComponent({ listing, reason }: ListingCardProps) {
+function ListingCardComponent({ listing, reason, publicLink = false }: ListingCardProps) {
   const { dictionary } = useLocale();
   const cover = listing.images.find((image) => image.isPrimary) ?? listing.images[0];
   const badge = listing.status !== "active"
@@ -35,7 +37,7 @@ function ListingCardComponent({ listing, reason }: ListingCardProps) {
 
   return (
     <Link
-      href={`/app/listings/${listing.id}`}
+      href={publicLink ? `/l/${listing.id}` : `/app/listings/${listing.id}`}
       className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
     >
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-slate-100">
