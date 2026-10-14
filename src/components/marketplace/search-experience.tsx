@@ -19,6 +19,7 @@ import {
 } from "@/features/search/discovery";
 import { getConditionLabel } from "@/lib/i18n-shared";
 import { getPickupAreaOptions } from "@/lib/maastricht-pickup-areas";
+import { friendlyError } from "@/lib/friendly-error";
 import {
   deleteSavedSearchAction,
   recordSearchEventAction,
@@ -440,7 +441,7 @@ export function SearchExperience({
     subcategorySlug
   ]);
 
-  const saveFeedback = saveState.message || deleteState.message;
+  const saveFeedback = friendlyError(saveState.message || deleteState.message, dictionary);
 
   return (
     <div className="space-y-4">

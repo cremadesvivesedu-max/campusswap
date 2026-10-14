@@ -10,6 +10,7 @@ import {
   openSellerStripeDashboardAction
 } from "@/server/actions/marketplace";
 import type { SellerStripeConnectStatus } from "@/types/domain";
+import { friendlyError } from "@/lib/friendly-error";
 
 function getReturnMessage(
   stripeState: string | undefined,
@@ -63,7 +64,7 @@ export function SettingsStripeConnectCard({
         const result = await action();
 
         if (!result.success) {
-          setError(result.message);
+          setError(friendlyError(result.message, dictionary));
           return;
         }
 
@@ -72,7 +73,7 @@ export function SettingsStripeConnectCard({
           return;
         }
 
-        setFeedback(result.message);
+        setFeedback(friendlyError(result.message, dictionary));
         router.refresh();
       } catch (caughtError) {
         setError(

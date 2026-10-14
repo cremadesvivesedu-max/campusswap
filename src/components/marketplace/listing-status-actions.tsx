@@ -9,6 +9,7 @@ import { useLocale } from "@/components/providers/locale-provider";
 import { getExchangeStatusLabel } from "@/lib/i18n-shared";
 import { updateListingStatusAction } from "@/server/actions/marketplace";
 import type { ListingStatus, SellerListingTransaction } from "@/types/domain";
+import { friendlyError } from "@/lib/friendly-error";
 
 export function ListingStatusActions({
   listingId,
@@ -69,7 +70,7 @@ export function ListingStatusActions({
               startTransition(async () => {
                 setPendingStatus(option.value);
                 const result = await updateListingStatusAction(listingId, option.value);
-                setFeedback(result.message);
+                setFeedback(friendlyError(result.message, dictionary));
 
                 if (result.success) {
                   router.refresh();

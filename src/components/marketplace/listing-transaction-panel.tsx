@@ -36,6 +36,7 @@ import {
 } from "@/lib/i18n-shared";
 import { createOrderBreakdown } from "@/lib/payments/order-pricing";
 import { formatCurrency } from "@/lib/utils";
+import { friendlyError } from "@/lib/friendly-error";
 import type {
   FulfillmentMethod,
   ListingStatus,
@@ -520,7 +521,7 @@ export function ListingTransactionPanel({
         const result = await action();
 
         if (!result.success) {
-          setError(result.message);
+          setError(friendlyError(result.message, dictionary));
           return;
         }
 
@@ -535,7 +536,7 @@ export function ListingTransactionPanel({
           return;
         }
 
-        setFeedback(result.message);
+        setFeedback(friendlyError(result.message, dictionary));
         router.refresh();
       } catch (caughtError) {
         setError(

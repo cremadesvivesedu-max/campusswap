@@ -81,11 +81,11 @@ export function OfferNegotiationPanel({
         const result = await action();
 
         if (!result.success) {
-          setError(result.message);
+          setError(friendlyError(result.message, dictionary));
           return;
         }
 
-        setFeedback(result.message);
+        setFeedback(friendlyError(result.message, dictionary));
 
         if (result.conversationId && result.conversationId !== conversationId) {
           router.push(`/app/messages/${result.conversationId}`);

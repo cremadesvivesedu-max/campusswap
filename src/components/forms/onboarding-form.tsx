@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { saveOnboardingAction } from "@/server/actions/forms";
 import type { Category, User } from "@/types/domain";
+import { friendlyError } from "@/lib/friendly-error";
 
 interface OnboardingFormProps {
   user: User;
@@ -144,7 +145,7 @@ export function OnboardingForm({ user, categories }: OnboardingFormProps) {
       <Button className="w-full" type="submit">
         {dictionary.auth.onboarding.save}
       </Button>
-      {state.message ? <p className="text-sm text-slate-600">{state.message}</p> : null}
+      {state.message ? <p className="text-sm text-slate-600">{friendlyError(state.message, dictionary)}</p> : null}
     </form>
   );
 }

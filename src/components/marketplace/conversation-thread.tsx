@@ -159,11 +159,11 @@ function ExchangePanel({
         const result = await action();
 
         if (!result.success) {
-          setActionError(result.message);
+          setActionError(friendlyError(result.message, dictionary));
           return;
         }
 
-        setFeedback(result.message);
+        setFeedback(friendlyError(result.message, dictionary));
         router.refresh();
       } catch (error) {
         setActionError(

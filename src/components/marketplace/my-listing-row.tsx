@@ -11,6 +11,7 @@ import { getExchangeStatusLabel, getListingStatusLabel } from "@/lib/i18n-shared
 import { formatCurrency } from "@/lib/utils";
 import { removeListingAction, updateListingStatusAction } from "@/server/actions/marketplace";
 import type { Listing, SellerListingTransaction } from "@/types/domain";
+import { friendlyError } from "@/lib/friendly-error";
 
 const statusTone: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -51,7 +52,7 @@ export function MyListingRow({
       try {
         const result = await task();
         if (!result.success) {
-          setMessage({ text: result.message, ok: false });
+          setMessage({ text: friendlyError(result.message, dictionary), ok: false });
           return;
         }
         onSuccess?.();

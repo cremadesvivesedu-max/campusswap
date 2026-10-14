@@ -13,6 +13,7 @@ export type AppLocale = (typeof supportedLocales)[number];
 export const dictionaries = {
   en: {
     localeLabel: "English",
+    localeCode: "en",
     languageSwitcher: { label: "Language" },
     limits: { tooFast: "You are going a bit fast. Wait a few minutes and try again." },
     blocking: { block: "Block this person", unblock: "Unblock", blockedByYou: "You blocked this conversation. Neither of you can send messages until you unblock it.", blockedByOther: "This conversation was closed by the other person. You can no longer send messages here." },
@@ -973,6 +974,7 @@ const mutableDictionaries = dictionaries as unknown as Record<AppLocale, Diction
 mutableDictionaries.es = {
   ...mutableDictionaries.en,
   localeLabel: "Espanol",
+  localeCode: "es",
   languageSwitcher: { label: "Idioma" },
   limits: { tooFast: "Vas un poco rápido. Espera unos minutos y vuelve a intentarlo." },
   blocking: { block: "Bloquear a esta persona", unblock: "Desbloquear", blockedByYou: "Has bloqueado esta conversación. Nadie puede enviar mensajes hasta que la desbloquees.", blockedByOther: "La otra persona ha cerrado esta conversación. Ya no puedes enviar mensajes aquí." },
@@ -1455,6 +1457,7 @@ mutableDictionaries.es = {
 mutableDictionaries.nl = {
   ...mutableDictionaries.en,
   localeLabel: "Nederlands",
+  localeCode: "nl",
   languageSwitcher: { label: "Taal" },
   limits: { tooFast: "Je gaat iets te snel. Wacht een paar minuten en probeer het opnieuw." },
   blocking: { block: "Deze persoon blokkeren", unblock: "Deblokkeren", blockedByYou: "Je hebt dit gesprek geblokkeerd. Niemand kan berichten sturen tot je het deblokkeert.", blockedByOther: "De ander heeft dit gesprek gesloten. Je kunt hier geen berichten meer sturen." },

@@ -1,0 +1,80 @@
+// Server actions answer in English. This table translates the messages people actually
+// see; unknown messages pass through unchanged.
+
+type Translation = { es: string; nl: string };
+
+const messages: Record<string, Translation> = {
+  "Add a short subject so the support queue is easier to review.": { es: "Añade un asunto corto para que podamos revisarlo más rápido.", nl: "Voeg een kort onderwerp toe zodat we het sneller kunnen bekijken." },
+  "Add at least one search term or filter before saving this search.": { es: "Añade al menos una palabra o un filtro antes de guardar la búsqueda.", nl: "Voeg minstens één zoekterm of filter toe voordat je de zoekopdracht bewaart." },
+  "All notifications marked as read.": { es: "Todas las notificaciones marcadas como leídas.", nl: "Alle meldingen gemarkeerd als gelezen." },
+  "An offer has already been accepted for this conversation.": { es: "Ya se aceptó una oferta en esta conversación.", nl: "Er is al een bod geaccepteerd in dit gesprek." },
+  "Choose a rating before submitting.": { es: "Elige una puntuación antes de enviar.", nl: "Kies een beoordeling voordat je verstuurt." },
+  "Choose a support category before sending this request.": { es: "Elige un tipo de consulta antes de enviarla.", nl: "Kies een categorie voordat je dit verzoek verstuurt." },
+  "Choose an image before uploading.": { es: "Elige una imagen antes de subirla.", nl: "Kies eerst een afbeelding." },
+  "Completed exchanges cannot be cancelled.": { es: "Un intercambio terminado no se puede cancelar.", nl: "Een afgeronde ruil kan niet worden geannuleerd." },
+  "Counteroffer sent.": { es: "Contraoferta enviada.", nl: "Tegenbod verstuurd." },
+  "Email is required.": { es: "El email es obligatorio.", nl: "E-mail is verplicht." },
+  "Enter a valid counteroffer amount.": { es: "Introduce un importe válido para la contraoferta.", nl: "Vul een geldig bedrag in voor het tegenbod." },
+  "Enter a valid offer amount.": { es: "Introduce un importe válido.", nl: "Vul een geldig bedrag in." },
+  "Exchange cancelled.": { es: "Intercambio cancelado.", nl: "Ruil geannuleerd." },
+  "Fill in the required title, description, price, category, and pickup area.": { es: "Rellena el título, el precio, la categoría y la zona de recogida.", nl: "Vul titel, prijs, categorie en ophaalgebied in." },
+  "Listing removed from saved items.": { es: "Anuncio quitado de guardados.", nl: "Advertentie verwijderd uit bewaard." },
+  "Listing reserved for this buyer.": { es: "Anuncio reservado para este comprador.", nl: "Advertentie gereserveerd voor deze koper." },
+  "Listing saved.": { es: "Anuncio guardado.", nl: "Advertentie bewaard." },
+  "Notification marked as read.": { es: "Notificación marcada como leída.", nl: "Melding gemarkeerd als gelezen." },
+  "Notification preferences saved.": { es: "Preferencias de notificación guardadas.", nl: "Meldingsvoorkeuren opgeslagen." },
+  "Offer accepted. The agreed price is now reflected in the exchange.": { es: "Oferta aceptada. El precio acordado ya aparece en el intercambio.", nl: "Bod geaccepteerd. De afgesproken prijs staat nu in de ruil." },
+  "Offer declined.": { es: "Oferta rechazada.", nl: "Bod afgewezen." },
+  "Offer sent.": { es: "Oferta enviada.", nl: "Bod verstuurd." },
+  "Offer withdrawn.": { es: "Oferta retirada.", nl: "Bod ingetrokken." },
+  "Onboarding saved.": { es: "Perfil guardado.", nl: "Profiel opgeslagen." },
+  "Order completed, listing marked as sold, and reviews are now unlocked.": { es: "Pedido completado y anuncio marcado como vendido. Ya podéis valoraros.", nl: "Bestelling afgerond en advertentie als verkocht gemarkeerd. Jullie kunnen elkaar nu beoordelen." },
+  "Order marked as delivered.": { es: "Pedido marcado como entregado.", nl: "Bestelling gemarkeerd als bezorgd." },
+  "Order marked as ready for pickup.": { es: "Pedido listo para recoger.", nl: "Bestelling klaar om op te halen." },
+  "Order marked as shipped.": { es: "Pedido marcado como enviado.", nl: "Bestelling gemarkeerd als verzonden." },
+  "Please provide an email.": { es: "Escribe tu email.", nl: "Vul je e-mailadres in." },
+  "Profile photo reset.": { es: "Foto de perfil eliminada.", nl: "Profielfoto verwijderd." },
+  "Profile photo updated.": { es: "Foto de perfil actualizada.", nl: "Profielfoto bijgewerkt." },
+  "Redirecting to Stripe onboarding.": { es: "Te llevamos a Stripe para configurar los cobros.", nl: "Je wordt doorgestuurd naar Stripe." },
+  "Redirecting you to Stripe Checkout.": { es: "Te llevamos al pago seguro de Stripe.", nl: "Je wordt doorgestuurd naar de betaling via Stripe." },
+  "Reservation released.": { es: "Reserva liberada.", nl: "Reservering vrijgegeven." },
+  "Review submitted.": { es: "Valoración enviada.", nl: "Beoordeling verstuurd." },
+  "Reviews can only be left for the other participant in this exchange.": { es: "Solo puedes valorar a la otra persona del intercambio.", nl: "Je kunt alleen de andere persoon in deze ruil beoordelen." },
+  "Reviews only unlock after a completed exchange.": { es: "Las valoraciones se activan cuando el intercambio se completa.", nl: "Beoordelen kan pas na een afgeronde ruil." },
+  "Saved search deleted.": { es: "Búsqueda guardada eliminada.", nl: "Bewaarde zoekopdracht verwijderd." },
+  "Share enough detail so CampusSwap can review the issue properly.": { es: "Cuéntanos un poco más para poder revisarlo bien.", nl: "Geef iets meer details zodat we het goed kunnen bekijken." },
+  "Support request submitted. CampusSwap can review it from the support queue now.": { es: "Consulta enviada. La revisaremos lo antes posible.", nl: "Verzoek verstuurd. We bekijken het zo snel mogelijk." },
+  "That category could not be found.": { es: "No encontramos esa categoría.", nl: "Die categorie bestaat niet." },
+  "That listing could not be found anymore.": { es: "Ese anuncio ya no existe.", nl: "Die advertentie bestaat niet meer." },
+  "That listing could not be found.": { es: "No encontramos ese anuncio.", nl: "Die advertentie is niet gevonden." },
+  "That saved search could not be found.": { es: "No encontramos esa búsqueda guardada.", nl: "Die bewaarde zoekopdracht is niet gevonden." },
+  "This item has already been sold.": { es: "Este artículo ya se ha vendido.", nl: "Dit item is al verkocht." },
+  "This item is already reserved for another buyer.": { es: "Este artículo ya está reservado para otra persona.", nl: "Dit item is al gereserveerd voor iemand anders." },
+  "This listing can no longer be reserved.": { es: "Este anuncio ya no se puede reservar.", nl: "Deze advertentie kan niet meer worden gereserveerd." },
+  "This listing has already been sold.": { es: "Este anuncio ya se ha vendido.", nl: "Deze advertentie is al verkocht." },
+  "This listing is already reserved for another buyer.": { es: "Este anuncio ya está reservado para otra persona.", nl: "Deze advertentie is al gereserveerd voor iemand anders." },
+  "This listing is currently held for another buyer.": { es: "Este anuncio está apartado para otra persona.", nl: "Deze advertentie is vastgehouden voor iemand anders." },
+  "This listing is no longer available for checkout.": { es: "Este anuncio ya no se puede pagar online.", nl: "Deze advertentie kan niet meer online worden betaald." },
+  "This listing is not available for offers right now.": { es: "Ahora mismo no se aceptan ofertas en este anuncio.", nl: "Er kunnen nu geen biedingen op deze advertentie worden gedaan." },
+  "This listing is not available for purchase right now.": { es: "Ahora mismo este anuncio no se puede comprar.", nl: "Deze advertentie is nu niet te koop." },
+  "This order is already paid.": { es: "Este pedido ya está pagado.", nl: "Deze bestelling is al betaald." },
+  "This search is already saved.": { es: "Esta búsqueda ya está guardada.", nl: "Deze zoekopdracht is al bewaard." },
+  "Use withdraw if you want to remove your own open offer.": { es: "Usa \"Retirar\" para quitar tu propia oferta.", nl: "Gebruik \"Intrekken\" om je eigen bod te verwijderen." },
+  "Wait for the buyer to respond before sending another counteroffer.": { es: "Espera a que responda el comprador antes de enviar otra contraoferta.", nl: "Wacht op de koper voordat je nog een tegenbod stuurt." },
+  "You cannot accept your own offer.": { es: "No puedes aceptar tu propia oferta.", nl: "Je kunt je eigen bod niet accepteren." },
+  "You cannot buy your own listing.": { es: "No puedes comprar tu propio anuncio.", nl: "Je kunt je eigen advertentie niet kopen." },
+  "You cannot make an offer on your own listing.": { es: "No puedes hacer una oferta en tu propio anuncio.", nl: "Je kunt geen bod doen op je eigen advertentie." },
+  "You have already reviewed this exchange.": { es: "Ya has valorado este intercambio.", nl: "Je hebt deze ruil al beoordeeld." },
+  "Listing deleted and removed from your marketplace surfaces.": { es: "Anuncio eliminado.", nl: "Advertentie verwijderd." },
+  "Listing removed from your marketplace surfaces while historical activity stays preserved.": { es: "Anuncio eliminado. Los chats y los intercambios se conservan.", nl: "Advertentie verwijderd. Chats en ruilen blijven bewaard." },
+  "Search saved and alerts turned on. We'll notify you when a matching listing appears.": { es: "Búsqueda guardada y avisos activados. Te avisaremos cuando salga algo que encaje.", nl: "Zoekopdracht bewaard en meldingen aan. We laten het weten als er iets passends verschijnt." },
+  "Search saved. We'll notify you when a matching listing appears.": { es: "Búsqueda guardada. Te avisaremos cuando salga algo que encaje.", nl: "Zoekopdracht bewaard. We laten het weten als er iets passends verschijnt." },
+  "Listing published.": { es: "Anuncio publicado.", nl: "Advertentie gepubliceerd." }
+};
+
+export function translateServerMessage(message: string, locale: string) {
+  if (locale !== "es" && locale !== "nl") {
+    return message;
+  }
+  return messages[message]?.[locale] ?? message;
+}
