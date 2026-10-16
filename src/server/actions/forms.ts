@@ -15,7 +15,8 @@ import { isLiveMode } from "@/lib/env";
 import { recordAppEvent } from "@/lib/instrumentation";
 import { createFeaturedCheckoutSession, stripe } from "@/lib/payments/stripe";
 import { getCurrentUser } from "@/server/queries/marketplace";
-import { shouldModerateListing } from "@/server/services/moderation";
+import { assessListingRisk } from "@/server/services/moderation";
+import { notifyAdminsOfListingRisk, notifyWantedMatches } from "@/server/services/listing-hooks";
 import {
   notifyPriceDropWatchers,
   notifySavedSearchMatchesForListing
@@ -775,7 +776,8 @@ export async function createListingAction(_: unknown, formData: FormData) {
     requestFeatured,
     imageFiles
   } = readListingFormValues(formData);
-  const flaggedForModeration = shouldModerateListing(title, description);
+  const risk = assessListingRisk({ title, description, price });
+  const flaggedForModeration = risk.level === "review";
   const requiresTrustReview = user.verificationStatus !== "verified";
   const needsReview = flaggedForModeration || requiresTrustReview;
   const fulfillmentValidationError = validateFulfillmentValues({
@@ -998,6 +1000,17 @@ export async function createListingAction(_: unknown, formData: FormData) {
         listing: buildAlertListing(alertListingInput),
         sellerId: user.id
       });
+      await notifyWantedMatches({
+        id: listing.id,
+        sellerId: user.id,
+        title,
+        description,
+        categorySlug,
+        price
+      });
+    }
+    if (risk.level !== "ok") {
+      await notifyAdminsOfListingRisk({ id: listing.id, title }, risk.reasons);
     }
     await recordAppEvent({
       eventName: "listing_created",
@@ -1154,7 +1167,8 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     } satisfies ActionState;
   }
 
-  const flaggedForModeration = shouldModerateListing(title, description);
+  const risk = assessListingRisk({ title, description, price });
+  const flaggedForModeration = risk.level === "review";
   const requiresTrustReview = user.verificationStatus !== "verified";
   const shouldReturnToReview =
     ["active", "pending-review"].includes(listing.status) &&
@@ -1305,6 +1319,18 @@ export async function updateListingAction(_: unknown, formData: FormData) {
       listing: alertListing,
       sellerId: listing.seller_id
     });
+    await notifyWantedMatches({
+      id: listingId,
+      sellerId: listing.seller_id,
+      title,
+      description,
+      categorySlug,
+      price
+    });
+  }
+
+  if (flaggedForModeration) {
+    await notifyAdminsOfListingRisk({ id: listingId, title }, risk.reasons);
   }
 
   if (toNumber(listing.price) > price) {

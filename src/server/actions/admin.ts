@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { notifySavedSearchMatchesForListingId } from "@/server/services/saved-search-alerts";
+import { notifyWantedMatches } from "@/server/services/listing-hooks";
 import type { ListingStatus, ReportStatus, SupportTicketStatus } from "@/types/domain";
 
 interface AdminActionResult {
@@ -63,6 +64,23 @@ export async function updateAdminListingAction(
   // Approving a listing from moderation is when it first becomes visible.
   if (status === "active" && previous?.status !== "active") {
     await notifySavedSearchMatchesForListingId(listingId);
+    const { data: approved } = await supabase
+      .from("listings")
+      .select("id, seller_id, title, description, price, category:categories(slug)")
+      .eq("id", listingId)
+      .maybeSingle();
+    const category = approved?.category as { slug?: string } | { slug?: string }[] | null | undefined;
+    const categorySlug = Array.isArray(category) ? category[0]?.slug : category?.slug;
+    if (approved && categorySlug) {
+      await notifyWantedMatches({
+        id: approved.id,
+        sellerId: approved.seller_id,
+        title: approved.title,
+        description: approved.description,
+        categorySlug,
+        price: Number(approved.price)
+      });
+    }
   }
 
   revalidatePath("/admin/listings");
