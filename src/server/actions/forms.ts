@@ -1444,3 +1444,128 @@ export async function startFeaturedPromotionCheckoutAction(formData: FormData) {
 
   redirect(checkoutUrl);
 }
+
+/**
+ * One item from "List several at once": photo, title, price, category. The page calls
+ * this once per item so each upload stays small and the seller sees progress.
+ */
+export async function createQuickListingAction(
+  formData: FormData
+): Promise<{ success: boolean; message: string; listingId?: string; needsReview?: boolean }> {
+  const user = await getCurrentUser();
+  const title = String(formData.get("title") ?? "").trim().slice(0, 120);
+  const price = Number(formData.get("price") ?? 0);
+  const categorySlug = String(formData.get("category") ?? "").trim();
+  const condition = String(formData.get("condition") ?? "good").trim() || "good";
+  const pickupArea = String(formData.get("pickupArea") ?? "").trim() || user.profile.neighborhood;
+  const image = formData.get("image");
+  const imageFiles = image instanceof File && image.size > 0 ? [image] : [];
+
+  if (!title || !categorySlug || !Number.isFinite(price) || price <= 0 || !pickupArea) {
+    return {
+      success: false,
+      message: "Fill in the required title, description, price, category, and pickup area."
+    };
+  }
+
+  const risk = assessListingRisk({ title, description: title, price });
+  const needsReview = risk.level === "review" || user.verificationStatus !== "verified";
+
+  if (!isLiveMode) {
+    return { success: true, message: "Listing published.", listingId: `demo-${Date.now()}`, needsReview };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { success: false, message: "Supabase is not configured for listing creation." };
+  }
+
+  const categoryId = await resolveCategoryId(supabase, categorySlug);
+
+  if (!categoryId) {
+    return { success: false, message: "That category could not be found." };
+  }
+
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .insert({
+      seller_id: user.id,
+      category_id: categoryId,
+      title,
+      description: title,
+      condition,
+      price,
+      negotiable: true,
+      location: user.profile.neighborhood,
+      pickup_area: pickupArea,
+      pickup_available: true,
+      shipping_available: false,
+      shipping_cost: 0,
+      status: needsReview ? "pending-review" : "active",
+      outlet: false,
+      featured: false,
+      urgent: false,
+      tags: []
+    })
+    .select("id")
+    .single();
+
+  if (error || !listing?.id) {
+    return { success: false, message: error?.message ?? "Unable to create the listing." };
+  }
+
+  if (imageFiles.length) {
+    try {
+      await replaceListingImagesIfNeeded(supabase, listing.id, title, user.id, imageFiles, false);
+    } catch (uploadError) {
+      return {
+        success: false,
+        message: uploadError instanceof Error ? uploadError.message : "Unable to upload listing images."
+      };
+    }
+  }
+
+  after(async () => {
+    if (!needsReview) {
+      await notifySavedSearchMatchesForListing({
+        listing: buildAlertListing({
+          listingId: listing.id,
+          sellerId: user.id,
+          title,
+          description: title,
+          categorySlug,
+          condition,
+          price,
+          negotiable: true,
+          outlet: false,
+          urgent: false,
+          pickupArea,
+          pickupAvailable: true,
+          shippingAvailable: false,
+          shippingCost: 0,
+          location: user.profile.neighborhood,
+          status: "active",
+          seller: user
+        }),
+        sellerId: user.id
+      });
+      await notifyWantedMatches({ id: listing.id, sellerId: user.id, title, categorySlug, price });
+    }
+    if (risk.level !== "ok") {
+      await notifyAdminsOfListingRisk({ id: listing.id, title }, risk.reasons);
+    }
+    await recordAppEvent({
+      eventName: "listing_created",
+      actorUserId: user.id,
+      listingId: listing.id,
+      metadata: { categorySlug, needsReview, bulk: true }
+    });
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/my-listings");
+  revalidatePath("/app/profile");
+
+  return { success: true, message: "Listing published.", listingId: listing.id, needsReview };
+}

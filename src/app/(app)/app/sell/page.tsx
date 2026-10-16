@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ListingForm } from "@/components/forms/listing-form";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -160,6 +161,14 @@ export default async function SellPage({
               : dictionary.listingForm.createDescription
           }
         />
+        {!isEditing ? (
+          <Link
+            href="/app/sell/bulk"
+            className="block rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+          >
+            {dictionary.bulkSell.entry}
+          </Link>
+        ) : null}
         {/* On phones the form itself carries the essentials; these explainers would push it off-screen. */}
         <Card className="hidden bg-white lg:block">
           <CardContent className="space-y-3 p-5 text-sm leading-7 text-slate-600 sm:p-8">
