@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import { MapPin, Paperclip, Send, X } from "lucide-react";
+import { Camera, MapPin, Paperclip, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,26 @@ import type { ListingOffer, Transaction, User } from "@/types/domain";
 import { maastrichtPickupAreas } from "@/lib/maastricht-pickup-areas";
 
 /** Turns https:// links in a chat message into tappable links (text stays text). */
+/** Small preview of a photo picked for the chat, before it is sent. */
+function AttachmentThumb({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  return (
+    <span className="relative block h-16 w-16 overflow-hidden rounded-xl bg-white">
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt={file.name} className="h-full w-full object-cover" />
+      ) : null}
+    </span>
+  );
+}
+
 const trackingHosts = ["postnl.nl", "dhl.com", "dpd.de", "ups.com", "gls-group.com"];
 
 function linkLabel(url: string) {
@@ -445,15 +465,21 @@ function ConversationShell({
                     >
                       {message.text ? <p className="whitespace-pre-wrap break-words">{linkify(message.text)}</p> : null}
                       {message.attachmentUrl && message.attachmentName ? (
-                        <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+                        // Tap to see the photo full size.
+                        <a
+                          href={message.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`block overflow-hidden rounded-2xl ${message.text ? "mt-2" : "-mx-2 -mt-0.5"}`}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={message.attachmentUrl}
                             alt={message.attachmentName}
-                            className="max-h-64 w-full object-cover"
+                            loading="lazy"
+                            className="max-h-72 w-full min-w-[180px] object-cover"
                           />
-                          <p className="px-3 py-2 text-xs">{message.attachmentName}</p>
-                        </div>
+                        </a>
                       ) : null}
                       <p
                         className={`mt-1 text-right text-[11px] ${
@@ -517,12 +543,7 @@ function ConversationShell({
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {pendingAttachments.map((file) => (
-                            <span
-                              key={`${file.name}-${file.size}`}
-                              className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700"
-                            >
-                              {file.name}
-                            </span>
+                            <AttachmentThumb key={`${file.name}-${file.size}`} file={file} />
                           ))}
                         </div>
                       </div>
@@ -625,7 +646,7 @@ function ConversationShell({
                             variant="outline"
                             onClick={() => fileInputRef.current?.click()}
                           >
-                            <Paperclip className="mr-2 h-4 w-4" />
+                            <Camera className="mr-2 h-4 w-4" />
                             {dictionary.messages.thread.attach}
                           </Button>
                         </>
