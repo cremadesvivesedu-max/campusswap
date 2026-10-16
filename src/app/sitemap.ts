@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { categoryLandings } from "@/features/seo/category-landings";
 import { getSiteUrl } from "@/lib/site-url";
 
 const routes = [
@@ -19,7 +20,7 @@ const routes = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
 
-  return routes.map((route) => ({
+  return [...routes, ...categoryLandings.map((landing) => `/maastricht/${landing.slug}`)].map((route) => ({
     url: `${siteUrl}${route}`,
     lastModified: new Date()
   }));

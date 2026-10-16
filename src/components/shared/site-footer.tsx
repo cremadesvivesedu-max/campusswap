@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { categoryLandings } from "@/features/seo/category-landings";
 
 const footerLinks = [
   { href: "/privacy", label: "Privacy" },
@@ -32,6 +33,18 @@ export function SiteFooter() {
           ))}
         </div>
       </div>
+      {/* Links Google can follow to the Maastricht pages. */}
+      <nav className="mx-auto max-w-7xl px-6 pb-10 text-xs text-slate-500">
+        <ul className="flex flex-wrap gap-x-4 gap-y-2">
+          {categoryLandings.map((landing) => (
+            <li key={landing.slug}>
+              <Link href={`/maastricht/${landing.slug}`} className="hover:text-white">
+                {landing.h1}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </footer>
   );
 }
