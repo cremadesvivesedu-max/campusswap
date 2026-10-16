@@ -9,6 +9,9 @@ import { categoryLandings, getCategoryLanding } from "@/features/seo/category-la
 import { getSiteUrl } from "@/lib/site-url";
 import { getListingsByCategory } from "@/server/queries/marketplace";
 
+// Rebuilt at most once an hour so the listings stay current.
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   return categoryLandings.map((landing) => ({ slug: landing.slug }));
 }
