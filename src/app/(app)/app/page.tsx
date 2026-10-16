@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, PackageOpen, Search } from "lucide-react";
+import { ChevronRight, Megaphone, PackageOpen, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,20 @@ export default async function AppHomePage() {
           <span className="block truncate text-sm text-white/85">{dictionary.arrivalKit.homeCtaSub}</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+      </Link>
+
+      <Link
+        href="/app/wanted"
+        className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-4 transition hover:border-slate-300"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+          <Megaphone className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-extrabold text-slate-950">{dictionary.wanted.homeCta}</span>
+          <span className="block truncate text-sm text-slate-500">{dictionary.wanted.homeCtaSub}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
       </Link>
 
       {featuredListings.length ? (

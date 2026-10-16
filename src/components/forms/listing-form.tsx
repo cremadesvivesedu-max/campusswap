@@ -27,6 +27,8 @@ interface ListingFormProps {
   promotionState?: "none" | "pending" | "active" | "cancelled";
   paymentConfigured?: boolean;
   defaultPickupArea?: string;
+  /** Starting values for a new listing, e.g. when answering an "I'm looking for…" request. */
+  prefill?: { title?: string; categorySlug?: string };
 }
 
 export function ListingForm({
@@ -35,7 +37,8 @@ export function ListingForm({
   featuredPrice = 2,
   promotionState = "none",
   paymentConfigured = false,
-  defaultPickupArea = ""
+  defaultPickupArea = "",
+  prefill
 }: ListingFormProps) {
   const { dictionary } = useLocale();
   const formActionHandler = initialListing ? updateListingAction : createListingAction;
@@ -55,13 +58,15 @@ export function ListingForm({
   const [shippingEnabled, setShippingEnabled] = useState(
     initialListing?.shippingAvailable ?? false
   );
-  const [categorySlug, setCategorySlug] = useState(initialListing?.categorySlug ?? "");
-  const [categoryTouched, setCategoryTouched] = useState(isEditing);
+  const [categorySlug, setCategorySlug] = useState(
+    initialListing?.categorySlug ?? prefill?.categorySlug ?? ""
+  );
+  const [categoryTouched, setCategoryTouched] = useState(isEditing || Boolean(prefill?.categorySlug));
   const [categoryWasSuggested, setCategoryWasSuggested] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const selectedCategory = categories.find((category) => category.slug === categorySlug);
   const priceRange = parsePriceRange(selectedCategory?.typicalPriceRange);
-  const [titleText, setTitleText] = useState(initialListing?.title ?? "");
+  const [titleText, setTitleText] = useState(initialListing?.title ?? prefill?.title ?? "");
   const [priceSuggestion, setPriceSuggestion] = useState<PriceSuggestion | null>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
 
@@ -202,7 +207,7 @@ export function ListingForm({
         required
         maxLength={120}
         placeholder={dictionary.listingForm.titlePlaceholder}
-        defaultValue={initialListing?.title}
+        defaultValue={initialListing?.title ?? prefill?.title}
         onChange={(event) => {
           setTitleText(event.target.value);
           handleTitleChange(event.target.value);

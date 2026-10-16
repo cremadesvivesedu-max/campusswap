@@ -862,10 +862,17 @@ export function SearchExperience({
             ))}
           </div>
         ) : (
-          <EmptyState
-            title={dictionary.search.emptyTitle}
-            description={dictionary.search.emptyDescription}
-          />
+          <div className="space-y-3">
+            <EmptyState
+              title={dictionary.search.emptyTitle}
+              description={dictionary.search.emptyDescription}
+            />
+            <div className="flex justify-center">
+              <Button asChild>
+                <Link href="/app/wanted">{dictionary.wanted.homeCta}</Link>
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

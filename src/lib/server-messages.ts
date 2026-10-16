@@ -77,6 +77,11 @@ const messages: Record<string, Translation> = {
   "This listing has a paid order. Finish it from the order panel on the listing page.": { es: "Este anuncio tiene un pedido pagado. Termínalo desde el panel del pedido en la página del anuncio.", nl: "Deze advertentie heeft een betaalde bestelling. Rond die af via het bestelpaneel op de advertentiepagina." },
   "That chat is not about this listing.": { es: "Ese chat no es de este anuncio.", nl: "Die chat gaat niet over deze advertentie." },
   "Only the seller can update this listing.": { es: "Solo el vendedor puede cambiar este anuncio.", nl: "Alleen de verkoper kan deze advertentie wijzigen." },
+  "Say what you are looking for.": { es: "Di qué estás buscando.", nl: "Zeg waar je naar zoekt." },
+  "Request posted. We'll tell you when something matches.": { es: "Petición publicada. Te avisamos cuando salga algo que encaje.", nl: "Verzoek geplaatst. We laten het weten als er iets passends is." },
+  "You already have 10 open requests. Close one first.": { es: "Ya tienes 10 peticiones abiertas. Cierra alguna primero.", nl: "Je hebt al 10 open verzoeken. Sluit er eerst een." },
+  "Request closed.": { es: "Petición cerrada.", nl: "Verzoek gesloten." },
+  "Something went wrong. Please try again.": { es: "Algo ha fallado. Inténtalo de nuevo.", nl: "Er ging iets mis. Probeer het opnieuw." },
   "Listing published.": { es: "Anuncio publicado.", nl: "Advertentie gepubliceerd." }
 };
 

@@ -84,10 +84,12 @@ export default async function SellPage({
 }: {
   searchParams: Promise<{
     listingId?: string;
+    title?: string;
+    category?: string;
     promotion?: "processing" | "paid" | "cancelled" | "payment-unavailable" | "error";
   }>;
 }) {
-  const { listingId, promotion } = await searchParams;
+  const { listingId, promotion, title: prefillTitle, category: prefillCategory } = await searchParams;
   const [categories, user] = await Promise.all([
     getAllCategories(),
     getCurrentUser()
@@ -207,6 +209,16 @@ export default async function SellPage({
         promotionState={listingToEdit?.featured ? "active" : promotionState.state}
         paymentConfigured={paymentConfigured}
         defaultPickupArea={user.profile.neighborhood}
+        prefill={
+          listingToEdit
+            ? undefined
+            : {
+                title: prefillTitle?.slice(0, 120),
+                categorySlug: categories.some((category) => category.slug === prefillCategory)
+                  ? prefillCategory
+                  : undefined
+              }
+        }
       />
     </div>
   );
