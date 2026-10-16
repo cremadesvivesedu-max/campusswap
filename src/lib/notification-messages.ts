@@ -43,6 +43,7 @@ const entries: Entry[] = [
   ["Someone is waiting for your reply", "Alguien espera tu respuesta", "Iemand wacht op je antwoord"],
   ["{a} is waiting for your answer about {b}.", "{a} espera tu respuesta sobre {b}.", "{a} wacht op je antwoord over {b}."],
   ["You have {a} unanswered chats.", "Tienes {a} chats sin responder.", "Je hebt {a} onbeantwoorde chats."],
+  ["{a} new listings this week in {b}. Have a look before they're gone.", "{a} anuncios nuevos esta semana en {b}. Échales un vistazo antes de que vuelen.", "{a} nieuwe advertenties deze week in {b}. Kijk snel voordat ze weg zijn."],
   ["New this week on CampusSwap", "Novedades de la semana en CampusSwap", "Nieuw deze week op CampusSwap"],
   ["{a} joined CampusSwap with your invite 🎉", "{a} se ha unido a CampusSwap con tu invitación 🎉", "{a} is lid geworden via jouw uitnodiging 🎉"],
   ["Your listing was not approved", "Tu anuncio no ha sido aprobado", "Je advertentie is niet goedgekeurd"],

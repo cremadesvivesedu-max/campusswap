@@ -214,3 +214,58 @@ export async function sendUnansweredChatReminders(admin: AdminClient, now = new 
 
   return sent;
 }
+
+/**
+ * Sundays: "12 new listings this week in Bikes and Furniture" for everyone who keeps the
+ * weekly digest on. It is a normal notification, so it also goes out as push, and by
+ * email as soon as email sending is configured.
+ */
+export async function sendWeeklyDigest(admin: AdminClient, now = new Date()) {
+  const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ data: listingRows }, { data: profileRows }] = await Promise.all([
+    admin
+      .from("listings")
+      .select("id, seller_id, category:categories(slug, name)")
+      .eq("status", "active")
+      .gte("created_at", since)
+      .limit(2000),
+    admin.from("profiles").select("user_id, preferred_categories, notification_preferences").limit(5000)
+  ]);
+  const listings = ((listingRows as { id: string; seller_id: string; category: { slug: string; name: string } | { slug: string; name: string }[] | null }[] | null) ?? []).map(
+    (row) => ({ id: row.id, sellerId: row.seller_id, category: Array.isArray(row.category) ? row.category[0] : row.category })
+  );
+
+  if (listings.length < 3) return 0;
+
+  const weekKey = now.toISOString().slice(0, 10);
+  let sent = 0;
+
+  for (const profile of (profileRows as { user_id: string; preferred_categories: unknown; notification_preferences: unknown }[] | null) ?? []) {
+    const preferences = Array.isArray(profile.notification_preferences) ? profile.notification_preferences : [];
+    if (preferences.length && !preferences.includes("featured_digest")) continue;
+
+    const wanted = Array.isArray(profile.preferred_categories) ? (profile.preferred_categories as string[]) : [];
+    const relevant = listings.filter(
+      (listing) => listing.sellerId !== profile.user_id && (!wanted.length || (listing.category && wanted.includes(listing.category.slug)))
+    );
+    if (relevant.length < 3) continue;
+
+    const counts = new Map<string, number>();
+    for (const listing of relevant) {
+      if (listing.category) counts.set(listing.category.name, (counts.get(listing.category.name) ?? 0) + 1);
+    }
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([name]) => name);
+
+    const delivered = await notifyOnce(admin, {
+      userId: profile.user_id,
+      dedupeKey: `weekly-digest:${profile.user_id}:${weekKey}`,
+      type: "listing",
+      title: "New this week on CampusSwap",
+      body: `${relevant.length} new listings this week in ${top.join(" and ") || "your categories"}. Have a look before they're gone.`,
+      href: "/app/search?sort=newest"
+    });
+    if (delivered) sent += 1;
+  }
+
+  return sent;
+}
