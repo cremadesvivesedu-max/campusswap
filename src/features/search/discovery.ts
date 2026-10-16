@@ -1,4 +1,5 @@
 import { matchesPickupAreaFilter } from "@/lib/maastricht-pickup-areas";
+import { expandSearchQuery, matchesExpandedQuery } from "@/features/search/expand";
 import type { Listing, ListingCondition, ListingDistanceFilter } from "@/types/domain";
 
 export type ListingSortOption =
@@ -114,10 +115,8 @@ export function filterListings(listings: Listing[], filters: DiscoveryFilters) {
   );
 
   if (filters.query.trim()) {
-    const tokens = tokenize(filters.query);
-    results = results.filter((listing) =>
-      tokens.every((token) => getListingSearchText(listing).includes(token))
-    );
+    const groups = expandSearchQuery(filters.query);
+    results = results.filter((listing) => matchesExpandedQuery(getListingSearchText(listing), groups));
   }
 
   if (filters.categorySlug) {

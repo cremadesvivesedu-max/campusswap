@@ -12,6 +12,7 @@ import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
 import { getSellerStripeConnectStatus } from "@/lib/payments/stripe-connect";
 import { getEmailDomain, resolveVerificationStatus } from "@/lib/verification";
 import { filterListings, type DiscoveryFilters } from "@/features/search/discovery";
+import { expandSearchQuery, sanitizeSearchTerm } from "@/features/search/expand";
 import { recommendListingsForUser as recommendDemoListings } from "@/server/services/recommendations";
 import { searchListings as searchDemoListings } from "@/server/services/search";
 import type {
@@ -1107,10 +1108,18 @@ async function fetchListingRows(
 
   const cleanQuery = input.query?.trim();
   if (cleanQuery) {
-    const escaped = cleanQuery.replace(/,/g, " ");
-    query = query.or(
-      `title.ilike.%${escaped}%,description.ilike.%${escaped}%`
-    );
+    // Every word must match, through any of its translations or a near spelling.
+    const groups = expandSearchQuery(cleanQuery)
+      .map((alternatives) => alternatives.map(sanitizeSearchTerm).filter((term) => term.length >= 2))
+      .filter((alternatives) => alternatives.length);
+    for (const alternatives of groups) {
+      query = query.or(
+        alternatives
+          .slice(0, 12)
+          .flatMap((term) => [`title.ilike.%${term}%`, `description.ilike.%${term}%`])
+          .join(",")
+      );
+    }
   }
 
   if (input.sort === "newest") {
