@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOptionalAuthUser, requireAuthUser } from "@/lib/auth/server";
 import { after } from "next/server";
+import { getRequestLocale } from "@/lib/i18n";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { resolvePickupArea } from "@/lib/maastricht-pickup-areas";
@@ -1207,6 +1208,16 @@ async function ensurePublicUserRecord() {
         .from("users")
         .update({ last_seen_at: new Date().toISOString() })
         .eq("id", authUser.id);
+    });
+  }
+
+  // Remember the language people use so push and email reach them in it too.
+  const locale = await getRequestLocale();
+  if (existing && authUser.user_metadata?.locale !== locale) {
+    after(async () => {
+      await admin.auth.admin.updateUserById(authUser.id, {
+        user_metadata: { ...(authUser.user_metadata ?? {}), locale }
+      });
     });
   }
 

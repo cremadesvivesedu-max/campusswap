@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUpRight, Bell, CheckCheck } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useLocale } from "@/components/providers/locale-provider";
+import { translateNotificationText } from "@/lib/notification-messages";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -180,10 +181,10 @@ export function NotificationsFeed({
                 </div>
                 <div className="space-y-2">
                   <h2 className="font-display text-xl font-semibold text-slate-950 sm:text-2xl">
-                    {notification.title}
+                    {translateNotificationText(notification.title, dictionary.localeCode)}
                   </h2>
                   <p className="text-sm leading-7 text-slate-600">
-                    {notification.body}
+                    {translateNotificationText(notification.body, dictionary.localeCode)}
                   </p>
                 </div>
               </button>

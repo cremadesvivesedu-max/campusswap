@@ -12,6 +12,7 @@ import {
   wantsEmail
 } from "@/server/services/email-notifications";
 import { sendPushToUser } from "@/server/services/push";
+import { translateNotificationText } from "@/lib/notification-messages";
 
 // Called by two Supabase database webhooks (INSERT on public.messages and on
 // public.notifications). Sends a push notification to the person's devices (if they
@@ -37,14 +38,16 @@ function isAuthorized(request: Request) {
 }
 
 async function loadRecipient(admin: NonNullable<ReturnType<typeof createAdminSupabaseClient>>, userId: string) {
-  const [{ data: user }, { data: profile }] = await Promise.all([
+  const [{ data: user }, { data: profile }, { data: auth }] = await Promise.all([
     admin.from("users").select("email").eq("id", userId).maybeSingle(),
-    admin.from("profiles").select("full_name, notification_preferences").eq("user_id", userId).maybeSingle()
+    admin.from("profiles").select("full_name, notification_preferences").eq("user_id", userId).maybeSingle(),
+    admin.auth.admin.getUserById(userId).catch(() => ({ data: { user: null } }))
   ]);
   return {
     email: (user?.email as string | undefined) ?? null,
     name: (profile?.full_name as string | undefined) ?? "",
-    preferences: profile?.notification_preferences ?? []
+    preferences: profile?.notification_preferences ?? [],
+    locale: String(auth?.user?.user_metadata?.locale ?? "en")
   };
 }
 
@@ -134,11 +137,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ skipped: "opted-out" });
       }
 
-      const title = String(record.title ?? "CampusSwap update");
+      const title = translateNotificationText(String(record.title ?? "CampusSwap update"), recipient.locale);
+      const body = translateNotificationText(String(record.body ?? ""), recipient.locale);
       const href = String(record.destination_href ?? "") || "/app/notifications";
       const push = await sendPushToUser(String(record.user_id ?? ""), {
         title,
-        body: String(record.body ?? ""),
+        body,
         url: href.startsWith("/") ? href : "/app/notifications"
       });
       if (!recipient.email) {
@@ -146,8 +150,8 @@ export async function POST(request: Request) {
       }
       const email = renderNotificationEmail({
         heading: title,
-        body: String(record.body ?? ""),
-        ctaLabel: "Open CampusSwap",
+        body,
+        ctaLabel: recipient.locale === "es" ? "Abrir CampusSwap" : recipient.locale === "nl" ? "Open CampusSwap" : "Open CampusSwap",
         ctaUrl: href.startsWith("/") ? `${siteUrl}${href}` : `${siteUrl}/app/notifications`,
         siteUrl
       });
