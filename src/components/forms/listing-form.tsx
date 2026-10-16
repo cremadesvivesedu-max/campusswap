@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getConditionLabel } from "@/lib/i18n-shared";
@@ -16,6 +16,8 @@ import { ListingImage } from "@/components/marketplace/listing-image";
 import { compressFileInput } from "@/lib/image-compression";
 import { friendlyError } from "@/lib/friendly-error";
 import { parsePriceRange, suggestCategory } from "@/features/listings/suggest-category";
+import type { PriceSuggestion } from "@/features/listings/price-suggestion";
+import { getPriceSuggestionAction } from "@/server/actions/pricing";
 import type { Category, Listing } from "@/types/domain";
 
 interface ListingFormProps {
@@ -59,6 +61,31 @@ export function ListingForm({
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const selectedCategory = categories.find((category) => category.slug === categorySlug);
   const priceRange = parsePriceRange(selectedCategory?.typicalPriceRange);
+  const [titleText, setTitleText] = useState(initialListing?.title ?? "");
+  const [priceSuggestion, setPriceSuggestion] = useState<PriceSuggestion | null>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
+
+  // Ask for a price range once the seller pauses typing (title or category changed).
+  useEffect(() => {
+    if (!categorySlug) {
+      setPriceSuggestion(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      getPriceSuggestionAction(categorySlug, titleText, initialListing?.id)
+        .then((suggestion) => {
+          if (!cancelled) setPriceSuggestion(suggestion);
+        })
+        .catch(() => {
+          if (!cancelled) setPriceSuggestion(null);
+        });
+    }, 600);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [categorySlug, titleText, initialListing?.id]);
 
   useEffect(
     () => () => photoPreviews.forEach((url) => URL.revokeObjectURL(url)),
@@ -176,7 +203,10 @@ export function ListingForm({
         maxLength={120}
         placeholder={dictionary.listingForm.titlePlaceholder}
         defaultValue={initialListing?.title}
-        onChange={(event) => handleTitleChange(event.target.value)}
+        onChange={(event) => {
+          setTitleText(event.target.value);
+          handleTitleChange(event.target.value);
+        }}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
@@ -221,6 +251,7 @@ export function ListingForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <Input
+            ref={priceInputRef}
             name="price"
             type="number"
             inputMode="decimal"
@@ -230,7 +261,30 @@ export function ListingForm({
             placeholder={dictionary.listingForm.pricePlaceholder}
             defaultValue={initialListing?.price}
           />
-          {priceRange ? (
+          {priceSuggestion ? (
+            <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-600">
+              <span>
+                💡{" "}
+                {(priceSuggestion.basis === "similar"
+                  ? dictionary.priceSuggestion.similar
+                  : dictionary.priceSuggestion.category)
+                  .replace("{low}", String(priceSuggestion.low))
+                  .replace("{high}", String(priceSuggestion.high))
+                  .replace("{count}", String(priceSuggestion.count))}
+              </span>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-800 hover:bg-emerald-100"
+                onClick={() => {
+                  if (priceInputRef.current) {
+                    priceInputRef.current.value = String(priceSuggestion.typical);
+                  }
+                }}
+              >
+                {dictionary.priceSuggestion.use.replace("{price}", String(priceSuggestion.typical))}
+              </button>
+            </div>
+          ) : priceRange ? (
             <p className="px-1 text-xs text-slate-500">
               {dictionary.listingForm.priceHint
                 .replace("{min}", String(priceRange.min))
