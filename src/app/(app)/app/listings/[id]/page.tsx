@@ -299,9 +299,19 @@ export default async function ListingDetailPage({
               <h2 className="text-lg font-bold text-slate-950">
                 {live.moreFromSeller.replace("{name}", seller.profile.fullName.split(" ")[0])}
               </h2>
-              <Link href={`/app/profile?userId=${seller.id}`} className="text-sm font-semibold text-emerald-700 hover:underline">
-                {live.seeAll}
-              </Link>
+              <div className="flex items-center gap-3">
+                {!isOwnListing && listing.status === "active" ? (
+                  <Link
+                    href={`/app/bundle/${seller.id}?listingId=${listing.id}`}
+                    className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                  >
+                    📦 {dictionary.bundle.entry}
+                  </Link>
+                ) : null}
+                <Link href={`/app/profile?userId=${seller.id}`} className="text-sm font-semibold text-emerald-700 hover:underline">
+                  {live.seeAll}
+                </Link>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4">
               {moreFromSeller.map((item) => (

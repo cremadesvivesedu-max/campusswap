@@ -110,6 +110,11 @@ export default async function ProfilePage({
           </span>
         </p>
         <TrustBadges user={profileUser} labels={dictionary.trustBadges} />
+        {!isOwnProfile && onSale.filter((listing) => listing.status === "active").length >= 2 ? (
+          <Button asChild variant="outline" className="w-full sm:w-auto">
+            <Link href={`/app/bundle/${profileUser.id}`}>📦 {dictionary.bundle.entry}</Link>
+          </Button>
+        ) : null}
         {profileUser.profile.bio ? (
           <p className="text-sm leading-6 text-slate-600">{profileUser.profile.bio}</p>
         ) : null}

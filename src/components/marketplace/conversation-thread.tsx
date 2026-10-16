@@ -68,6 +68,7 @@ const trackingHosts = ["postnl.nl", "dhl.com", "dpd.de", "ups.com", "gls-group.c
 function linkLabel(url: string) {
   if (url.includes("google.com/maps")) return "Google Maps ↗";
   if (trackingHosts.some((host) => url.includes(host))) return "📦 Tracking ↗";
+  if (url.includes("/app/listings/")) return "🔗 CampusSwap ↗";
   return url;
 }
 
