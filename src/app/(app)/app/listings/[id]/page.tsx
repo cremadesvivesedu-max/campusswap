@@ -30,6 +30,7 @@ import { FavoriteToggleButton } from "@/components/marketplace/favorite-toggle-b
 import { ShareListingButtons } from "@/components/marketplace/share-listing-buttons";
 import { RemoveListingButton } from "@/components/marketplace/remove-listing-button";
 import { Button } from "@/components/ui/button";
+import { TrustBadges } from "@/components/shared/trust-badges";
 import { getShipmentForTransaction } from "@/server/services/order-protection";
 
 // Listing page in marketplace order (Wallapop-like): photos, price and title, seller,
@@ -201,6 +202,12 @@ export default async function ListingDetailPage({
                   </span>
                 ) : null}
               </div>
+              <TrustBadges
+                user={seller}
+                labels={dictionary.trustBadges}
+                hide={["verified-student", "new-member"]}
+                className="pt-1"
+              />
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden="true" />
           </Link>

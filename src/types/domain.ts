@@ -101,6 +101,8 @@ export interface SellerTrustMetrics {
   reviewCount: number;
   responseRate: number;
   responseRateMethod: "conversation-reply-rate" | "profile-estimate";
+  /** Typical time to first reply to a new buyer, from real chats. */
+  medianReplyMinutes?: number;
 }
 
 export interface SellerStripeConnectStatus {

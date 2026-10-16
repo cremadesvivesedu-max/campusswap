@@ -5,6 +5,7 @@ import { ReviewCard } from "@/components/marketplace/review-card";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { StarRating } from "@/components/shared/star-rating";
 import { VerificationStatusBadge } from "@/components/shared/verification-status-badge";
+import { TrustBadges } from "@/components/shared/trust-badges";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { getDictionaryForRequest, getRequestLocale } from "@/lib/i18n";
@@ -108,6 +109,7 @@ export default async function ProfilePage({
             {copy.memberSince} <strong className="text-slate-950">{memberSince}</strong>
           </span>
         </p>
+        <TrustBadges user={profileUser} labels={dictionary.trustBadges} />
         {profileUser.profile.bio ? (
           <p className="text-sm leading-6 text-slate-600">{profileUser.profile.bio}</p>
         ) : null}

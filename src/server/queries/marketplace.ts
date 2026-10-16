@@ -572,6 +572,7 @@ async function fetchSellerMetricsMap(userIds: string[]) {
 
   const buyerConversationCounts = new Map<string, number>();
   const sellerReplyCounts = new Map<string, number>();
+  const sellerReplyMinutes = new Map<string, number[]>();
 
   for (const conversation of conversations) {
     const messages = messagesByConversation.get(conversation.id) ?? [];
@@ -588,11 +589,19 @@ async function fetchSellerMetricsMap(userIds: string[]) {
       (buyerConversationCounts.get(conversation.seller_id) ?? 0) + 1
     );
 
-    const replied = messages.some(
+    const firstReply = messages.find(
       (message) =>
         message.sender_id === conversation.seller_id &&
         Date.parse(message.sent_at) >= Date.parse(firstBuyerMessage.sent_at)
     );
+    const replied = Boolean(firstReply);
+
+    if (firstReply) {
+      const minutes = (Date.parse(firstReply.sent_at) - Date.parse(firstBuyerMessage.sent_at)) / 60000;
+      const list = sellerReplyMinutes.get(conversation.seller_id) ?? [];
+      list.push(minutes);
+      sellerReplyMinutes.set(conversation.seller_id, list);
+    }
 
     if (replied) {
       sellerReplyCounts.set(
@@ -620,11 +629,19 @@ async function fetchSellerMetricsMap(userIds: string[]) {
             : profile?.responseRate ?? 0,
           responseRateMethod: hasConversationRate
             ? "conversation-reply-rate"
-            : "profile-estimate"
+            : "profile-estimate",
+          medianReplyMinutes: median(sellerReplyMinutes.get(userId))
         } satisfies SellerTrustMetrics
       ];
     })
   );
+}
+
+function median(values?: number[]) {
+  if (!values?.length) return undefined;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return Math.round(sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2);
 }
 
 async function fetchListingAnalyticsMap(listingIds: string[]) {
