@@ -4,6 +4,7 @@ import { demoAdminUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { assessListingRisk } from "@/server/services/moderation";
 import {
   getWeekStarts,
   loadWeeklyMetrics,
@@ -791,3 +792,103 @@ export async function getAdminWeeklyMetrics(weeks = 8): Promise<{
   };
 }
 
+
+export interface ModerationQueueItem {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  createdAt: string;
+  categoryName: string;
+  imageUrl?: string;
+  outlet: boolean;
+  featured: boolean;
+  sellerId: string;
+  sellerName: string;
+  sellerVerified: boolean;
+  reasons: string[];
+}
+
+/** Listings held for review, oldest first, with why they were held. */
+export async function getModerationQueue(): Promise<ModerationQueueItem[]> {
+  if (!isLiveMode) {
+    return demoData.listings
+      .filter((listing) => listing.status === "pending-review")
+      .map((listing) => ({
+        id: listing.id,
+        title: listing.title,
+        description: listing.description,
+        price: listing.price,
+        createdAt: listing.createdAt,
+        categoryName: listing.categorySlug,
+        imageUrl: listing.images[0]?.url,
+        outlet: listing.outlet,
+        featured: listing.featured,
+        sellerId: listing.sellerId,
+        sellerName: listing.sellerName ?? "",
+        sellerVerified: listing.sellerVerificationStatus === "verified",
+        reasons: assessListingRisk(listing).reasons
+      }));
+  }
+
+  await requireAdminAccess();
+  const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return [];
+  }
+
+  const { data } = await admin
+    .from("listings")
+    .select("id, title, description, price, created_at, outlet, featured, seller_id, category:categories(name), images:listing_images(url, is_primary)")
+    .eq("status", "pending-review")
+    .order("created_at", { ascending: true })
+    .limit(100);
+  const rows =
+    (data as {
+      id: string;
+      title: string;
+      description: string;
+      price: number | string;
+      created_at: string;
+      outlet: boolean;
+      featured: boolean;
+      seller_id: string;
+      category: { name: string } | { name: string }[] | null;
+      images: { url: string; is_primary: boolean }[] | null;
+    }[] | null) ?? [];
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const sellerIds = [...new Set(rows.map((row) => row.seller_id))];
+  const [{ data: users }, { data: profiles }] = await Promise.all([
+    admin.from("users").select("id, verification_status").in("id", sellerIds),
+    admin.from("profiles").select("user_id, full_name").in("user_id", sellerIds)
+  ]);
+  const verified = new Map(((users as { id: string; verification_status: string }[] | null) ?? []).map((row) => [row.id, row.verification_status === "verified"]));
+  const names = new Map(((profiles as { user_id: string; full_name: string | null }[] | null) ?? []).map((row) => [row.user_id, row.full_name ?? ""]));
+
+  return rows.map((row) => {
+    const price = Number(row.price);
+    const sellerVerified = verified.get(row.seller_id) ?? false;
+    const category = Array.isArray(row.category) ? row.category[0] : row.category;
+    const cover = row.images?.find((image) => image.is_primary) ?? row.images?.[0];
+    const reasons = assessListingRisk({ title: row.title, description: row.description, price }).reasons;
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      price,
+      createdAt: row.created_at,
+      categoryName: category?.name ?? "",
+      imageUrl: cover?.url,
+      outlet: row.outlet,
+      featured: row.featured,
+      sellerId: row.seller_id,
+      sellerName: names.get(row.seller_id) || "—",
+      sellerVerified,
+      reasons: sellerVerified ? reasons : [...reasons, "account not verified as a student yet"]
+    };
+  });
+}

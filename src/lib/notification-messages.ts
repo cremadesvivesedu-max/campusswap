@@ -48,6 +48,11 @@ const entries: Entry[] = [
   ["{a} joined CampusSwap with your invite 🎉", "{a} se ha unido a CampusSwap con tu invitación 🎉", "{a} is lid geworden via jouw uitnodiging 🎉"],
   ["Thanks for spreading the word. See where you are on the leaderboard.", "Gracias por correr la voz. Mira en qué puesto vas en la clasificación.", "Bedankt voor het delen. Bekijk je plek op het klassement."],
   ["Your listing was not approved", "Tu anuncio no ha sido aprobado", "Je advertentie is niet goedgekeurd"],
+  ["{a} was not approved: it looks like a possible scam", "{a} no ha sido aprobado: parece una posible estafa", "{a} is niet goedgekeurd: het lijkt op oplichting"],
+  ["{a} was not approved: this item is not allowed on CampusSwap", "{a} no ha sido aprobado: este artículo no está permitido en CampusSwap", "{a} is niet goedgekeurd: dit artikel is niet toegestaan op CampusSwap"],
+  ["{a} was not approved: the price or description is misleading", "{a} no ha sido aprobado: el precio o la descripción son engañosos", "{a} is niet goedgekeurd: de prijs of beschrijving is misleidend"],
+  ["{a} was not approved: it duplicates another listing", "{a} no ha sido aprobado: duplica otro anuncio", "{a} is niet goedgekeurd: het is een dubbele advertentie"],
+  ["{a} was not approved: it needs a real photo and a clearer description", "{a} no ha sido aprobado: necesita una foto real y una descripción más clara", "{a} is niet goedgekeurd: er is een echte foto en duidelijkere beschrijving nodig"],
   ["{a} was not approved: {b}", "{a} no ha sido aprobado: {b}", "{a} is niet goedgekeurd: {b}"],
 
   // Bodies

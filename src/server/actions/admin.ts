@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { notifySavedSearchMatchesForListingId } from "@/server/services/saved-search-alerts";
@@ -364,4 +365,55 @@ export async function updateVerificationRuleAction(
   revalidatePath("/signup");
 
   return;
+}
+
+const rejectionReasons: Record<string, string> = {
+  scam: "it looks like a possible scam",
+  prohibited: "this item is not allowed on CampusSwap",
+  price: "the price or description is misleading",
+  duplicate: "it duplicates another listing",
+  quality: "it needs a real photo and a clearer description"
+};
+
+/** Reject a held listing: it stays hidden and the seller is told why. */
+export async function rejectListingAction(formData: FormData): Promise<void> {
+  const listingId = String(formData.get("listingId") ?? "").trim();
+  const reason = rejectionReasons[String(formData.get("reason") ?? "")] ?? rejectionReasons.quality;
+
+  if (!listingId || !isLiveMode) {
+    return;
+  }
+
+  const { adminUser, supabase } = await requireAdminActionContext();
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("id, title, seller_id")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (!listing) {
+    return;
+  }
+
+  await supabase
+    .from("listings")
+    .update({
+      status: "hidden",
+      removed_at: new Date().toISOString(),
+      removed_by: adminUser.id,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", listingId);
+
+  const admin = createAdminSupabaseClient();
+  await admin?.from("notifications").insert({
+    user_id: listing.seller_id,
+    type: "listing",
+    title: "Your listing was not approved",
+    body: `${listing.title} was not approved: ${reason}`,
+    destination_href: "/app/my-listings"
+  });
+
+  revalidatePath("/admin/listings");
+  revalidatePath("/admin");
 }

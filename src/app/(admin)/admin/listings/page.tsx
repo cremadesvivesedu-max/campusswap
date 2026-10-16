@@ -1,13 +1,16 @@
 import { updateAdminListingAction } from "@/server/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getAdminListings } from "@/server/queries/admin";
+import { ModerationQueue } from "@/components/admin/moderation-queue";
+import { getAdminListings, getModerationQueue } from "@/server/queries/admin";
 
 export default async function AdminListingsPage() {
-  const listings = await getAdminListings();
+  const [listings, queue] = await Promise.all([getAdminListings(), getModerationQueue()]);
 
   return (
     <div className="space-y-4">
+      <ModerationQueue items={queue} />
+      <h2 className="pt-4 text-2xl font-extrabold text-slate-950">Todos los anuncios</h2>
       {listings.map((listing) => (
         <Card key={listing.id} className="bg-white">
           <CardHeader>
