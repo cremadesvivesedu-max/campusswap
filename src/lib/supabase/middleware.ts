@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isReferralCode, REFERRAL_COOKIE } from "@/features/referrals/code";
 import { createServerClient } from "@supabase/ssr";
 import { env, supabasePublicKey } from "@/lib/env";
 
@@ -53,6 +54,16 @@ export async function updateSession(request: NextRequest) {
   });
 
   await supabase.auth.getUser();
+
+  // Invite links (?ref=abcd1234) are remembered for 30 days so the signup can credit the inviter.
+  const ref = request.nextUrl.searchParams.get("ref");
+  if (isReferralCode(ref) && !request.cookies.get(REFERRAL_COOKIE)) {
+    response.cookies.set(REFERRAL_COOKIE, ref.toLowerCase(), {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax"
+    });
+  }
 
   return response;
 }

@@ -128,6 +128,15 @@ export default async function ProfilePage({
             </Button>
           </div>
         ) : null}
+        {isOwnProfile ? (
+          <Link
+            href="/app/invite"
+            className="flex items-center justify-between rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+          >
+            🎁 {dictionary.invite.entry}
+            <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
       </section>
 
       <nav aria-label={copy.onSale} className="flex border-b border-slate-200">

@@ -46,6 +46,7 @@ const entries: Entry[] = [
   ["{a} new listings this week in {b}. Have a look before they're gone.", "{a} anuncios nuevos esta semana en {b}. Échales un vistazo antes de que vuelen.", "{a} nieuwe advertenties deze week in {b}. Kijk snel voordat ze weg zijn."],
   ["New this week on CampusSwap", "Novedades de la semana en CampusSwap", "Nieuw deze week op CampusSwap"],
   ["{a} joined CampusSwap with your invite 🎉", "{a} se ha unido a CampusSwap con tu invitación 🎉", "{a} is lid geworden via jouw uitnodiging 🎉"],
+  ["Thanks for spreading the word. See where you are on the leaderboard.", "Gracias por correr la voz. Mira en qué puesto vas en la clasificación.", "Bedankt voor het delen. Bekijk je plek op het klassement."],
   ["Your listing was not approved", "Tu anuncio no ha sido aprobado", "Je advertentie is niet goedgekeurd"],
   ["{a} was not approved: {b}", "{a} no ha sido aprobado: {b}", "{a} is niet goedgekeurd: {b}"],
 

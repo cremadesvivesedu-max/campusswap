@@ -3,6 +3,8 @@ import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getOptionalAuthUser, requireAuthUser } from "@/lib/auth/server";
 import { after } from "next/server";
+import { cookies } from "next/headers";
+import { isReferralCode, REFERRAL_COOKIE } from "@/features/referrals/code";
 import { getRequestLocale } from "@/lib/i18n";
 import { demoCurrentUserId, demoData } from "@/lib/demo-data";
 import { isLiveMode } from "@/lib/env";
@@ -1318,14 +1320,57 @@ async function ensurePublicUserRecord() {
     preferred_categories: [],
     buyer_intent: true,
     seller_intent: false,
-    notification_preferences: ["messages", "listing_updates"],
+    notification_preferences: ["messages", "listing_updates", "saved_searches", "featured_digest"],
     rating_average: 0,
     review_count: 0,
     response_rate: 0,
     verified_badge: verificationStatus === "verified"
   });
 
+  // Brand-new account: credit whoever invited them (cookie set by the invite link).
+  const cookieStore = await cookies();
+  const referralCode = cookieStore.get(REFERRAL_COOKIE)?.value;
+  if (isReferralCode(referralCode)) {
+    after(async () => {
+      await creditReferral(admin, authUser.id, referralCode, fullName);
+    });
+  }
+
   return fetchUserRowById(authUser.id);
+}
+
+async function creditReferral(
+  admin: NonNullable<ReturnType<typeof createAdminSupabaseClient>>,
+  newUserId: string,
+  code: string,
+  newUserName: string
+) {
+  const { data: referrer } = await admin
+    .from("users")
+    .select("id")
+    .eq("referral_code", code.toLowerCase())
+    .maybeSingle();
+
+  if (!referrer?.id || referrer.id === newUserId) {
+    return;
+  }
+
+  const { error } = await admin
+    .from("referrals")
+    .insert({ referred_id: newUserId, referrer_id: referrer.id });
+
+  if (error) {
+    // Already credited, or the referrals table is not there yet.
+    return;
+  }
+
+  await admin.from("notifications").insert({
+    user_id: referrer.id,
+    type: "system",
+    title: `${newUserName.split(" ")[0]} joined CampusSwap with your invite 🎉`,
+    body: "Thanks for spreading the word. See where you are on the leaderboard.",
+    destination_href: "/app/invite"
+  });
 }
 
 export const getCurrentUser = cache(async function getCurrentUser() {
