@@ -13,6 +13,8 @@ import { removeListingAction, updateListingStatusAction } from "@/server/actions
 import type { Listing, SellerListingTransaction } from "@/types/domain";
 import { friendlyError } from "@/lib/friendly-error";
 import { MarkSoldSheet } from "@/components/marketplace/mark-sold-sheet";
+import { daysListed, isStaleListing, suggestPriceDrop } from "@/features/listings/price-suggestion";
+import { dropListingPriceAction } from "@/server/actions/forms";
 
 const statusTone: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -67,6 +69,11 @@ export function MyListingRow({
 
   const canToggle = listing.status === "active" || listing.status === "archived";
   const canMarkSold = ["active", "reserved", "archived"].includes(listing.status);
+  const chats = listing.analytics?.messagesReceived ?? 0;
+  const dropTo =
+    isStaleListing({ createdAt: listing.createdAt, chats, status: listing.status })
+      ? suggestPriceDrop(listing.price)
+      : null;
 
   return (
     <li className={`rounded-2xl border border-slate-200 bg-white p-3 ${isPending ? "opacity-60" : ""}`}>
@@ -176,6 +183,24 @@ export function MyListingRow({
               {dictionary.myListings.openExchangeChat}
             </Link>
           ) : null}
+        </div>
+      ) : null}
+      {dropTo && !message?.ok ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <span>💡 {dictionary.priceNudge.suggest.replace("{days}", String(daysListed(listing.createdAt)))}</span>
+          <button
+            type="button"
+            disabled={isPending}
+            className="rounded-full bg-amber-500 px-3 py-1.5 font-bold text-white hover:bg-amber-600"
+            onClick={() =>
+              run(
+                () => dropListingPriceAction(listing.id, dropTo),
+                () => setMessage({ text: dictionary.priceNudge.done, ok: true })
+              )
+            }
+          >
+            {dictionary.priceNudge.apply.replace("{price}", String(dropTo))}
+          </button>
         </div>
       ) : null}
       {showSold ? (

@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { listingMatchesWanted } from "@/features/wanted/match";
+import { daysListed, suggestPriceDrop } from "@/features/listings/price-suggestion";
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabaseClient>>;
 
@@ -94,4 +95,48 @@ export async function notifyAdminsOfListingRisk(listing: { id: string; title: st
       })
     )
   );
+}
+
+/**
+ * Daily: sellers whose listing has sat for 7+ days without a single chat get one
+ * suggestion to lower the price (once per listing).
+ */
+export async function sendPriceDropNudges(admin: AdminClient, now = new Date()) {
+  const day = 24 * 60 * 60 * 1000;
+  const { data } = await admin
+    .from("listings")
+    .select("id, seller_id, title, price, created_at")
+    .eq("status", "active")
+    .lte("created_at", new Date(now.getTime() - 7 * day).toISOString())
+    .gte("created_at", new Date(now.getTime() - 30 * day).toISOString())
+    .limit(300);
+  const listings = (data as { id: string; seller_id: string; title: string; price: number | string; created_at: string }[] | null) ?? [];
+
+  if (!listings.length) return 0;
+
+  const { data: conversations } = await admin
+    .from("conversations")
+    .select("listing_id")
+    .in("listing_id", listings.map((listing) => listing.id));
+  const withChats = new Set(((conversations as { listing_id: string }[] | null) ?? []).map((row) => row.listing_id));
+  let sent = 0;
+
+  for (const listing of listings) {
+    if (withChats.has(listing.id)) continue;
+    const price = Number(listing.price);
+    const dropTo = suggestPriceDrop(price);
+    if (!dropTo) continue;
+
+    const delivered = await notifyOnce(admin, {
+      userId: listing.seller_id,
+      dedupeKey: `price-nudge:${listing.id}`,
+      type: "listing",
+      title: "Time for a price drop?",
+      body: `${listing.title} has been listed for ${daysListed(listing.created_at, now)} days. Dropping to €${dropTo} usually brings new chats.`,
+      href: "/app/my-listings"
+    });
+    if (delivered) sent += 1;
+  }
+
+  return sent;
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { runDailyOrderJobs } from "@/server/services/order-protection";
+import { sendPriceDropNudges } from "@/server/services/listing-hooks";
 import { formatMondaySummary, loadWeeklyMetrics } from "@/server/services/weekly-metrics";
 
 // Runs once a day from Vercel Cron (see vercel.json). Vercel sends
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
 
   const now = new Date();
   const orders = await runDailyOrderJobs(admin, now);
+  const priceNudges = await sendPriceDropNudges(admin, now);
   let mondaySummary: string | null = null;
 
   // Monday morning: last week's numbers to every admin (push + in-app notification).
@@ -63,5 +65,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, orders, mondaySummary });
+  return NextResponse.json({ ok: true, orders, priceNudges, mondaySummary });
 }

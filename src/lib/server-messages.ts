@@ -82,6 +82,7 @@ const messages: Record<string, Translation> = {
   "You already have 10 open requests. Close one first.": { es: "Ya tienes 10 peticiones abiertas. Cierra alguna primero.", nl: "Je hebt al 10 open verzoeken. Sluit er eerst een." },
   "Request closed.": { es: "Petición cerrada.", nl: "Verzoek gesloten." },
   "Something went wrong. Please try again.": { es: "Algo ha fallado. Inténtalo de nuevo.", nl: "Er ging iets mis. Probeer het opnieuw." },
+  "Price updated.": { es: "Precio actualizado.", nl: "Prijs bijgewerkt." },
   "Listing published.": { es: "Anuncio publicado.", nl: "Advertentie gepubliceerd." }
 };
 

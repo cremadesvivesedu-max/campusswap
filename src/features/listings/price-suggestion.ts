@@ -66,3 +66,23 @@ export function suggestPrice(title: string, points: PricePoint[], minimum = 3): 
 
   return { low, high, typical, count: pool.length, basis };
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** About 15% off, rounded to an everyday price, and always actually lower. */
+export function suggestPriceDrop(price: number) {
+  if (!Number.isFinite(price) || price <= 3) return null;
+  const suggested = roundPrice(price * 0.85);
+  if (suggested < price) return suggested;
+  const fallback = Math.floor(price - 1);
+  return fallback >= 1 ? fallback : null;
+}
+
+/** Listed for a week or more with nobody writing: time to nudge the price. */
+export function isStaleListing(input: { createdAt: string; chats: number; status: string }, now = new Date()) {
+  return input.status === "active" && input.chats === 0 && now.getTime() - Date.parse(input.createdAt) >= 7 * DAY_MS;
+}
+
+export function daysListed(createdAt: string, now = new Date()) {
+  return Math.floor((now.getTime() - Date.parse(createdAt)) / DAY_MS);
+}

@@ -14,7 +14,7 @@ import {
 import { isLiveMode } from "@/lib/env";
 import { recordAppEvent } from "@/lib/instrumentation";
 import { createFeaturedCheckoutSession, stripe } from "@/lib/payments/stripe";
-import { getCurrentUser } from "@/server/queries/marketplace";
+import { getCurrentUser, getListingById } from "@/server/queries/marketplace";
 import { assessListingRisk } from "@/server/services/moderation";
 import { notifyAdminsOfListingRisk, notifyWantedMatches } from "@/server/services/listing-hooks";
 import {
@@ -1568,4 +1568,56 @@ export async function createQuickListingAction(
   revalidatePath("/app/profile");
 
   return { success: true, message: "Listing published.", listingId: listing.id, needsReview };
+}
+
+/** One tap from "Time for a price drop?": lowers the price and tells people who saved it. */
+export async function dropListingPriceAction(
+  listingId: string,
+  newPrice: number
+): Promise<{ success: boolean; message: string }> {
+  if (!isLiveMode) {
+    return { success: true, message: "Price updated." };
+  }
+
+  const user = await getCurrentUser();
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { success: false, message: "Something went wrong. Please try again." };
+  }
+
+  const listing = await getListingById(listingId);
+
+  if (!listing || listing.sellerId !== user.id) {
+    return { success: false, message: "Only the seller can update this listing." };
+  }
+
+  if (!Number.isFinite(newPrice) || newPrice <= 0 || newPrice >= listing.price) {
+    return { success: false, message: "Something went wrong. Please try again." };
+  }
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ price: newPrice, updated_at: new Date().toISOString() })
+    .eq("id", listingId)
+    .eq("seller_id", user.id);
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  after(async () => {
+    await notifyPriceDropWatchers({
+      listing: { ...listing, price: newPrice },
+      sellerId: user.id,
+      previousPrice: listing.price,
+      newPrice
+    });
+  });
+
+  revalidatePath("/app/my-listings");
+  revalidatePath(`/app/listings/${listingId}`);
+  revalidatePath("/app");
+
+  return { success: true, message: "Price updated." };
 }

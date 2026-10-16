@@ -36,3 +36,22 @@ describe("price suggestion", () => {
     expect(roundPrice(0.2)).toBe(1);
   });
 });
+
+describe("price drop nudges", () => {
+  it("suggests about 15% off at an everyday price", async () => {
+    const { suggestPriceDrop } = await import("@/features/listings/price-suggestion");
+    expect(suggestPriceDrop(20)).toBe(17);
+    expect(suggestPriceDrop(100)).toBe(85);
+    expect(suggestPriceDrop(5)).toBe(4);
+    expect(suggestPriceDrop(3)).toBeNull();
+  });
+
+  it("only nudges week-old listings nobody has written about", async () => {
+    const { isStaleListing } = await import("@/features/listings/price-suggestion");
+    const now = new Date("2027-03-10T12:00:00Z");
+    expect(isStaleListing({ createdAt: "2027-03-01T12:00:00Z", chats: 0, status: "active" }, now)).toBe(true);
+    expect(isStaleListing({ createdAt: "2027-03-01T12:00:00Z", chats: 2, status: "active" }, now)).toBe(false);
+    expect(isStaleListing({ createdAt: "2027-03-08T12:00:00Z", chats: 0, status: "active" }, now)).toBe(false);
+    expect(isStaleListing({ createdAt: "2027-03-01T12:00:00Z", chats: 0, status: "sold" }, now)).toBe(false);
+  });
+});
