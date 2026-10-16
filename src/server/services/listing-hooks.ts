@@ -140,3 +140,77 @@ export async function sendPriceDropNudges(admin: AdminClient, now = new Date()) 
 
   return sent;
 }
+
+/**
+ * Daily: if someone wrote to you 20–44 hours ago and you have not answered, one gentle
+ * reminder (grouped per person, so several chats become one notification).
+ */
+export async function sendUnansweredChatReminders(admin: AdminClient, now = new Date()) {
+  const hour = 60 * 60 * 1000;
+  const from = new Date(now.getTime() - 44 * hour).toISOString();
+  const to = new Date(now.getTime() - 20 * hour).toISOString();
+
+  const { data: conversations } = await admin
+    .from("conversations")
+    .select("id, listing_id, buyer_id, seller_id, blocked_by")
+    .gte("updated_at", from)
+    .limit(500);
+  const rows =
+    (conversations as { id: string; listing_id: string; buyer_id: string; seller_id: string; blocked_by: string | null }[] | null) ?? [];
+  const open = rows.filter((row) => !row.blocked_by);
+
+  if (!open.length) return 0;
+
+  const { data: messages } = await admin
+    .from("messages")
+    .select("conversation_id, sender_id, sent_at")
+    .in("conversation_id", open.map((row) => row.id))
+    .order("sent_at", { ascending: false })
+    .limit(5000);
+  const last = new Map<string, { sender_id: string; sent_at: string }>();
+  for (const message of (messages as { conversation_id: string; sender_id: string; sent_at: string }[] | null) ?? []) {
+    if (!last.has(message.conversation_id)) last.set(message.conversation_id, message);
+  }
+
+  // recipient -> conversations waiting on them
+  const waiting = new Map<string, { conversationId: string; senderId: string; listingId: string }[]>();
+  for (const conversation of open) {
+    const message = last.get(conversation.id);
+    if (!message || message.sent_at < from || message.sent_at > to) continue;
+    const recipient = message.sender_id === conversation.buyer_id ? conversation.seller_id : conversation.buyer_id;
+    const list = waiting.get(recipient) ?? [];
+    list.push({ conversationId: conversation.id, senderId: message.sender_id, listingId: conversation.listing_id });
+    waiting.set(recipient, list);
+  }
+
+  if (!waiting.size) return 0;
+
+  const all = [...waiting.values()].flat();
+  const [{ data: profiles }, { data: listings }] = await Promise.all([
+    admin.from("profiles").select("user_id, full_name").in("user_id", [...new Set(all.map((item) => item.senderId))]),
+    admin.from("listings").select("id, title").in("id", [...new Set(all.map((item) => item.listingId))])
+  ]);
+  const names = new Map(((profiles as { user_id: string; full_name: string | null }[] | null) ?? []).map((row) => [row.user_id, row.full_name ?? ""]));
+  const titles = new Map(((listings as { id: string; title: string }[] | null) ?? []).map((row) => [row.id, row.title]));
+  const day = now.toISOString().slice(0, 10);
+  let sent = 0;
+
+  for (const [recipient, items] of waiting) {
+    const first = items[0];
+    const name = (names.get(first.senderId) || "Someone").split(" ")[0];
+    const delivered = await notifyOnce(admin, {
+      userId: recipient,
+      dedupeKey: `unanswered:${recipient}:${day}`,
+      type: "listing",
+      title: "Someone is waiting for your reply",
+      body:
+        items.length === 1
+          ? `${name} is waiting for your answer about ${titles.get(first.listingId) ?? "your listing"}.`
+          : `You have ${items.length} unanswered chats.`,
+      href: items.length === 1 ? `/app/messages/${first.conversationId}` : "/app/messages"
+    });
+    if (delivered) sent += 1;
+  }
+
+  return sent;
+}

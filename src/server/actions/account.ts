@@ -31,6 +31,9 @@ const personalData: [table: string, column: string][] = [
   ["notifications", "user_id"],
   ["reports", "reporter_id"],
   ["support_tickets", "user_id"],
+  ["wanted_requests", "user_id"],
+  ["referrals", "referrer_id"],
+  ["referrals", "referred_id"],
   ["app_events", "actor_user_id"]
 ];
 
@@ -104,7 +107,10 @@ export async function deleteMyAccountAction(confirmation: string, expectedWord: 
     admin.from("users").update({ email: anonymousEmail, avatar_url: null }).eq("id", user.id),
     admin.from("favorites").delete().eq("user_id", user.id),
     admin.from("saved_searches").delete().eq("user_id", user.id),
-    admin.from("notifications").delete().eq("user_id", user.id)
+    admin.from("notifications").delete().eq("user_id", user.id),
+    admin.from("notification_events").delete().eq("user_id", user.id),
+    admin.from("push_subscriptions").delete().eq("user_id", user.id),
+    admin.from("wanted_requests").delete().eq("user_id", user.id)
   ];
 
   for (const step of steps) {

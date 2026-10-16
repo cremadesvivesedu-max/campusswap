@@ -40,6 +40,13 @@ const entries: Entry[] = [
   ["Something you wanted is here", "Ha aparecido algo que buscabas", "Iets wat je zocht is er"],
   ["Time for a price drop?", "¿Bajamos el precio?", "Tijd voor een prijsverlaging?"],
   ["Listing needs a check", "Anuncio pendiente de revisar", "Advertentie moet gecontroleerd worden"],
+  ["Someone is waiting for your reply", "Alguien espera tu respuesta", "Iemand wacht op je antwoord"],
+  ["{a} is waiting for your answer about {b}.", "{a} espera tu respuesta sobre {b}.", "{a} wacht op je antwoord over {b}."],
+  ["You have {a} unanswered chats.", "Tienes {a} chats sin responder.", "Je hebt {a} onbeantwoorde chats."],
+  ["New this week on CampusSwap", "Novedades de la semana en CampusSwap", "Nieuw deze week op CampusSwap"],
+  ["{a} joined CampusSwap with your invite 🎉", "{a} se ha unido a CampusSwap con tu invitación 🎉", "{a} is lid geworden via jouw uitnodiging 🎉"],
+  ["Your listing was not approved", "Tu anuncio no ha sido aprobado", "Je advertentie is niet goedgekeurd"],
+  ["{a} was not approved: {b}", "{a} no ha sido aprobado: {b}", "{a} is niet goedgekeurd: {b}"],
 
   // Bodies
   ["{a} is now visible on CampusSwap.", "{a} ya se ve en CampusSwap.", "{a} is nu zichtbaar op CampusSwap."],
