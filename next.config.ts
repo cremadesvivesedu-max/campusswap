@@ -33,7 +33,9 @@ if (supabaseHostname) {
 const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
   images: {
-    remotePatterns
+    remotePatterns,
+    // Listing cards use 58 to stay light; 75 is the default elsewhere.
+    qualities: [58, 75]
   },
   experimental: {
     serverActions: {
