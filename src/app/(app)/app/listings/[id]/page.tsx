@@ -116,12 +116,12 @@ export default async function ListingDetailPage({
               </span>
             ) : null}
             {listing.urgent ? (
-              <span className="rounded-full bg-orange-500 px-2.5 py-1 text-xs font-bold text-white">
+              <span className="rounded-full bg-orange-700 px-2.5 py-1 text-xs font-bold text-white">
                 {dictionary.listing.urgent}
               </span>
             ) : null}
             {listing.outlet ? (
-              <span className="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold text-white">
+              <span className="rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">
                 {dictionary.listing.outlet}
               </span>
             ) : null}

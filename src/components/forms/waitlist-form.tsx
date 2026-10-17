@@ -25,6 +25,7 @@ export function WaitlistForm() {
       />
       <select
         name="intent"
+        aria-label={dictionary.marketing.home.waitlist.both}
         className="h-11 w-full rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
       >
         <option value="both">{dictionary.marketing.home.waitlist.both}</option>

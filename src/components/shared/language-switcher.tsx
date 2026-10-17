@@ -21,6 +21,7 @@ export function LanguageSwitcher({ tone = "light" }: { tone?: "light" | "dark" }
         {dictionary.languageSwitcher.label}
       </span>
       <select
+        aria-label={dictionary.languageSwitcher.label}
         value={locale}
         onChange={(event) => {
           document.cookie = `${localeCookieName}=${event.target.value}; path=/; max-age=31536000; SameSite=Lax`;

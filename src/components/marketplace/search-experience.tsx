@@ -484,7 +484,7 @@ export function SearchExperience({
 
             {!lockedCategorySlug ? (
               <div className="space-y-2">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                   {dictionary.search.categories}
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -511,7 +511,7 @@ export function SearchExperience({
 
             {subcategories.length ? (
               <div className="space-y-2">
-                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                   {dictionary.search.subcategories}
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -539,7 +539,7 @@ export function SearchExperience({
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                   {dictionary.search.minPrice}
                 </span>
                 <Input
@@ -550,7 +550,7 @@ export function SearchExperience({
                 />
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                   {dictionary.search.maxPrice}
                 </span>
                 <Input
@@ -563,7 +563,7 @@ export function SearchExperience({
             </div>
 
             <div className="space-y-2">
-              <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {dictionary.search.condition}
               </span>
               <div className="flex flex-wrap gap-2">
@@ -591,7 +591,7 @@ export function SearchExperience({
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {dictionary.search.pickupArea}
               </span>
               <select
@@ -614,7 +614,7 @@ export function SearchExperience({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {dictionary.search.distance}
               </span>
               <select
@@ -653,7 +653,7 @@ export function SearchExperience({
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {dictionary.search.minimumSellerRating}
               </span>
               <Input
@@ -668,7 +668,7 @@ export function SearchExperience({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {dictionary.search.sort}
               </span>
               <select

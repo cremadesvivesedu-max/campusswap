@@ -29,9 +29,9 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
   const badge = listing.status !== "active"
     ? { label: getListingStatusLabel(dictionary, listing.status), tone: "bg-slate-950/85 text-white" }
     : listing.urgent
-      ? { label: dictionary.listing.urgent, tone: "bg-orange-500 text-white" }
+      ? { label: dictionary.listing.urgent, tone: "bg-orange-700 text-white" }
       : listing.outlet
-        ? { label: dictionary.listing.outlet, tone: "bg-rose-500 text-white" }
+        ? { label: dictionary.listing.outlet, tone: "bg-rose-600 text-white" }
         : listing.featured
           ? { label: dictionary.listing.featured, tone: "bg-amber-400 text-slate-950" }
           : null;

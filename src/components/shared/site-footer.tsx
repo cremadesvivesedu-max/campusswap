@@ -34,7 +34,7 @@ export function SiteFooter() {
         </div>
       </div>
       {/* Links Google can follow to the Maastricht pages. */}
-      <nav className="mx-auto max-w-7xl px-6 pb-10 text-xs text-slate-500">
+      <nav className="mx-auto max-w-7xl px-6 pb-10 text-xs text-slate-400">
         <ul className="flex flex-wrap gap-x-4 gap-y-2">
           {categoryLandings.map((landing) => (
             <li key={landing.slug}>

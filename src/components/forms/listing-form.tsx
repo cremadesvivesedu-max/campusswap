@@ -244,6 +244,7 @@ export function ListingForm({
         </div>
         <select
           name="condition"
+          aria-label={dictionary.search.filterLabels.condition}
           className="h-12 rounded-2xl border border-border bg-white px-4 text-sm text-slate-900"
           defaultValue={initialListing?.condition ?? "good"}
         >
