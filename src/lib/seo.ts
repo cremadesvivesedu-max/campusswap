@@ -3,20 +3,15 @@ import { siteName, siteTagline } from "@/lib/constants";
 import { getSiteUrl } from "@/lib/site-url";
 
 export function buildMetadata(title: string, description: string): Metadata {
+  // The home page passes the bare site name; "CampusSwap | CampusSwap" looked broken in Google.
+  const fullTitle = title === siteName ? `${siteName} – ${siteTagline.replace(/\.$/, "")}` : `${title} | ${siteName}`;
   return {
-    title: `${title} | ${siteName}`,
+    title: fullTitle,
     description,
     applicationName: siteName,
     metadataBase: new URL(getSiteUrl()),
     manifest: "/manifest.webmanifest",
-    icons: {
-      icon: [
-        { url: "/favicon.ico" },
-        { url: "/icon.png", type: "image/png", sizes: "512x512" }
-      ],
-      shortcut: "/favicon.ico",
-      apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }]
-    },
+    // favicon.ico, icon.png and apple-icon.png in src/app are linked automatically by Next.
     openGraph: {
       title,
       description,
