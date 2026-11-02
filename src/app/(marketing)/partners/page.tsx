@@ -5,10 +5,10 @@ import { listedPartners, partnerCopy } from "@/features/partners/partners";
 import { getRequestLocale } from "@/lib/i18n";
 import { buildMetadata } from "@/lib/seo";
 
-export const metadata = buildMetadata(
-  "Student deals in Maastricht",
-  "Local shops in Maastricht that give CampusSwap students a deal."
-);
+export const metadata = {
+  ...buildMetadata("Student deals in Maastricht", "Local shops in Maastricht that give CampusSwap students a deal."),
+  robots: listedPartners.length > 0 ? undefined : { index: false, follow: false }
+};
 
 export default async function PartnersPage() {
   const locale = await getRequestLocale();
