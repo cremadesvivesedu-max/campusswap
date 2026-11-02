@@ -1,6 +1,9 @@
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("FAQ", "Answers to common questions about buying and selling on CampusSwap in Maastricht.");
 
 export default async function FaqPage() {
   const dictionary = await getDictionaryForRequest();

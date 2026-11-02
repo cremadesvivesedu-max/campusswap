@@ -1,4 +1,7 @@
 import { LegalPage } from "@/components/shared/legal-page";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Terms of use", "The terms for using CampusSwap, the student marketplace in Maastricht.");
 
 export default function TermsPage() {
   return (

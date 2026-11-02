@@ -1,4 +1,7 @@
 import { LegalPage } from "@/components/shared/legal-page";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Privacy policy", "How CampusSwap collects and protects your personal data.");
 
 export default function PrivacyPage() {
   return (

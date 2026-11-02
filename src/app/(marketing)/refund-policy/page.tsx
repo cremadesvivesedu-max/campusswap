@@ -1,4 +1,7 @@
 import { LegalPage } from "@/components/shared/legal-page";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Refund policy", "How refunds work for payments on CampusSwap.");
 
 export default function RefundPolicyPage() {
   return (

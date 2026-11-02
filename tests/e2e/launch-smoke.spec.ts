@@ -7,7 +7,8 @@ test("public home and Maastricht pages load", async ({ page }) => {
   await expect(page.getByRole("search")).toBeVisible();
   await page.goto("/maastricht/second-hand-bikes");
   await expect(page.getByRole("heading", { level: 1, name: "Second-hand bikes in Maastricht" })).toBeVisible();
-  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(1);
+  // One from the root layout (site name and logo), one from the landing page.
+  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(2);
 });
 
 test("search understands Spanish, Dutch and typos", async ({ page }) => {

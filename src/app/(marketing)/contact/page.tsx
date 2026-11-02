@@ -3,6 +3,9 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { env } from "@/lib/env";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Contact", "Get in touch with the CampusSwap team in Maastricht.");
 
 const contactCards = [
   {

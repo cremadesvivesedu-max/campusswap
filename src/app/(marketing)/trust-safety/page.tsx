@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trustSignals } from "@/lib/constants";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Trust and safety", "How CampusSwap helps students in Maastricht buy, sell and meet safely.");
 
 export default function TrustSafetyPage() {
   return (

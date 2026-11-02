@@ -17,7 +17,7 @@ export function buildMetadata(title: string, description: string): Metadata {
       description,
       siteName,
       type: "website",
-      url: getSiteUrl()
+      url: "./"
     },
     twitter: {
       card: "summary_large_image",
@@ -25,7 +25,8 @@ export function buildMetadata(title: string, description: string): Metadata {
       description
     },
     alternates: {
-      canonical: "/"
+      // "./" is the current page; "/" told Google every page was a copy of the home page.
+      canonical: "./"
     }
   };
 }

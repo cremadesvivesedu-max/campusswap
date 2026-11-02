@@ -2,6 +2,9 @@ import { ListingCard } from "@/components/marketplace/listing-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getOutletListings } from "@/server/queries/marketplace";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Outlet", "Low-priced second-hand student essentials in Maastricht.");
 
 export default async function OutletPage() {
   const [listings, dictionary] = await Promise.all([

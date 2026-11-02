@@ -1,5 +1,8 @@
 ﻿import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("How it works", "How buying and selling second-hand works on CampusSwap, the student marketplace in Maastricht.");
 
 const steps = [
   { title: "Create your account", body: "Any valid email can enter CampusSwap. Supported Maastricht student domains unlock verified or pending student-trust status when available." },

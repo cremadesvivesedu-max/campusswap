@@ -1,5 +1,8 @@
 ﻿import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Join CampusSwap", "Get launch updates from CampusSwap, the second-hand marketplace for students in Maastricht.");
 
 export default function JoinPage() {
   return (

@@ -2,6 +2,9 @@ import { CategoryLinkCard } from "@/components/marketplace/category-link-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories } from "@/server/queries/marketplace";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata("Categories", "Browse second-hand bikes, furniture, electronics and kitchen items from students in Maastricht.");
 
 export default async function CategoriesPage() {
   const [categories, dictionary] = await Promise.all([
