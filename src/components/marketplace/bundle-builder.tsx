@@ -21,13 +21,15 @@ export function BundleBuilder({
   sellerId,
   currentUserId,
   siteUrl,
-  preselectedId
+  preselectedId,
+  sellerDiscount
 }: {
   listings: Listing[];
   sellerId: string;
   currentUserId: string;
   siteUrl: string;
   preselectedId?: string;
+  sellerDiscount?: number | null;
 }) {
   const { dictionary } = useLocale();
   const copy = dictionary.bundle;
@@ -40,7 +42,7 @@ export function BundleBuilder({
   const [isPending, startTransition] = useTransition();
   const chosen = listings.filter((listing) => selected.has(listing.id));
   const total = chosen.reduce((sum, listing) => sum + listing.price, 0);
-  const suggested = suggestBundlePrice(total);
+  const suggested = suggestBundlePrice(total, sellerDiscount);
   const offer = Number(offerText) > 0 ? Number(offerText) : suggested;
 
   const toggle = (id: string) =>
@@ -59,7 +61,8 @@ export function BundleBuilder({
         const text = buildBundleMessage(
           chosen.map((listing) => ({ id: listing.id, title: listing.title, price: listing.price })),
           offer,
-          siteUrl
+          siteUrl,
+          offer === suggested ? sellerDiscount : null
         );
         const conversation = isLiveClientMode
           ? await ensureLiveConversationForListing(first.id, currentUserId, sellerId)

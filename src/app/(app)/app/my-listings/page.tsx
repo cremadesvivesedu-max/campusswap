@@ -1,5 +1,6 @@
 import { MovingSaleCard } from "@/components/marketplace/moving-sale-card";
 import { MyListingRow } from "@/components/marketplace/my-listing-row";
+import { SellerPreferencesCard } from "@/components/marketplace/seller-preferences-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { getDictionaryForRequest } from "@/lib/i18n";
@@ -9,6 +10,7 @@ import {
   getSellerListingTransactions
 } from "@/server/queries/marketplace";
 import { getMyMoveOutDate } from "@/server/queries/moving-sale";
+import { getMySellerPreferences } from "@/server/queries/seller-preferences";
 
 export default async function MyListingsPage({
   searchParams
@@ -17,11 +19,12 @@ export default async function MyListingsPage({
 }) {
   const created = (await searchParams)?.created;
   const user = await getCurrentUser();
-  const [listings, transactionsByListing, dictionary, moveOutDate] = await Promise.all([
+  const [listings, transactionsByListing, dictionary, moveOutDate, sellerPreferences] = await Promise.all([
     getListingsForSeller(user.id),
     getSellerListingTransactions(user.id),
     getDictionaryForRequest(),
-    getMyMoveOutDate()
+    getMyMoveOutDate(),
+    getMySellerPreferences()
   ]);
 
   return (
@@ -68,7 +71,10 @@ export default async function MyListingsPage({
         />
       )}
       {listings.length ? (
-        <MovingSaleCard sellerId={user.id} initialMoveOutDate={moveOutDate} />
+        <>
+          <MovingSaleCard sellerId={user.id} initialMoveOutDate={moveOutDate} />
+          <SellerPreferencesCard initial={sellerPreferences} />
+        </>
       ) : null}
     </div>
   );

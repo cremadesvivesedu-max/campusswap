@@ -20,11 +20,15 @@ function firstNameOf(fullName: string | null | undefined) {
   return String(fullName ?? "").trim().split(/\s+/)[0] ?? "";
 }
 
-/** Only items a buyer can still get: active first, then reserved. */
+/** Only items a buyer can still get: active first (free ones on top), then reserved. */
 function forSale(listings: Listing[]) {
   return listings
     .filter((listing) => listing.status === "active" || listing.status === "reserved")
-    .sort((a, b) => Number(a.status === "reserved") - Number(b.status === "reserved"));
+    .sort(
+      (a, b) =>
+        Number(a.status === "reserved") - Number(b.status === "reserved") ||
+        Number(b.price === 0) - Number(a.price === 0)
+    );
 }
 
 /**

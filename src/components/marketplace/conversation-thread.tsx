@@ -43,6 +43,8 @@ import {
 import type { ListingOffer, Transaction, User } from "@/types/domain";
 import { maastrichtPickupAreas } from "@/lib/maastricht-pickup-areas";
 import { needsPaymentWarning } from "@/features/messaging/chat-safety";
+import { formatAwayDate } from "@/features/profile/seller-preferences";
+import { getSellerAwayUntilAction } from "@/server/actions/seller-preferences";
 
 /** Turns https:// links in a chat message into tappable links (text stays text). */
 /** Small preview of a photo picked for the chat, before it is sent. */
@@ -360,6 +362,19 @@ function ConversationShell({
   onToggleBlock
 }: ConversationShellProps) {
   const { dictionary } = useLocale();
+  const [awayUntil, setAwayUntil] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentUserId === sellerId) return;
+    let stale = false;
+    getSellerAwayUntilAction(sellerId)
+      .then((date) => {
+        if (!stale) setAwayUntil(date);
+      })
+      .catch(() => undefined);
+    return () => {
+      stale = true;
+    };
+  }, [currentUserId, sellerId]);
   const replies: readonly string[] =
     currentUserId === sellerId
       ? SELLER_QUICK_ACTIONS
@@ -461,6 +476,13 @@ function ConversationShell({
               <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-900">
                 {dictionary.chatSafety.banner}
               </p>
+              {awayUntil ? (
+                <p className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-xs leading-5 text-sky-900">
+                  {dictionary.sellerPrefs.awayNotice
+                    .replace("{name}", sellerName.split(" ")[0])
+                    .replace("{date}", formatAwayDate(awayUntil, dictionary.localeCode))}
+                </p>
+              ) : null}
               {messages.map((message) => {
                 const isOwnMessage = message.senderId === currentUserId;
                 return (

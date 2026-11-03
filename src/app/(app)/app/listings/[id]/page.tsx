@@ -17,6 +17,8 @@ import {
   getListingsForSeller,
   getUserById
 } from "@/server/queries/marketplace";
+import { getSellerPreferences } from "@/server/queries/seller-preferences";
+import { formatAwayDate } from "@/features/profile/seller-preferences";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { formatLastActive, isPopularListing } from "@/features/listings/activity";
 import { ListingGallery } from "@/components/marketplace/listing-gallery";
@@ -59,7 +61,8 @@ export default async function ListingDetailPage({
     sellerStripeStatus,
     transactionContext,
     sellerListings,
-    categoryListings
+    categoryListings,
+    sellerPreferences
   ] = await Promise.all([
     getUserById(listing.sellerId),
     currentUserPromise,
@@ -68,7 +71,8 @@ export default async function ListingDetailPage({
     getSellerStripeConnectStatusForUser(listing.sellerId),
     currentUserPromise.then((user) => getListingTransactionContext(listing.id, user.id)),
     getListingsForSeller(listing.sellerId),
-    getListingsByCategory(listing.categorySlug)
+    getListingsByCategory(listing.categorySlug),
+    getSellerPreferences(listing.sellerId)
   ]);
   const live = dictionary.listingLive;
   const moreFromSeller = sellerListings
@@ -138,6 +142,13 @@ export default async function ListingDetailPage({
           <h1 className="text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
             {listing.title}
           </h1>
+          {sellerPreferences.awayUntil && seller && !isOwnListing ? (
+            <p className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900">
+              {dictionary.sellerPrefs.awayNotice
+                .replace("{name}", seller.profile.fullName.split(" ")[0])
+                .replace("{date}", formatAwayDate(sellerPreferences.awayUntil, dictionary.localeCode))}
+            </p>
+          ) : null}
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
             <span className="font-semibold text-slate-700">
               {getConditionLabel(dictionary, listing.condition)}
@@ -309,6 +320,7 @@ export default async function ListingDetailPage({
                     className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
                   >
                     📦 {dictionary.bundle.entry}
+                    {sellerPreferences.bundleDiscount ? ` −${sellerPreferences.bundleDiscount}%` : ""}
                   </Link>
                 ) : null}
                 <Link href={`/app/profile?userId=${seller.id}`} className="text-sm font-semibold text-emerald-700 hover:underline">

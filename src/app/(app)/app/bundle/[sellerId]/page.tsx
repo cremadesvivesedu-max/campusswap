@@ -3,6 +3,7 @@ import { BundleBuilder } from "@/components/marketplace/bundle-builder";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/site-url";
 import { getCurrentUser, getListingsForSeller, getUserById } from "@/server/queries/marketplace";
+import { getSellerPreferences } from "@/server/queries/seller-preferences";
 
 export default async function BundlePage({
   params,
@@ -12,11 +13,12 @@ export default async function BundlePage({
   searchParams: Promise<{ listingId?: string }>;
 }) {
   const [{ sellerId }, { listingId }] = await Promise.all([params, searchParams]);
-  const [currentUser, seller, listings, dictionary] = await Promise.all([
+  const [currentUser, seller, listings, dictionary, preferences] = await Promise.all([
     getCurrentUser(),
     getUserById(sellerId),
     getListingsForSeller(sellerId),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getSellerPreferences(sellerId)
   ]);
 
   if (!seller) {
@@ -38,6 +40,13 @@ export default async function BundlePage({
         </h1>
         <p className="text-sm text-slate-600">{copy.subtitle}</p>
       </div>
+      {preferences.bundleDiscount && available.length >= 2 ? (
+        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {dictionary.sellerPrefs.discountNote
+            .replace("{name}", seller.profile.fullName.split(" ")[0])
+            .replace("{percent}", String(preferences.bundleDiscount))}
+        </p>
+      ) : null}
       {available.length >= 2 ? (
         <BundleBuilder
           listings={available}
@@ -45,6 +54,7 @@ export default async function BundlePage({
           currentUserId={currentUser.id}
           siteUrl={getSiteUrl()}
           preselectedId={listingId}
+          sellerDiscount={preferences.bundleDiscount}
         />
       ) : (
         <p className="rounded-2xl bg-white p-5 text-sm text-slate-600">{copy.notEnough}</p>

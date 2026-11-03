@@ -118,6 +118,17 @@ test("bundle: pick two items from one seller", async ({ page }) => {
   await expect(page.getByRole("button", { name: /send bundle offer/i })).toBeEnabled();
 });
 
+test("bundle: the seller's discount is applied and their absence is shown", async ({ page }) => {
+  // Demo seller Lina gives 15% off bundles and is away.
+  await page.goto("/app/bundle/user-lina");
+  await expect(page.getByText(/gives 15% off bundles/)).toBeVisible();
+  await page.goto("/app/listings/listing-bike-1");
+  await expect(page.getByText(/Lina is away until .+ and may reply late/)).toBeVisible();
+  await page.getByRole("button", { name: /message seller/i }).first().click();
+  await expect(page).toHaveURL(/\/app\/messages\//);
+  await expect(page.getByText(/Lina is away until .+ and may reply late/)).toBeVisible();
+});
+
 test("admin: weekly metrics and moderation queue", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Métricas del lunes" })).toBeVisible();
