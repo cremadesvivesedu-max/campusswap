@@ -127,7 +127,8 @@ test("admin: weekly metrics and moderation queue", async ({ page }) => {
 
 test("partners: confirmed shop is listed with its code", async ({ page }) => {
   await page.goto("/partners");
-  await page.getByRole("link", { name: /ThePhoneLab/ }).first().click();
+  await expect(page.getByRole("heading", { name: "ThePhoneLab Maastricht" })).toBeVisible();
+  await page.locator('a[href="/partners/thephonelab"]').first().click();
   await expect(page).toHaveURL(/\/partners\/thephonelab/);
   await expect(page.getByText("CAMPUSLAB")).toBeVisible();
 });
