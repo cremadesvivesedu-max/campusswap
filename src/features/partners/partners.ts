@@ -22,8 +22,8 @@ export const partners: Partner[] = [
   {
     slug: "thephonelab",
     name: "ThePhoneLab Maastricht",
-    // Waiting for Riny's confirmation of the offer (sent 30/10/2026).
-    listed: false,
+    // Riny confirmed the offer on 3/11/2026.
+    listed: true,
     promoCode: "CAMPUSLAB",
     category: {
       en: "Phone, tablet and laptop repair",

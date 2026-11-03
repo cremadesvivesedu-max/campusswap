@@ -49,6 +49,13 @@ test("chat: safety notice is always there, warning only on payment talk from the
   await expect(page.getByText(/this message mentions a payment/)).toHaveCount(0);
 });
 
+test("chat: quick replies suit the person's role", async ({ page }) => {
+  // Demo visitor Omar is the buyer here.
+  await page.goto("/app/messages/conv-bike");
+  await expect(page.getByRole("button", { name: "Is this available?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Yes, it's still available" })).toHaveCount(0);
+});
+
 test("sell form: giving an item away swaps the price field for a note", async ({ page }) => {
   await page.goto("/app/sell");
   const price = page.locator('input[name="price"]:not([type="hidden"])');
@@ -116,4 +123,11 @@ test("admin: weekly metrics and moderation queue", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Métricas del lunes" })).toBeVisible();
   await page.goto("/admin/listings");
   await expect(page.getByRole("heading", { name: /Pendientes de revisar/ })).toBeVisible();
+});
+
+test("partners: confirmed shop is listed with its code", async ({ page }) => {
+  await page.goto("/partners");
+  await page.getByRole("link", { name: /ThePhoneLab/ }).first().click();
+  await expect(page).toHaveURL(/\/partners\/thephonelab/);
+  await expect(page.getByText("CAMPUSLAB")).toBeVisible();
 });

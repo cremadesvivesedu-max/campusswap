@@ -34,6 +34,7 @@ export const dictionaries = {
     trustBadges: { trustedSeller: "Trusted seller", fastReplier: "Replies in ~{time}", verifiedStudent: "Verified student", verifiedAt: "Verified {uni}", newMember: "New on CampusSwap" },
     priceNudge: { suggest: "No chats in {days} days. A lower price usually helps.", apply: "Drop to {price} €", done: "Price lowered. People who saved it get a heads-up." },
     bulkSell: { title: "List several things at once", subtitle: "Moving out? Pick all your photos — one photo becomes one listing. Add a title and price to each and publish them together.", pick: "Choose photos", pickMore: "Add more photos", titlePlaceholder: "What is it?", pricePlaceholder: "€", categoryPlaceholder: "Category", remove: "Remove", pickupArea: "Pickup area for all", condition: "Condition for all", publish: "Publish {count} listings", publishing: "Publishing {done} of {count}…", done: "{count} listings published", inReview: "Some listings will go live after a quick check.", failed: "Could not publish", seeListings: "See my listings", incomplete: "Add a title, price and category to every photo.", entry: "Moving out? List several things at once →" },
+    quickReplies: { available: "Is this available?", reserve: "Can you reserve it?", campusMeet: "Can we meet on campus?", negotiable: "Is the price negotiable?", stillAvailable: "Yes, it's still available", reservedForNow: "Sorry, it's reserved for now", whenPickup: "When can you pick it up?" },
     giveaway: { free: "Free", checkbox: "Give it away for free", hint: "Free items are collected in person, so there is no payment or shipping.", arrange: "This item is free. Message the seller to arrange pickup.", filter: "Free only", homeCta: "Free stuff", homeCtaSub: "Things students are giving away" },
     chatSafety: { banner: "Stay safe: meet somewhere public, check the item before you pay, and never pay in advance outside CampusSwap or open payment links from strangers.", warning: "Careful: this message mentions a payment. Only pay once you have seen the item, open no payment links and never share bank codes." },
     wanted: { title: "Looking for something?", subtitle: "Post what you need. Sellers see it, and we tell you the moment a matching listing appears.", formTitle: "What are you looking for?", whatPlaceholder: "e.g. Women's bike with lights", categoryAny: "Any category", maxPrice: "Max price (€)", notePlaceholder: "Anything else? (optional)", post: "Post request", posting: "Posting…", boardTitle: "Students are looking for", empty: "No requests yet. Be the first!", haveOne: "I have one", close: "Close", yours: "Your request", upTo: "up to {price} €", homeCta: "Can't find it? Ask for it", homeCtaSub: "Post what you need and get a ping when it's listed" },
@@ -1009,6 +1010,7 @@ mutableDictionaries.es = {
   trustBadges: { trustedSeller: "Vendedor de confianza", fastReplier: "Responde en ~{time}", verifiedStudent: "Estudiante verificado", verifiedAt: "Verificado {uni}", newMember: "Nuevo en CampusSwap" },
   priceNudge: { suggest: "{days} días sin chats. Un precio más bajo suele ayudar.", apply: "Bajar a {price} €", done: "Precio bajado. Avisamos a quien lo tiene guardado." },
   bulkSell: { title: "Publica varias cosas a la vez", subtitle: "¿Te mudas? Elige todas tus fotos: cada foto es un anuncio. Pon título y precio a cada una y publícalas juntas.", pick: "Elegir fotos", pickMore: "Añadir más fotos", titlePlaceholder: "¿Qué es?", pricePlaceholder: "€", categoryPlaceholder: "Categoría", remove: "Quitar", pickupArea: "Zona de recogida para todos", condition: "Estado para todos", publish: "Publicar {count} anuncios", publishing: "Publicando {done} de {count}…", done: "{count} anuncios publicados", inReview: "Algunos anuncios saldrán tras una revisión rápida.", failed: "No se pudo publicar", seeListings: "Ver mis anuncios", incomplete: "Pon título, precio y categoría a cada foto.", entry: "¿Te mudas? Publica varias cosas a la vez →" },
+  quickReplies: { available: "¿Sigue disponible?", reserve: "¿Me lo puedes reservar?", campusMeet: "¿Quedamos en el campus?", negotiable: "¿El precio es negociable?", stillAvailable: "Sí, sigue disponible", reservedForNow: "Lo siento, ahora está reservado", whenPickup: "¿Cuándo puedes recogerlo?" },
   giveaway: { free: "Gratis", checkbox: "Regalarlo gratis", hint: "Los artículos gratis se recogen en persona: sin pago ni envío.", arrange: "Este artículo es gratis. Escribe al vendedor para quedar.", filter: "Solo gratis", homeCta: "Cosas gratis", homeCtaSub: "Lo que otros estudiantes regalan" },
   chatSafety: { banner: "Por tu seguridad: queda en un sitio público, revisa el artículo antes de pagar y nunca pagues por adelantado fuera de CampusSwap ni abras enlaces de pago de desconocidos.", warning: "Cuidado: este mensaje habla de un pago. Paga solo cuando hayas visto el artículo, no abras enlaces de pago y nunca compartas códigos del banco." },
   wanted: { title: "¿Buscas algo?", subtitle: "Publica lo que necesitas. Los vendedores lo ven y te avisamos en cuanto salga un anuncio que encaje.", formTitle: "¿Qué estás buscando?", whatPlaceholder: "p. ej. Bici de mujer con luces", categoryAny: "Cualquier categoría", maxPrice: "Precio máx. (€)", notePlaceholder: "¿Algo más? (opcional)", post: "Publicar petición", posting: "Publicando…", boardTitle: "Los estudiantes están buscando", empty: "Aún no hay peticiones. ¡Sé el primero!", haveOne: "Tengo uno", close: "Cerrar", yours: "Tu petición", upTo: "hasta {price} €", homeCta: "¿No lo encuentras? Pídelo", homeCtaSub: "Publica lo que necesitas y te avisamos cuando salga" },
@@ -1506,6 +1508,7 @@ mutableDictionaries.nl = {
   trustBadges: { trustedSeller: "Betrouwbare verkoper", fastReplier: "Reageert binnen ~{time}", verifiedStudent: "Geverifieerde student", verifiedAt: "Geverifieerd {uni}", newMember: "Nieuw op CampusSwap" },
   priceNudge: { suggest: "{days} dagen geen chats. Een lagere prijs helpt meestal.", apply: "Verlaag naar € {price}", done: "Prijs verlaagd. Wie het bewaard heeft krijgt een seintje." },
   bulkSell: { title: "Meerdere spullen tegelijk plaatsen", subtitle: "Ga je verhuizen? Kies al je foto's — één foto wordt één advertentie. Geef elk een titel en prijs en plaats ze samen.", pick: "Foto's kiezen", pickMore: "Meer foto's toevoegen", titlePlaceholder: "Wat is het?", pricePlaceholder: "€", categoryPlaceholder: "Categorie", remove: "Verwijderen", pickupArea: "Ophaalgebied voor alles", condition: "Staat voor alles", publish: "{count} advertenties plaatsen", publishing: "{done} van {count} plaatsen…", done: "{count} advertenties geplaatst", inReview: "Sommige advertenties gaan na een snelle controle online.", failed: "Kon niet plaatsen", seeListings: "Mijn advertenties", incomplete: "Geef elke foto een titel, prijs en categorie.", entry: "Ga je verhuizen? Plaats meerdere spullen tegelijk →" },
+  quickReplies: { available: "Is dit nog beschikbaar?", reserve: "Kun je het voor me reserveren?", campusMeet: "Kunnen we op de campus afspreken?", negotiable: "Is de prijs bespreekbaar?", stillAvailable: "Ja, het is nog beschikbaar", reservedForNow: "Sorry, het is nu gereserveerd", whenPickup: "Wanneer kun je het ophalen?" },
   giveaway: { free: "Gratis", checkbox: "Gratis weggeven", hint: "Gratis spullen haal je persoonlijk op: geen betaling of verzending.", arrange: "Dit artikel is gratis. Stuur de verkoper een bericht om het ophalen af te spreken.", filter: "Alleen gratis", homeCta: "Gratis spullen", homeCtaSub: "Wat studenten weggeven" },
   chatSafety: { banner: "Veilig handelen: spreek af op een openbare plek, bekijk het artikel voordat je betaalt en betaal nooit vooruit buiten CampusSwap of via een betaallink van een onbekende.", warning: "Let op: dit bericht gaat over een betaling. Betaal pas als je het artikel hebt gezien, open geen betaallinks en deel nooit bankcodes." },
   wanted: { title: "Op zoek naar iets?", subtitle: "Plaats wat je nodig hebt. Verkopers zien het, en we laten het je meteen weten als er iets passends verschijnt.", formTitle: "Waar ben je naar op zoek?", whatPlaceholder: "bijv. Damesfiets met lampjes", categoryAny: "Elke categorie", maxPrice: "Max. prijs (€)", notePlaceholder: "Nog iets? (optioneel)", post: "Verzoek plaatsen", posting: "Plaatsen…", boardTitle: "Studenten zoeken", empty: "Nog geen verzoeken. Wees de eerste!", haveOne: "Ik heb er een", close: "Sluiten", yours: "Jouw verzoek", upTo: "tot € {price}", homeCta: "Kun je het niet vinden? Vraag erom", homeCtaSub: "Plaats wat je nodig hebt en krijg een seintje als het er is" },
@@ -3652,16 +3655,29 @@ export function getNotificationTypeLabel(
   return dictionary.notifications.typeLabels[type] ?? type;
 }
 
+// Sent as these English keys and translated when shown, so each person reads them in their own language.
+export const SELLER_QUICK_ACTIONS = [
+  "Yes, it's still available",
+  "Sorry, it's reserved for now",
+  "When can you pick it up?"
+] as const;
+
 export function getLocalizedQuickAction(dictionary: Dictionary, value: string) {
   switch (value) {
     case "Is this available?":
-      return dictionary.messages.quickActions.available;
+      return dictionary.quickReplies.available;
     case "Can you reserve it?":
-      return dictionary.messages.quickActions.reserve;
+      return dictionary.quickReplies.reserve;
     case "Can we meet on campus?":
-      return dictionary.messages.quickActions.campusMeet;
+      return dictionary.quickReplies.campusMeet;
     case "Is the price negotiable?":
-      return dictionary.messages.quickActions.negotiable;
+      return dictionary.quickReplies.negotiable;
+    case SELLER_QUICK_ACTIONS[0]:
+      return dictionary.quickReplies.stillAvailable;
+    case SELLER_QUICK_ACTIONS[1]:
+      return dictionary.quickReplies.reservedForNow;
+    case SELLER_QUICK_ACTIONS[2]:
+      return dictionary.quickReplies.whenPickup;
     default:
       return value;
   }

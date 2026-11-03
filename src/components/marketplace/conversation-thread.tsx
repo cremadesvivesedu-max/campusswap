@@ -26,7 +26,8 @@ import {
 import { demoData } from "@/lib/demo-data";
 import {
   getExchangeStatusLabel,
-  getLocalizedQuickAction
+  getLocalizedQuickAction,
+  SELLER_QUICK_ACTIONS
 } from "@/lib/i18n-shared";
 import { formatCurrency } from "@/lib/utils";
 import { isLiveClientMode } from "@/lib/public-env";
@@ -117,6 +118,7 @@ interface ConversationShellProps {
   sellerName: string;
   sellerAvatar?: string;
   sellerId: string;
+  listingIsFree: boolean;
   messages: {
     id: string;
     senderId: string;
@@ -344,6 +346,7 @@ function ConversationShell({
   sellerName,
   sellerAvatar,
   sellerId,
+  listingIsFree,
   messages,
   quickActions,
   currentUserId,
@@ -357,6 +360,10 @@ function ConversationShell({
   onToggleBlock
 }: ConversationShellProps) {
   const { dictionary } = useLocale();
+  const replies: readonly string[] =
+    currentUserId === sellerId
+      ? SELLER_QUICK_ACTIONS
+      : quickActions.filter((action) => !(listingIsFree && action === "Is the price negotiable?"));
   const [composerValue, setComposerValue] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [showMeetups, setShowMeetups] = useState(false);
@@ -468,7 +475,7 @@ function ConversationShell({
                           : "border border-slate-200 bg-slate-100 text-slate-800"
                       } ${message.pending ? "opacity-60" : ""}`}
                     >
-                      {message.text ? <p className="whitespace-pre-wrap break-words">{linkify(message.text)}</p> : null}
+                      {message.text ? <p className="whitespace-pre-wrap break-words">{linkify(getLocalizedQuickAction(dictionary, message.text))}</p> : null}
                       {!isOwnMessage && message.text && needsPaymentWarning(message.text) ? (
                         <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
                           {dictionary.chatSafety.warning}
@@ -530,7 +537,7 @@ function ConversationShell({
                 <div className="space-y-2">
                   <p className="sr-only">{dictionary.messages.thread.quickReplies}</p>
                   <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {quickActions.map((action) => (
+                    {replies.map((action) => (
                       <button
                         key={action}
                         type="button"
@@ -784,6 +791,7 @@ function DemoConversationThread({
         attachmentName: message.attachment?.name,
         attachmentUrl: message.attachment?.url
       }))}
+      listingIsFree={listing.price === 0}
       quickActions={conversation.quickActions}
       currentUserId={currentUserId}
       onSend={(text, files) => {
@@ -876,6 +884,7 @@ function LiveConversationThread({
         })),
         ...outbox
       ]}
+      listingIsFree={thread.listing.price === 0}
       quickActions={thread.conversation.quickActions}
       currentUserId={currentUserId}
       onSend={(text, files) => {

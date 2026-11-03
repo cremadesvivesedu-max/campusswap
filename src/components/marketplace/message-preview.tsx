@@ -6,7 +6,7 @@ import { Camera } from "lucide-react";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { ProfileAvatar } from "@/components/shared/profile-avatar";
 import { useLocale } from "@/components/providers/locale-provider";
-import { getListingStatusLabel } from "@/lib/i18n-shared";
+import { getListingStatusLabel, getLocalizedQuickAction } from "@/lib/i18n-shared";
 import type { ConversationPreview } from "@/types/domain";
 
 /** Time today, weekday this week, otherwise a short date (like chat apps). */
@@ -86,7 +86,7 @@ function MessagePreviewComponent({ preview }: { preview: ConversationPreview }) 
                 </>
               ) : (
                 <span className="truncate">
-                  {latest?.text || dictionary.messages.actions.noMessagesYet}
+                  {latest?.text ? getLocalizedQuickAction(dictionary, latest.text) : dictionary.messages.actions.noMessagesYet}
                 </span>
               )}
             </p>
