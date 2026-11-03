@@ -8,7 +8,7 @@ import { formatMoveOutCountdown } from "@/features/profile/moving-sale";
 import { getConditionLabel, getDictionaryForRequest } from "@/lib/i18n";
 import { buildMetadata } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
-import { formatCurrency } from "@/lib/utils";
+import { formatListingPrice } from "@/lib/utils";
 import { getMovingSale } from "@/server/queries/moving-sale";
 
 // Public "moving sale" page: every item a student still has for sale, with a countdown
@@ -116,7 +116,7 @@ export default async function MovingSalePage({ params }: PageProps) {
                       {listing.title}
                     </p>
                     <p className="font-display text-lg font-semibold text-slate-950">
-                      {formatCurrency(listing.price)}
+                      {formatListingPrice(listing.price, dictionary.giveaway.free)}
                     </p>
                     <p className="text-xs text-slate-500">
                       {getConditionLabel(dictionary, listing.condition)}

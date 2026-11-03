@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getConditionLabel, getListingStatusLabel } from "@/lib/i18n-shared";
-import { formatCurrency } from "@/lib/utils";
+import { formatListingPrice } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 
 interface SavedListingsWorkspaceProps {
@@ -105,7 +105,7 @@ export function SavedListingsWorkspace({
                 <tbody>
                   <CompareRow
                     label={dictionary.saved.compareFields.price}
-                    values={selectedListings.map((listing) => formatCurrency(listing.price))}
+                    values={selectedListings.map((listing) => formatListingPrice(listing.price, dictionary.giveaway.free))}
                   />
                   <CompareRow
                     label={dictionary.saved.compareFields.condition}

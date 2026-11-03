@@ -69,6 +69,7 @@ export function ListingForm({
   const [titleText, setTitleText] = useState(initialListing?.title ?? prefill?.title ?? "");
   const [priceSuggestion, setPriceSuggestion] = useState<PriceSuggestion | null>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
+  const [isFree, setIsFree] = useState(initialListing?.price === 0);
 
   // Ask for a price range once the seller pauses typing (title or category changed).
   useEffect(() => {
@@ -256,18 +257,27 @@ export function ListingForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
+          {isFree ? <input type="hidden" name="price" value="0" /> : null}
           <Input
             ref={priceInputRef}
             name="price"
+            disabled={isFree}
+            className={isFree ? "hidden" : undefined}
             type="number"
             inputMode="decimal"
             min="1"
             step="0.5"
             required
             placeholder={dictionary.listingForm.pricePlaceholder}
-            defaultValue={initialListing?.price}
+            defaultValue={initialListing?.price || undefined}
           />
-          {priceSuggestion ? (
+          <label className="flex items-center gap-2 px-1 py-1 text-sm font-medium text-slate-700">
+            <input type="checkbox" checked={isFree} onChange={(event) => setIsFree(event.target.checked)} />
+            {dictionary.giveaway.checkbox}
+          </label>
+          {isFree ? (
+            <p className="px-1 text-xs text-slate-500">{dictionary.giveaway.hint}</p>
+          ) : priceSuggestion ? (
             <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-600">
               <span>
                 💡{" "}

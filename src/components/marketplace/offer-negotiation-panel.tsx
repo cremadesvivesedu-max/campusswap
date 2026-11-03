@@ -102,6 +102,11 @@ export function OfferNegotiationPanel({
     });
   };
 
+  // Free items have no price to negotiate.
+  if (listingPrice === 0) {
+    return null;
+  }
+
   return (
     <div className="space-y-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-start justify-between gap-3">

@@ -13,6 +13,11 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/** A listing's price, or the "Free" word for giveaways (price 0). */
+export function formatListingPrice(value: number, freeLabel: string) {
+  return value === 0 ? freeLabel : formatCurrency(value);
+}
+
 export function titleCase(value: string) {
   return value
     .split("-")

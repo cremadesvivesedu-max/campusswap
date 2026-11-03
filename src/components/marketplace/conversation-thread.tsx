@@ -41,6 +41,7 @@ import {
 } from "@/server/actions/marketplace";
 import type { ListingOffer, Transaction, User } from "@/types/domain";
 import { maastrichtPickupAreas } from "@/lib/maastricht-pickup-areas";
+import { needsPaymentWarning } from "@/features/messaging/chat-safety";
 
 /** Turns https:// links in a chat message into tappable links (text stays text). */
 /** Small preview of a photo picked for the chat, before it is sent. */
@@ -450,6 +451,9 @@ function ConversationShell({
               ref={messageListRef}
               className="flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:px-6"
             >
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-5 text-amber-900">
+                {dictionary.chatSafety.banner}
+              </p>
               {messages.map((message) => {
                 const isOwnMessage = message.senderId === currentUserId;
                 return (
@@ -465,6 +469,11 @@ function ConversationShell({
                       } ${message.pending ? "opacity-60" : ""}`}
                     >
                       {message.text ? <p className="whitespace-pre-wrap break-words">{linkify(message.text)}</p> : null}
+                      {!isOwnMessage && message.text && needsPaymentWarning(message.text) ? (
+                        <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                          {dictionary.chatSafety.warning}
+                        </p>
+                      ) : null}
                       {message.attachmentUrl && message.attachmentName ? (
                         // Tap to see the photo full size.
                         <a

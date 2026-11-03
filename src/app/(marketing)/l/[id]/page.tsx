@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getConditionLabel, getDictionaryForRequest, getListingStatusLabel } from "@/lib/i18n";
 import { buildMetadata } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
-import { formatCurrency } from "@/lib/utils";
+import { formatListingPrice } from "@/lib/utils";
 import { getListingById } from "@/server/queries/marketplace";
 
 // Public page for a shared listing link: readable without an account, so WhatsApp and
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return buildMetadata("Listing not available", "Buy and sell student essentials in Maastricht.");
   }
 
-  const title = `${listing.title} · ${formatCurrency(listing.price)}`;
+  const title = `${listing.title} · ${formatListingPrice(listing.price, "Free")}`;
   const description = listing.description.slice(0, 180);
   const cover = listing.images.find((image) => image.isPrimary) ?? listing.images.at(0);
   const base = buildMetadata(title, description);
@@ -87,7 +87,7 @@ export default async function SharedListingPage({ params }: PageProps) {
           <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             {listing.title}
           </h1>
-          <p className="font-display text-3xl font-semibold text-slate-950">{formatCurrency(listing.price)}</p>
+          <p className="font-display text-3xl font-semibold text-slate-950">{formatListingPrice(listing.price, dictionary.giveaway.free)}</p>
           <p className="flex items-center gap-2 text-sm text-slate-600">
             <MapPin className="h-4 w-4" />
             {copy.pickup}: {listing.pickupArea}

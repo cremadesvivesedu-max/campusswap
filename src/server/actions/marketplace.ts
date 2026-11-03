@@ -1504,6 +1504,13 @@ export async function startPurchaseIntentAction(input: {
     };
   }
 
+  if (Number(listing.price) <= 0) {
+    return {
+      success: false,
+      message: "This item is free: message the seller to arrange pickup."
+    };
+  }
+
   if (["sold", "archived", "hidden", "pending-review"].includes(listing.status)) {
     return {
       success: false,
@@ -2097,6 +2104,13 @@ export async function submitOfferAction(
     return {
       success: false,
       message: "You cannot make an offer on your own listing."
+    };
+  }
+
+  if (Number(listing.price) <= 0) {
+    return {
+      success: false,
+      message: "This item is free: message the seller to arrange pickup."
     };
   }
 

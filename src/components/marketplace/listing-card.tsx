@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getListingStatusLabel } from "@/lib/i18n-shared";
-import { formatCurrency } from "@/lib/utils";
+import { formatListingPrice } from "@/lib/utils";
 import type { Listing } from "@/types/domain";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { CardHeartButton } from "@/components/marketplace/card-heart-button";
@@ -59,7 +59,7 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
       </div>
       <div className="space-y-0.5 px-0.5 pt-2">
         <p className="text-lg font-extrabold leading-6 text-slate-950">
-          {formatCurrency(listing.price)}
+          {formatListingPrice(listing.price, dictionary.giveaway.free)}
         </p>
         <p className="line-clamp-1 text-sm text-slate-700 group-hover:underline">{listing.title}</p>
         <p className="flex items-center gap-1 truncate text-xs text-slate-500">

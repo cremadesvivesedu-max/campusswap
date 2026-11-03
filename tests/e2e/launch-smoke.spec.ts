@@ -36,6 +36,38 @@ test("chat: open a conversation and send a message with Enter", async ({ page })
   await expect(page.getByText(text)).toBeVisible();
 });
 
+test("chat: safety notice is always there, warning only on payment talk from the other person", async ({ page }) => {
+  await page.goto("/app/listings/listing-bike-1");
+  await page.getByRole("button", { name: /message seller/i }).first().click();
+  await expect(page).toHaveURL(/\/app\/messages\//);
+  await expect(page.getByText(/Stay safe: meet somewhere public/)).toBeVisible();
+  // Your own messages never get the warning.
+  const box = page.getByPlaceholder(/message/i);
+  await box.fill("Shall I send a Tikkie?");
+  await box.press("Enter");
+  await expect(page.getByText("Shall I send a Tikkie?")).toBeVisible();
+  await expect(page.getByText(/this message mentions a payment/)).toHaveCount(0);
+});
+
+test("sell form: giving an item away swaps the price field for a note", async ({ page }) => {
+  await page.goto("/app/sell");
+  const price = page.locator('input[name="price"]:not([type="hidden"])');
+  await expect(price).toBeVisible();
+  await page.getByLabel("Give it away for free").check();
+  await expect(price).toBeHidden();
+  await expect(page.locator('input[type="hidden"][name="price"]')).toHaveValue("0");
+  await expect(page.getByText(/Free items are collected in person/)).toBeVisible();
+});
+
+test("free stuff: home link opens search with the free filter on", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("link", { name: /Free stuff/ }).click();
+  await expect(page).toHaveURL(/\/app\/search\?max=0/);
+  await expect(page.getByLabel("Free only")).toBeChecked();
+  // The demo data has nothing free, and paid items must not slip through.
+  await expect(page.getByText("Gazelle city bike with lock")).toHaveCount(0);
+});
+
 test("sell several items at once", async ({ page }) => {
   await page.goto("/app/sell/bulk");
   const png = Buffer.from(

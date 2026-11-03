@@ -27,7 +27,7 @@ export default async function BundlePage({
     redirect("/app/my-listings");
   }
 
-  const available = listings.filter((listing) => listing.status === "active");
+  const available = listings.filter((listing) => listing.status === "active" && listing.price > 0);
   const copy = dictionary.bundle;
 
   return (

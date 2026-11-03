@@ -45,7 +45,7 @@ export function assessListingRisk(input: { title: string; description: string; p
 
   for (const group of highValueItems) {
     const hit = group.words.find((word) => lowered.includes(word));
-    if (hit && input.price > 0 && input.price < group.minimum) {
+    if (hit && input.price < group.minimum) {
       review.push(`price looks too good to be true (${hit} for €${input.price})`);
       break;
     }

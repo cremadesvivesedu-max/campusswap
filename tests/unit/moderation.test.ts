@@ -9,6 +9,10 @@ describe("moderation", () => {
   it("flags risky listings", () => {
     expect(shouldModerateListing("Cheap bike", "Deposit first and I will hold it")).toBe(true);
   });
+
+  it("holds a free iPhone for review: a classic bait listing", () => {
+    expect(assessListingRisk({ title: "Free iPhone", description: "Pick up today", price: 0 }).level).toBe("review");
+  });
 });
 
 describe("listing risk checks", () => {

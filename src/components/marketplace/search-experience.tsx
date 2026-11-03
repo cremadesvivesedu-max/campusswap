@@ -347,7 +347,7 @@ export function SearchExperience({
     if (priceMax) {
       chips.push({
         key: "max",
-        label: `${dictionary.search.filterLabels.max} ${priceMax}`,
+        label: priceMax === "0" ? dictionary.giveaway.filter : `${dictionary.search.filterLabels.max} ${priceMax}`,
         clear: () => setPriceMax("")
       });
     }
@@ -640,6 +640,15 @@ export function SearchExperience({
                   onChange={(event) => setOutletOnly(event.target.checked)}
                 />
                 {dictionary.search.outletOnly}
+              </label>
+              <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
+                <input
+                  className="mr-2"
+                  type="checkbox"
+                  checked={priceMax === "0"}
+                  onChange={(event) => setPriceMax(event.target.checked ? "0" : "")}
+                />
+                {dictionary.giveaway.filter}
               </label>
               <label className="rounded-2xl border border-border bg-slate-50 p-4 text-sm">
                 <input

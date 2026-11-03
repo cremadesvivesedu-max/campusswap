@@ -8,7 +8,7 @@ import { useLocale } from "@/components/providers/locale-provider";
 import { ListingImage } from "@/components/marketplace/listing-image";
 import { Button } from "@/components/ui/button";
 import { getExchangeStatusLabel, getListingStatusLabel } from "@/lib/i18n-shared";
-import { formatCurrency } from "@/lib/utils";
+import { formatListingPrice } from "@/lib/utils";
 import { removeListingAction, updateListingStatusAction } from "@/server/actions/marketplace";
 import type { Listing, SellerListingTransaction } from "@/types/domain";
 import { friendlyError } from "@/lib/friendly-error";
@@ -87,7 +87,7 @@ export function MyListingRow({
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-start justify-between gap-2">
             <p className="text-lg font-extrabold leading-6 text-slate-950">
-              {formatCurrency(listing.price)}
+              {formatListingPrice(listing.price, dictionary.giveaway.free)}
             </p>
             <details className="relative">
               <summary

@@ -81,19 +81,24 @@ async function insertNotificationSafely(
 
 function readListingFormValues(formData: FormData): ListingFormValues {
   const title = String(formData.get("title") ?? "").trim();
+  const rawPrice = String(formData.get("price") ?? "").trim();
+  // An empty field stays invalid; only an explicit 0 makes the listing a giveaway.
+  const price = rawPrice ? Number(rawPrice) : Number.NaN;
+  const isFree = price === 0;
   return {
     listingId: String(formData.get("listingId") ?? "").trim() || undefined,
     title,
     // The description is optional in the quick sell flow; the title stands in for it.
     description: String(formData.get("description") ?? "").trim() || title,
     pickupArea: String(formData.get("pickupArea") ?? "").trim(),
-    pickupAvailable: formData.get("pickupAvailable") === "on",
-    shippingAvailable: formData.get("shippingAvailable") === "on",
-    shippingCost: Number(formData.get("shippingCost") ?? 0),
+    // Free items are always handed over in person: nothing to pay, ship or negotiate.
+    pickupAvailable: isFree || formData.get("pickupAvailable") === "on",
+    shippingAvailable: !isFree && formData.get("shippingAvailable") === "on",
+    shippingCost: isFree ? 0 : Number(formData.get("shippingCost") ?? 0),
     categorySlug: String(formData.get("category") ?? "").trim(),
     condition: String(formData.get("condition") ?? "good").trim(),
-    price: Number(formData.get("price") ?? 0),
-    negotiable: formData.get("negotiable") === "on",
+    price,
+    negotiable: !isFree && formData.get("negotiable") === "on",
     outlet: formData.get("outlet") === "on",
     urgent: formData.get("urgent") === "on",
     requestFeatured: formData.get("requestFeatured") === "on",
@@ -799,7 +804,7 @@ export async function createListingAction(_: unknown, formData: FormData) {
     imageFiles
   });
 
-  if (!title || !description || !pickupArea || !categorySlug || !price) {
+  if (!title || !description || !pickupArea || !categorySlug || !Number.isFinite(price) || price < 0) {
     return {
       success: false,
       message: "Fill in the required title, description, price, category, and pickup area."
@@ -1080,7 +1085,7 @@ export async function updateListingAction(_: unknown, formData: FormData) {
     } satisfies ActionState;
   }
 
-  if (!title || !description || !pickupArea || !categorySlug || !price) {
+  if (!title || !description || !pickupArea || !categorySlug || !Number.isFinite(price) || price < 0) {
     return {
       success: false,
       message: "Fill in the required title, description, price, category, and pickup area."

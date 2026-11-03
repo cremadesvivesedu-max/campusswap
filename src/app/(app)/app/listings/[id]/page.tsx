@@ -7,7 +7,7 @@ import {
   getListingStatusLabel,
   getRequestLocale
 } from "@/lib/i18n";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatListingPrice } from "@/lib/utils";
 import {
   getCurrentUser,
   getListingById,
@@ -131,7 +131,10 @@ export default async function ListingDetailPage({
               </span>
             ) : null}
           </div>
-          <p className="text-3xl font-extrabold text-slate-950">{formatCurrency(listing.price)}</p>
+          <p className="text-3xl font-extrabold text-slate-950">{formatListingPrice(listing.price, dictionary.giveaway.free)}</p>
+          {listing.price === 0 && !isOwnListing ? (
+            <p className="text-sm text-slate-600">{dictionary.giveaway.arrange}</p>
+          ) : null}
           <h1 className="text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
             {listing.title}
           </h1>
@@ -357,7 +360,7 @@ export default async function ListingDetailPage({
             </div>
           </div>
         ) : null}
-        {seller ? (
+        {seller && (listing.price > 0 || isOwnListing || transactionContext.viewerTransaction) ? (
           <details
             open={isOwnListing || Boolean(transactionContext.viewerTransaction || transactionContext.latestOffer)}
             className="group rounded-2xl border border-slate-200 bg-white"
@@ -424,7 +427,7 @@ export default async function ListingDetailPage({
         <div className="mx-auto flex max-w-md items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-xl font-extrabold leading-tight text-slate-950">
-              {formatCurrency(listing.price)}
+              {formatListingPrice(listing.price, dictionary.giveaway.free)}
             </p>
             <p className="truncate text-xs text-slate-500">{listing.title}</p>
           </div>
