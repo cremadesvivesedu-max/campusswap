@@ -41,6 +41,12 @@ export function daysUntilMoveOut(value: string | null | undefined, now = new Dat
   return days >= 0 ? days : null;
 }
 
+/** January and June, when the most students leave Maastricht. */
+export function isMovingSeason(now = new Date()) {
+  const month = now.getUTCMonth();
+  return month === 0 || month === 5;
+}
+
 export function formatMoveOutCountdown(
   days: number,
   copy: { daysLeft: string; oneDayLeft: string; today: string }

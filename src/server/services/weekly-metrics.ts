@@ -7,6 +7,7 @@ export interface WeekMetrics {
   weekStart: string;
   newUsers: number;
   newListings: number;
+  newFreeListings: number;
   newChats: number;
   messages: number;
   sales: number;
@@ -65,7 +66,7 @@ export async function loadWeeklyMetrics(admin: AdminClient, weeks = 8, now = new
   const starts = getWeekStarts(now, weeks);
   const oldest = starts[starts.length - 1];
 
-  const [completed, reviewRows] = await Promise.all([
+  const [completed, reviewRows, freeRows] = await Promise.all([
     admin
       .from("transactions")
       .select("completed_at, amount")
@@ -76,10 +77,17 @@ export async function loadWeeklyMetrics(admin: AdminClient, weeks = 8, now = new
       .from("reviews")
       .select("created_at, rating")
       .gte("created_at", oldest.toISOString())
+      .limit(5000),
+    admin
+      .from("listings")
+      .select("created_at")
+      .eq("price", 0)
+      .gte("created_at", oldest.toISOString())
       .limit(5000)
   ]);
   const sales = (completed.data as { completed_at: string; amount: number | string | null }[] | null) ?? [];
   const ratings = (reviewRows.data as { created_at: string; rating: number }[] | null) ?? [];
+  const freeListings = (freeRows.data as { created_at: string }[] | null) ?? [];
 
   return Promise.all(
     starts.map(async (start): Promise<WeekMetrics> => {
@@ -101,6 +109,7 @@ export async function loadWeeklyMetrics(admin: AdminClient, weeks = 8, now = new
         weekStart: start.toISOString(),
         newUsers,
         newListings,
+        newFreeListings: freeListings.filter((row) => inWeek(row.created_at)).length,
         newChats,
         messages,
         sales: weekSales.length,

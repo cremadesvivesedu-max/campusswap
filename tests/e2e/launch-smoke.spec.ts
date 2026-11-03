@@ -129,6 +129,14 @@ test("bundle: the seller's discount is applied and their absence is shown", asyn
   await expect(page.getByText(/Lina is away until .+ and may reply late/)).toBeVisible();
 });
 
+test("moving out page and the bike check tip", async ({ page }) => {
+  await page.goto("/moving-out");
+  await expect(page.getByRole("heading", { name: /Sell your room in one go/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Publish my things" })).toHaveAttribute("href", "/app/sell/bulk");
+  await page.goto("/app/listings/listing-bike-1");
+  await expect(page.getByRole("link", { name: "Check it on Stop Heling" })).toBeVisible();
+});
+
 test("admin: weekly metrics and moderation queue", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Métricas del lunes" })).toBeVisible();

@@ -759,6 +759,7 @@ export async function getAdminWeeklyMetrics(weeks = 8): Promise<{
         weekStart: start.toISOString(),
         newUsers: 0,
         newListings: 0,
+        newFreeListings: 0,
         newChats: 0,
         messages: 0,
         sales: 0,

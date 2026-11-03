@@ -12,6 +12,7 @@ function week(overrides: Partial<WeekMetrics>): WeekMetrics {
     weekStart: "2027-02-01T00:00:00.000Z",
     newUsers: 0,
     newListings: 0,
+    newFreeListings: 0,
     newChats: 0,
     messages: 0,
     sales: 0,

@@ -142,6 +142,19 @@ export default async function ListingDetailPage({
           <h1 className="text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
             {listing.title}
           </h1>
+          {listing.categorySlug === "bikes" && !isOwnListing ? (
+            <p className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
+              {dictionary.bikeCheck.text}{" "}
+              <a
+                href="https://www.stopheling.nl/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-emerald-700 underline"
+              >
+                {dictionary.bikeCheck.link}
+              </a>
+            </p>
+          ) : null}
           {sellerPreferences.awayUntil && seller && !isOwnListing ? (
             <p className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900">
               {dictionary.sellerPrefs.awayNotice

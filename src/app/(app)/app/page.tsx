@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Gift, Megaphone, PackageOpen, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
+import { MovingSeasonBanner } from "@/components/marketplace/moving-season-banner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { getDictionaryForRequest } from "@/lib/i18n";
@@ -67,6 +68,8 @@ export default async function AppHomePage() {
         </span>
         <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
       </Link>
+
+      <MovingSeasonBanner title={dictionary.movingOut.bannerTitle} body={dictionary.movingOut.bannerBody} />
 
       <Link
         href="/app/search?max=0"

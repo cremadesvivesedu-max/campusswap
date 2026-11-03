@@ -3,18 +3,21 @@ import Link from "next/link";
 import { ChevronRight, MapPin, PackageSearch, Search, ShieldCheck, UserCheck } from "lucide-react";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ListingCard } from "@/components/marketplace/listing-card";
+import { MovingSeasonBanner } from "@/components/marketplace/moving-season-banner";
 import { Button } from "@/components/ui/button";
 import { getCategoryBrowseHref } from "@/lib/category-links";
 import { getDictionaryForRequest } from "@/lib/i18n";
 import { getAllCategories, getFeaturedListings } from "@/server/queries/marketplace";
+import { getReusedItemsCount, IMPACT_MIN_ITEMS } from "@/server/queries/impact";
 
 // Public home in the same marketplace style as the app: say what it is, let people
 // search, show real items, explain the three steps, then the details.
 export default async function HomePage() {
-  const [featured, categories, dictionary] = await Promise.all([
+  const [featured, categories, dictionary, reusedItems] = await Promise.all([
     getFeaturedListings(8),
     getAllCategories(),
-    getDictionaryForRequest()
+    getDictionaryForRequest(),
+    getReusedItemsCount()
   ]);
   const copy = dictionary.landing;
   const old = dictionary.marketing.home;
@@ -97,6 +100,7 @@ export default async function HomePage() {
       ) : null}
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
+        <MovingSeasonBanner title={dictionary.movingOut.bannerTitle} body={dictionary.movingOut.bannerBody} />
         <h2 className="text-2xl font-extrabold text-slate-950">{copy.howTitle}</h2>
         <ol className="grid gap-4 md:grid-cols-3">
           {steps.map((step, index) => (
@@ -112,6 +116,11 @@ export default async function HomePage() {
             </li>
           ))}
         </ol>
+        {reusedItems >= IMPACT_MIN_ITEMS ? (
+          <p className="text-center font-semibold text-emerald-800">
+            {dictionary.impact.line.replace("{count}", String(reusedItems))}
+          </p>
+        ) : null}
       </section>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">

@@ -3,6 +3,7 @@ import { formatChange, type WeekMetrics } from "@/server/services/weekly-metrics
 const rows: { key: keyof WeekMetrics; label: string; money?: boolean }[] = [
   { key: "newUsers", label: "Usuarios nuevos" },
   { key: "newListings", label: "Anuncios nuevos" },
+  { key: "newFreeListings", label: "Anuncios gratis" },
   { key: "newChats", label: "Chats nuevos" },
   { key: "messages", label: "Mensajes" },
   { key: "sales", label: "Ventas" },

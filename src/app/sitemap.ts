@@ -11,6 +11,7 @@ const routes = [
   "/outlet",
   "/trust-safety",
   "/faq",
+  "/moving-out",
   "/join",
   "/privacy",
   "/terms",
