@@ -146,8 +146,11 @@ test("admin: weekly metrics and moderation queue", async ({ page }) => {
 
 test("partners: confirmed shop is listed with its code", async ({ page }) => {
   await page.goto("/partners");
-  await expect(page.getByRole("heading", { name: "ThePhoneLab Maastricht" })).toBeVisible();
-  await page.locator('a[href="/partners/thephonelab"]').first().click();
+  const banner = page.locator('a[href="/partners/thephonelab"]').first();
+  await expect(banner).toContainText("CAMPUSLAB");
+  await expect(banner.getByRole("img", { name: "ThePhoneLab Maastricht" })).toBeVisible();
+  await banner.click();
   await expect(page).toHaveURL(/\/partners\/thephonelab/);
+  await expect(page.getByRole("heading", { level: 1, name: "ThePhoneLab Maastricht" })).toBeVisible();
   await expect(page.getByText("CAMPUSLAB")).toBeVisible();
 });

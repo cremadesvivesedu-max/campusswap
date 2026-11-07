@@ -16,6 +16,9 @@ export interface Partner {
   address: string;
   mapsUrl: string;
   websiteUrl: string;
+  // Logo in /public and the shop's own brand colour, used for its banner.
+  logo: string;
+  brandColor: string;
 }
 
 export const partners: Partner[] = [
@@ -49,7 +52,10 @@ export const partners: Partner[] = [
     ],
     address: "Wycker Brugstraat 58, 6221 ED Maastricht",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Wycker+Brugstraat+58+Maastricht",
-    websiteUrl: "https://www.thephonelab.nl/"
+    websiteUrl: "https://www.thephonelab.nl/",
+    // Official logo from thephonelab.nl (the agreement includes showing it in the app).
+    logo: "/partners/thephonelab.svg",
+    brandColor: "#E82429"
   }
 ];
 
@@ -67,6 +73,12 @@ export const partnerCopy: Record<
     website: string;
     directions: string;
     all: string;
+    badge: string;
+    copy: string;
+    copied: string;
+    stepsTitle: string;
+    steps: [string, string, string];
+    bannerLabel: string;
   }
 > = {
   en: {
@@ -80,7 +92,17 @@ export const partnerCopy: Record<
     visit: "Where to go",
     website: "Website",
     directions: "Directions",
-    all: "All student deals"
+    all: "All student deals",
+    badge: "Official partner",
+    copy: "Copy code",
+    copied: "Copied",
+    stepsTitle: "How it works",
+    steps: [
+      "Go to the shop with your phone, tablet or laptop.",
+      "Show the code before you pay.",
+      "Get the deal on your repair."
+    ],
+    bannerLabel: "New partner"
   },
   es: {
     eyebrow: "Ofertas para estudiantes",
@@ -93,7 +115,17 @@ export const partnerCopy: Record<
     visit: "Dónde está",
     website: "Web",
     directions: "Cómo llegar",
-    all: "Todas las ofertas"
+    all: "Todas las ofertas",
+    badge: "Partner oficial",
+    copy: "Copiar código",
+    copied: "Copiado",
+    stepsTitle: "Cómo funciona",
+    steps: [
+      "Ve a la tienda con tu móvil, tablet o portátil.",
+      "Enseña el código antes de pagar.",
+      "Llévate la oferta con tu reparación."
+    ],
+    bannerLabel: "Nuevo partner"
   },
   nl: {
     eyebrow: "Studentendeals",
@@ -106,7 +138,17 @@ export const partnerCopy: Record<
     visit: "Waar je moet zijn",
     website: "Website",
     directions: "Routebeschrijving",
-    all: "Alle studentendeals"
+    all: "Alle studentendeals",
+    badge: "Officiële partner",
+    copy: "Code kopiëren",
+    copied: "Gekopieerd",
+    stepsTitle: "Zo werkt het",
+    steps: [
+      "Ga naar de winkel met je telefoon, tablet of laptop.",
+      "Laat de code zien voordat je betaalt.",
+      "Krijg de deal bij je reparatie."
+    ],
+    bannerLabel: "Nieuwe partner"
   }
 };
 

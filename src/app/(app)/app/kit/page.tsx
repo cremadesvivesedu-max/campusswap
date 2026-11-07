@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PartnerBanner } from "@/components/marketplace/partner-banner";
 import { ArrivalKitChecklist } from "@/components/marketplace/arrival-kit-checklist";
 import { listedPartners, partnerCopy } from "@/features/partners/partners";
 import { arrivalKit, arrivalKitSearchHref, countMatches } from "@/features/listings/arrival-kit";
@@ -36,14 +36,7 @@ export default async function ArrivalKitPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-bold text-slate-950">{partnerCopy[locale].eyebrow}</h2>
           {listedPartners.map((partner) => (
-            <Link
-              key={partner.slug}
-              href={`/partners/${partner.slug}`}
-              className="block rounded-2xl border border-slate-200 bg-white p-4 hover:border-emerald-300"
-            >
-              <p className="font-semibold text-slate-950">{partner.name}</p>
-              <p className="text-sm leading-6 text-slate-600">{partner.headline[locale]}</p>
-            </Link>
+            <PartnerBanner key={partner.slug} partner={partner} locale={locale} />
           ))}
         </section>
       ) : null}
