@@ -145,6 +145,9 @@ test("admin: weekly metrics and moderation queue", async ({ page }) => {
 });
 
 test("partners: confirmed shop is listed with its code", async ({ page }) => {
+  // The installed app opens on /app, so the banner must be there too.
+  await page.goto("/app");
+  await expect(page.locator('a[href="/partners/thephonelab"]').first()).toContainText("CAMPUSLAB");
   await page.goto("/partners");
   const banner = page.locator('a[href="/partners/thephonelab"]').first();
   await expect(banner).toContainText("CAMPUSLAB");

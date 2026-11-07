@@ -2,9 +2,11 @@ import Link from "next/link";
 import { ChevronRight, Gift, Megaphone, PackageOpen, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { MovingSeasonBanner } from "@/components/marketplace/moving-season-banner";
+import { PartnerBanner } from "@/components/marketplace/partner-banner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { getDictionaryForRequest } from "@/lib/i18n";
+import { listedPartners } from "@/features/partners/partners";
+import { getDictionaryForRequest, getRequestLocale } from "@/lib/i18n";
 import {
   getAllCategories,
   getFeaturedListings,
@@ -14,11 +16,12 @@ import {
 // Marketplace home in the Wallapop/Vinted mould: search first, categories as chips,
 // then products. Explanations live on the public pages, not here.
 export default async function AppHomePage() {
-  const [dictionary, categories, feed, featuredListings] = await Promise.all([
+  const [dictionary, categories, feed, featuredListings, locale] = await Promise.all([
     getDictionaryForRequest(),
     getAllCategories(),
     getHomeFeed(24),
-    getFeaturedListings(4)
+    getFeaturedListings(4),
+    getRequestLocale()
   ]);
   const copy = dictionary.home;
 
@@ -70,6 +73,10 @@ export default async function AppHomePage() {
       </Link>
 
       <MovingSeasonBanner title={dictionary.movingOut.bannerTitle} body={dictionary.movingOut.bannerBody} />
+
+      {listedPartners.map((partner) => (
+        <PartnerBanner key={partner.slug} partner={partner} locale={locale} />
+      ))}
 
       <Link
         href="/app/search?max=0"
