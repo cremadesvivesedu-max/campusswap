@@ -11,6 +11,15 @@ if (!url || !serviceRole) {
   process.exit(1);
 }
 
+// The seed resets the demo accounts to their public default passwords and overwrites
+// pricing_settings and content_blocks, so it must never touch the live project.
+const PRODUCTION_PROJECT_REF = "krztfnvinfgmxrmbwqkn";
+
+if (url.includes(PRODUCTION_PROJECT_REF)) {
+  console.error("Refusing to seed: this is the production Supabase project.");
+  process.exit(1);
+}
+
 const supabase = createClient(url, serviceRole);
 
 function stableUuid(key: string) {
