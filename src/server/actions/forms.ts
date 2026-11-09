@@ -1459,14 +1459,17 @@ export async function createQuickListingAction(
 ): Promise<{ success: boolean; message: string; listingId?: string; needsReview?: boolean }> {
   const user = await getCurrentUser();
   const title = String(formData.get("title") ?? "").trim().slice(0, 120);
-  const price = Number(formData.get("price") ?? 0);
+  // Same rule as the full form: an empty field stays invalid, only an explicit 0 is a giveaway.
+  const rawPrice = String(formData.get("price") ?? "").trim();
+  const price = rawPrice ? Number(rawPrice) : Number.NaN;
+  const isFree = price === 0;
   const categorySlug = String(formData.get("category") ?? "").trim();
   const condition = String(formData.get("condition") ?? "good").trim() || "good";
   const pickupArea = String(formData.get("pickupArea") ?? "").trim() || user.profile.neighborhood;
   const image = formData.get("image");
   const imageFiles = image instanceof File && image.size > 0 ? [image] : [];
 
-  if (!title || !categorySlug || !Number.isFinite(price) || price <= 0 || !pickupArea) {
+  if (!title || !categorySlug || !Number.isFinite(price) || price < 0 || !pickupArea) {
     return {
       success: false,
       message: "Fill in the required title, description, price, category, and pickup area."
@@ -1501,7 +1504,7 @@ export async function createQuickListingAction(
       description: title,
       condition,
       price,
-      negotiable: true,
+      negotiable: !isFree,
       location: user.profile.neighborhood,
       pickup_area: pickupArea,
       pickup_available: true,
@@ -1542,7 +1545,7 @@ export async function createQuickListingAction(
           categorySlug,
           condition,
           price,
-          negotiable: true,
+          negotiable: !isFree,
           outlet: false,
           urgent: false,
           pickupArea,
@@ -1618,6 +1621,72 @@ export async function dropListingPriceAction(
       previousPrice: listing.price,
       newPrice
     });
+  });
+
+  revalidatePath("/app/my-listings");
+  revalidatePath(`/app/listings/${listingId}`);
+  revalidatePath("/app");
+
+  return { success: true, message: "Price updated." };
+}
+
+/** "Donate instead of selling": one tap turns a listing into a free, pickup-only one. */
+export async function giveAwayListingAction(
+  listingId: string
+): Promise<{ success: boolean; message: string }> {
+  if (!isLiveMode) {
+    return { success: true, message: "Price updated." };
+  }
+
+  const user = await getCurrentUser();
+  const supabase = await createServerSupabaseClient();
+
+  if (!supabase) {
+    return { success: false, message: "Something went wrong. Please try again." };
+  }
+
+  const listing = await getListingById(listingId);
+
+  if (!listing || listing.sellerId !== user.id) {
+    return { success: false, message: "Only the seller can update this listing." };
+  }
+
+  if (listing.status !== "active" || listing.price <= 0) {
+    return { success: false, message: "Something went wrong. Please try again." };
+  }
+
+  // A free iPhone is a classic bait listing, so it goes through the same check as a new one.
+  const risk = assessListingRisk({ title: listing.title, description: listing.description, price: 0 });
+  const status = risk.level === "review" ? "pending-review" : listing.status;
+
+  const { error } = await supabase
+    .from("listings")
+    .update({
+      price: 0,
+      negotiable: false,
+      pickup_available: true,
+      shipping_available: false,
+      shipping_cost: 0,
+      status,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", listingId)
+    .eq("seller_id", user.id);
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  after(async () => {
+    await notifyPriceDropWatchers({
+      listing: { ...listing, price: 0, status },
+      sellerId: user.id,
+      previousPrice: listing.price,
+      newPrice: 0
+    });
+    if (risk.level !== "ok") {
+      await notifyAdminsOfListingRisk({ id: listingId, title: listing.title }, risk.reasons);
+    }
   });
 
   revalidatePath("/app/my-listings");

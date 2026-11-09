@@ -91,7 +91,7 @@ test("sell several items at once", async ({ page }) => {
   await titles.nth(1).fill("City bike");
   const prices = page.getByPlaceholder("€");
   await prices.nth(0).fill("8");
-  await prices.nth(1).fill("70");
+  await page.getByLabel("Give it away for free").nth(1).check();
   await page.getByRole("button", { name: /publish 2 listings/i }).click();
   await expect(page.getByText("2 listings published")).toBeVisible();
 });

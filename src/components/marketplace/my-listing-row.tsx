@@ -14,7 +14,7 @@ import type { Listing, SellerListingTransaction } from "@/types/domain";
 import { friendlyError } from "@/lib/friendly-error";
 import { MarkSoldSheet } from "@/components/marketplace/mark-sold-sheet";
 import { daysListed, isStaleListing, suggestPriceDrop } from "@/features/listings/price-suggestion";
-import { dropListingPriceAction } from "@/server/actions/forms";
+import { dropListingPriceAction, giveAwayListingAction } from "@/server/actions/forms";
 
 const statusTone: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -69,6 +69,7 @@ export function MyListingRow({
 
   const canToggle = listing.status === "active" || listing.status === "archived";
   const canMarkSold = ["active", "reserved", "archived"].includes(listing.status);
+  const canGiveAway = listing.status === "active" && listing.price > 0;
   const chats = listing.analytics?.messagesReceived ?? 0;
   const dropTo =
     isStaleListing({ createdAt: listing.createdAt, chats, status: listing.status })
@@ -111,6 +112,25 @@ export function MyListingRow({
                     }}
                   >
                     {dictionary.soldFlow.markSold}
+                  </button>
+                ) : null}
+                {canGiveAway ? (
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    className="block w-full px-4 py-2.5 text-left hover:bg-slate-50"
+                    onClick={(event) => {
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                      if (!window.confirm(dictionary.giveaway.confirmDonate.replace("{title}", listing.title))) {
+                        return;
+                      }
+                      run(
+                        () => giveAwayListingAction(listing.id),
+                        () => setMessage({ text: dictionary.giveaway.donated, ok: true })
+                      );
+                    }}
+                  >
+                    {dictionary.giveaway.donate}
                   </button>
                 ) : null}
                 {canToggle ? (

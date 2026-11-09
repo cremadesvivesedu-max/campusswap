@@ -19,6 +19,7 @@ interface Item {
   preview: string;
   title: string;
   price: string;
+  free: boolean;
   categorySlug: string;
   categoryTouched: boolean;
   status: "idle" | "sending" | "done" | "error";
@@ -53,6 +54,7 @@ export function BulkSellForm({ categories, defaultPickupArea }: { categories: Ca
         preview: URL.createObjectURL(file),
         title: "",
         price: "",
+        free: false,
         categorySlug: "",
         categoryTouched: false,
         status: "idle" as const
@@ -64,7 +66,7 @@ export function BulkSellForm({ categories, defaultPickupArea }: { categories: Ca
     setItems((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
 
   const pending = items.filter((item) => item.status !== "done");
-  const complete = (item: Item) => item.title.trim().length > 1 && Number(item.price) > 0 && item.categorySlug;
+  const complete = (item: Item) => item.title.trim().length > 1 && (item.free || Number(item.price) > 0) && item.categorySlug;
   const doneCount = items.filter((item) => item.status === "done").length;
   const allDone = items.length > 0 && doneCount === items.length;
 
@@ -79,7 +81,7 @@ export function BulkSellForm({ categories, defaultPickupArea }: { categories: Ca
       update(item.key, { status: "sending", error: undefined });
       const formData = new FormData();
       formData.set("title", item.title.trim());
-      formData.set("price", item.price);
+      formData.set("price", item.free ? "0" : item.price);
       formData.set("category", item.categorySlug);
       formData.set("condition", condition);
       formData.set("pickupArea", pickupArea);
@@ -199,16 +201,22 @@ export function BulkSellForm({ categories, defaultPickupArea }: { categories: Ca
                       ) : null}
                     </div>
                     <div className="grid grid-cols-[90px_1fr] gap-2">
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min="1"
-                        step="0.5"
-                        value={item.price}
-                        placeholder={copy.pricePlaceholder}
-                        disabled={locked}
-                        onChange={(event) => update(item.key, { price: event.target.value })}
-                      />
+                      {item.free ? (
+                        <span className="flex h-11 items-center justify-center rounded-2xl bg-emerald-50 text-sm font-bold text-emerald-700">
+                          {dictionary.giveaway.free}
+                        </span>
+                      ) : (
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min="1"
+                          step="0.5"
+                          value={item.price}
+                          placeholder={copy.pricePlaceholder}
+                          disabled={locked}
+                          onChange={(event) => update(item.key, { price: event.target.value })}
+                        />
+                      )}
                       <select
                         value={item.categorySlug}
                         disabled={locked}
@@ -226,6 +234,15 @@ export function BulkSellForm({ categories, defaultPickupArea }: { categories: Ca
                         ))}
                       </select>
                     </div>
+                    <label className="flex items-center gap-2 px-1 text-xs font-medium text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={item.free}
+                        disabled={locked}
+                        onChange={(event) => update(item.key, { free: event.target.checked })}
+                      />
+                      {dictionary.giveaway.checkbox}
+                    </label>
                     {item.status === "error" ? (
                       <p className="flex items-center gap-1 text-xs text-rose-700">
                         <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
