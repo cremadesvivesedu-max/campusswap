@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "@/app/globals.css";
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
@@ -35,6 +36,8 @@ export default async function RootLayout({
           {children}
         </LocaleProvider>
         <ServiceWorkerRegister />
+        {/* Vercel Web Analytics: cookieless page views, no consent banner needed. */}
+        <Analytics />
         {/* Tells search engines the site's name and logo (shown next to results). */}
         <script
           type="application/ld+json"
