@@ -55,7 +55,7 @@ interface DbProfileRow {
 
 interface DbUserWithProfile {
   id: string;
-  email: string;
+  email?: string | null;
   role: User["role"];
   verification_status: User["verificationStatus"];
   avatar_url: string | null;
@@ -278,7 +278,7 @@ function freshnessLabel(createdAt: string, status: Listing["status"], outlet: bo
 function mapUser(row: DbUserWithProfile): User {
   return {
     id: row.id,
-    email: row.email,
+    email: row.email ?? "",
     role: row.role,
     verificationStatus: row.verification_status,
     avatar: row.avatar_url ?? undefined,
@@ -572,7 +572,6 @@ const conversationSelect = `
     ),
     seller:users!listings_seller_id_fkey (
       id,
-      email,
       role,
       verification_status,
       avatar_url,
@@ -598,7 +597,6 @@ const conversationSelect = `
   ),
   buyer:users!conversations_buyer_id_fkey (
     id,
-    email,
     role,
     verification_status,
     avatar_url,
@@ -623,7 +621,6 @@ const conversationSelect = `
   ),
   seller:users!conversations_seller_id_fkey (
     id,
-    email,
     role,
     verification_status,
     avatar_url,

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { trustedServerHeaders } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 import { env, supabasePublicKey } from "@/lib/env";
 import { buildSiteUrl, sanitizeInternalPath } from "@/lib/site-url";
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, supabasePublicKey, {
+    global: { headers: trustedServerHeaders() },
     cookies: {
       getAll() {
         return request.cookies.getAll();

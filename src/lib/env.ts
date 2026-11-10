@@ -19,6 +19,8 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default("CampusSwap <onboarding@resend.dev>"),
   NOTIFY_WEBHOOK_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
+  // Proves to the database that a write comes from our server (migration 0023).
+  SERVER_DB_TOKEN: z.string().optional(),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default("mailto:hello@campusswap.app"),
@@ -48,6 +50,7 @@ export const env = envSchema.parse({
   EMAIL_FROM: process.env.EMAIL_FROM,
   NOTIFY_WEBHOOK_SECRET: process.env.NOTIFY_WEBHOOK_SECRET,
   CRON_SECRET: process.env.CRON_SECRET,
+  SERVER_DB_TOKEN: process.env.SERVER_DB_TOKEN,
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
   VAPID_SUBJECT: process.env.VAPID_SUBJECT,

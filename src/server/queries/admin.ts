@@ -253,10 +253,10 @@ export async function getAdminMetrics() {
     listingRows,
     transactionRows
   ] = await Promise.all([
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "student"),
     supabase
       .from("users")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("role", "student")
       .eq("verification_status", "verified"),
     supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -370,7 +370,9 @@ export async function getAdminUsers() {
   }
 
   await requireAdminAccess();
-  const supabase = await createServerSupabaseClient();
+  // Emails are hidden from normal sessions (migration 0023): read them with the
+  // service role, only after the admin check above.
+  const supabase = createAdminSupabaseClient() ?? (await createServerSupabaseClient());
   if (!supabase) {
     return [];
   }

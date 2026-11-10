@@ -62,7 +62,7 @@ interface DbProfileRow {
 
 interface DbUserRow {
   id: string;
-  email: string;
+  email?: string | null;
   role: User["role"];
   verification_status: VerificationStatus;
   avatar_url: string | null;
@@ -304,7 +304,6 @@ const listingSelect = `
   ),
   seller:users!listings_seller_id_fkey (
     id,
-    email,
     role,
     verification_status,
     avatar_url,
@@ -428,7 +427,8 @@ function mapUser(
 
   return {
     id: row.id,
-    email: row.email,
+    // Email is never selected for other people (see migration 0023).
+    email: row.email ?? "",
     role: row.role,
     verificationStatus: row.verification_status,
     avatar: row.avatar_url ?? undefined,
@@ -1016,7 +1016,6 @@ async function fetchUserRowById(userId: string) {
     .select(
       `
         id,
-        email,
         role,
         verification_status,
         avatar_url,
@@ -1394,10 +1393,17 @@ export const getCurrentUser = cache(async function getCurrentUser() {
     throw new Error("Unable to load the current CampusSwap user.");
   }
 
-  const sellerMetricsByUserId = await fetchSellerMetricsMap([row.id]);
-  return mapUser(row, {
-    sellerMetrics: sellerMetricsByUserId.get(row.id)
-  });
+  const [sellerMetricsByUserId, authUser] = await Promise.all([
+    fetchSellerMetricsMap([row.id]),
+    getOptionalAuthUser()
+  ]);
+  return {
+    ...mapUser(row, {
+      sellerMetrics: sellerMetricsByUserId.get(row.id)
+    }),
+    // Own email comes from the signed-in session, never from public.users.
+    email: authUser?.email ?? ""
+  };
 });
 
 export const getUserById = cache(async function getUserById(userId: string) {
@@ -1929,7 +1935,6 @@ export async function getListingTransactionContext(
         completed_at,
         buyer:users!transactions_buyer_id_fkey (
           id,
-          email,
           role,
           verification_status,
           avatar_url,
@@ -1954,7 +1959,6 @@ export async function getListingTransactionContext(
         ),
         seller:users!transactions_seller_id_fkey (
           id,
-          email,
           role,
           verification_status,
           avatar_url,
@@ -2092,7 +2096,6 @@ export async function getSellerListingTransactions(
         completed_at,
         buyer:users!transactions_buyer_id_fkey (
           id,
-          email,
           role,
           verification_status,
           avatar_url,
