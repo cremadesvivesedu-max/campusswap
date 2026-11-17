@@ -7,8 +7,9 @@
 -- 3. University email verification for people who signed up with another
 --    address (e.g. Google): a 6-digit code is emailed to the university
 --    address. The address is kept only until the code is used or expires;
---    afterwards we keep a SHA-256 of it (so one university address can't
---    verify many accounts) and the date.
+--    afterwards we keep a keyed hash of it (HMAC-SHA-256, key only in the
+--    server env; columns keep the *_sha256 name) so one university address
+--    can't verify many accounts, plus the date.
 -- 4. maastrichtuniversity.nl (staff, PhD) joins student.maastrichtuniversity.nl.
 
 -- 1 ---------------------------------------------------------------------

@@ -156,7 +156,7 @@ begin
   from information_schema.columns
   where table_schema = 'public'
     and table_name = 'users'
-    and column_name not in ('email', 'stripe_connected_account_id');
+    and column_name not in ('email', 'stripe_connected_account_id', 'university_email_sha256');
 
   execute format('grant select (%s) on public.users to authenticated', readable);
 end;
