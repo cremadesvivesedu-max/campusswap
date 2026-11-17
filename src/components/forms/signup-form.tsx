@@ -1,5 +1,6 @@
 "use client";
 
+import { trackFunnel } from "@/lib/funnel-events";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,6 +77,7 @@ export function SignupForm({ allowedDomains }: SignupFormProps) {
             }
           });
 
+          if (!signupError) trackFunnel("signup");
           if (signupError) {
             setError(signupError.message);
             return;

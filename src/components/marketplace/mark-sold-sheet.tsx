@@ -1,5 +1,6 @@
 "use client";
 
+import { trackFunnel } from "@/lib/funnel-events";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserX } from "lucide-react";
@@ -55,6 +56,7 @@ export function MarkSoldSheet({
           setError(friendlyError(result.message, dictionary));
           return;
         }
+        trackFunnel("sale_completed");
         onSold?.();
         if (result.transactionId) {
           router.push(`/app/reviews/new/${result.transactionId}`);

@@ -41,7 +41,7 @@ export function VerificationPromptCard({
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/verify-email">Review verification status</Link>
+          <Link href="/app/settings#university-email">Verify with your university email</Link>
         </Button>
       </CardContent>
     </Card>

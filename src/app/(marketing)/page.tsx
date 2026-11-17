@@ -4,6 +4,7 @@ import { ChevronRight, MapPin, PackageSearch, Search, ShieldCheck, UserCheck } f
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { MovingSeasonBanner } from "@/components/marketplace/moving-season-banner";
+import { CampaignBanner } from "@/components/marketplace/campaign-banner";
 import { PartnerBanner } from "@/components/marketplace/partner-banner";
 import { listedPartners } from "@/features/partners/partners";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,7 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
         <MovingSeasonBanner title={dictionary.movingOut.bannerTitle} body={dictionary.movingOut.bannerBody} />
+        <CampaignBanner copy={dictionary.campaigns} />
         {listedPartners.map((partner) => (
           <PartnerBanner key={partner.slug} partner={partner} locale={locale} />
         ))}

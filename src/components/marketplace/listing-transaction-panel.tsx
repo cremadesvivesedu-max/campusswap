@@ -1,5 +1,6 @@
 "use client";
 
+import { trackFunnel } from "@/lib/funnel-events";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -908,7 +909,12 @@ export function ListingTransactionPanel({
             {canComplete && transaction ? (
               <Button
                 type="button"
-                onClick={() => runAction(() => completeTransactionAction(transaction.id))}
+                onClick={() => runAction(() =>
+                  completeTransactionAction(transaction.id).then((result) => {
+                    if (result.success) trackFunnel("sale_completed");
+                    return result;
+                  })
+                )}
                 disabled={isPending}
               >
                 {isPending

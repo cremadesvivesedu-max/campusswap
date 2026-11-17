@@ -1,10 +1,14 @@
 import { MetricCard } from "@/components/admin/metric-card";
 import { getAdminMetrics } from "@/server/queries/admin";
+import { FunnelTable } from "@/components/admin/funnel-table";
+import { getFunnelWeeks } from "@/server/queries/funnel";
 
 export default async function AdminAnalyticsPage() {
-  const metrics = await getAdminMetrics();
+  const [metrics, funnelWeeks] = await Promise.all([getAdminMetrics(), getFunnelWeeks()]);
 
   return (
+    <div className="space-y-4">
+    <FunnelTable weeks={funnelWeeks} />
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <MetricCard
         title="Verified users"
@@ -71,6 +75,7 @@ export default async function AdminAnalyticsPage() {
         value={`${Math.round(metrics.responseRate * 100)}%`}
         hint="Healthy marketplace benchmark"
       />
+    </div>
     </div>
   );
 }

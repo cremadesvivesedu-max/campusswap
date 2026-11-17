@@ -9,7 +9,7 @@ export default function PrivacyPage() {
       eyebrow="Privacy Policy"
       title="CampusSwap handles marketplace data with a practical student-safety mindset."
       description="This policy explains what CampusSwap collects, why it is used, how payment and support data are handled, and how users can contact us about privacy questions."
-      lastUpdated="October 13, 2026"
+      lastUpdated="November 17, 2026"
       quickLinks={[
         { href: "/terms", label: "Terms" },
         { href: "/refund-policy", label: "Refunds & disputes" },
@@ -58,7 +58,16 @@ export default function PrivacyPage() {
           title: "Cookies and similar technologies",
           paragraphs: [
             "CampusSwap only uses cookies that the service needs to work: a login session cookie so you stay signed in, and a language cookie that is set when you choose a language. We do not use advertising or third-party tracking cookies, so there is no cookie banner.",
-            "To improve the product we record a small set of in-app events on our own servers (for example sign-up, listing created, checkout completed), linked to your account. These events do not use cookies and are never shared with advertisers."
+            "For the security and running of the service we keep a separate internal log of a small set of in-app events on our own servers (for example sign-up, listing created, checkout completed), linked to your account. These events do not use cookies and are never shared with advertisers. They are not the anonymous counts described below.",
+            "We count visits to our website with a simple daily total. When a page loads, your browser asks our server to add one to that day's count. We do not store your IP address, browser details, a cookie or anything on your device, and the count cannot be linked to you. We use these totals to understand how many visitors sign up, list items and complete sales, and to notice problems. Only aggregated totals are ever shared inside our team. Our legal basis for the brief technical processing of the request is our legitimate interest in understanding and improving the service (Article 6(1)(f) GDPR).",
+            "We use Vercel Web Analytics to measure page views and a few product events (sign-up, listing created, sale completed). It does not use cookies or store anything on your device, and these events carry no personal details. They are not linked to your account. Vercel processes this data on our behalf. Our legal basis is our legitimate interest in improving the service (Article 6(1)(f) GDPR)."
+          ]
+        },
+        {
+          title: "University email verification",
+          paragraphs: [
+            "If you choose to verify your student status, you enter your university email address (for example @student.maastrichtuniversity.nl, @maastrichtuniversity.nl or @zuyd.nl). We send a one-time six-digit code to that address through Resend. Until you use the code or it expires, we temporarily store your university email address and a protected (hashed) version of the code; the code is valid for 15 minutes and can be tried at most 5 times. Expired codes are deleted automatically.",
+            "Once you verify, we keep only a protected, one-way hashed version of your university email address (so the same address cannot verify several accounts), the date of verification, your university and your 'verified' badge. We do not keep the address itself. A hashed email address still counts as personal data, so we treat it as such. Verification is optional. Our legal bases are performance of the service you request (Article 6(1)(b) GDPR) and our legitimate interest in preventing fraud and duplicate accounts (Article 6(1)(f) GDPR). This data is deleted when you delete your account."
           ]
         },
         {

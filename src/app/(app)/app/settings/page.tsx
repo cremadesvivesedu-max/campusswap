@@ -1,6 +1,7 @@
 import { SettingsStripeConnectCard } from "@/components/forms/settings-stripe-connect-card";
 import { SettingsNotificationPreferencesForm } from "@/components/forms/settings-notification-preferences-form";
 import { AccountDataCard } from "@/components/forms/account-data-card";
+import { UniversityEmailCard } from "@/components/forms/university-email-card";
 import { LogoutButton } from "@/components/shared/logout-button";
 import { PushToggle } from "@/components/pwa/push-toggle";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
@@ -63,7 +64,7 @@ export default async function SettingsPage({
             </h2>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
-            <p>{dictionary.settings.reviewVerification}</p>
+            <UniversityEmailCard verified={user.verificationStatus === "verified"} />
             <LogoutButton />
             <AccountDataCard />
           </CardContent>
