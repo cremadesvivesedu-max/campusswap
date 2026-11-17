@@ -10,6 +10,8 @@ import { track } from "@vercel/analytics";
  */
 export type FunnelEvent = "signup" | "listing_created" | "sale_completed";
 
+// Privacy (legal review 17/11/2026): never pass properties, ids or any personal
+// detail to track(). Only the bare event name.
 export function trackFunnel(event: FunnelEvent) {
   try {
     track(event);

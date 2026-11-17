@@ -21,6 +21,7 @@ const envSchema = z.object({
   CRON_SECRET: z.string().optional(),
   // Proves to the database that a write comes from our server (migration 0023).
   SERVER_DB_TOKEN: z.string().optional(),
+  VERIFICATION_HMAC_KEY: z.string().min(32).optional(),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default("mailto:hello@campusswap.app"),
@@ -51,6 +52,7 @@ export const env = envSchema.parse({
   NOTIFY_WEBHOOK_SECRET: process.env.NOTIFY_WEBHOOK_SECRET,
   CRON_SECRET: process.env.CRON_SECRET,
   SERVER_DB_TOKEN: process.env.SERVER_DB_TOKEN,
+  VERIFICATION_HMAC_KEY: process.env.VERIFICATION_HMAC_KEY,
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
   VAPID_SUBJECT: process.env.VAPID_SUBJECT,

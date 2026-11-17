@@ -34,8 +34,12 @@ const personalData: [table: string, column: string][] = [
   ["wanted_requests", "user_id"],
   ["referrals", "referrer_id"],
   ["referrals", "referred_id"],
-  ["app_events", "actor_user_id"]
+  ["app_events", "actor_user_id"],
+  ["university_email_codes", "user_id"]
 ];
+
+// Secrets that are not useful to the person and must not leave the server.
+const omitFromExport: Record<string, string[]> = { university_email_codes: ["code_sha256"] };
 
 export async function exportMyDataAction(): Promise<AccountResult> {
   const user = await getCurrentUser();
@@ -55,7 +59,10 @@ export async function exportMyDataAction(): Promise<AccountResult> {
     if (error) {
       continue;
     }
-    exported[`${table}.${column}`] = data ?? [];
+    const omit = omitFromExport[table] ?? [];
+    exported[`${table}.${column}`] = (data ?? []).map((row: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(row).filter(([key]) => !omit.includes(key)))
+    );
   }
 
   // Profile details kept on the auth account itself (for example the moving day).

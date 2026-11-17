@@ -1,6 +1,6 @@
 "use server";
 
-import { createHash, randomInt } from "node:crypto";
+import { createHmac, randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { resend } from "@/lib/email/resend";
 import { env, isLiveMode } from "@/lib/env";
@@ -32,12 +32,20 @@ export type UniversityEmailResult = {
   email?: string;
 };
 
-function sha256(value: string) {
-  return createHash("sha256").update(value).digest("hex");
+// Keyed hashes (HMAC-SHA-256, key only in the server environment): a plain
+// SHA-256 of a predictable student address or a 6-digit code is easy to reverse.
+// Columns keep their *_sha256 names. Changing the key breaks duplicate checks for
+// already-verified accounts, so set it once.
+function keyedHash(value: string) {
+  return createHmac("sha256", env.VERIFICATION_HMAC_KEY as string).update(value).digest("hex");
+}
+
+function emailHash(email: string) {
+  return keyedHash(`email:${email}`);
 }
 
 function codeHash(userId: string, code: string) {
-  return sha256(`${userId}:${code}`);
+  return keyedHash(`code:${userId}:${code}`);
 }
 
 /** Step 1: email a 6-digit code to the university address. */
@@ -49,7 +57,7 @@ export async function sendUniversityCodeAction(
   if (!email) return { success: false, message: "invalidEmail" };
 
   const admin = createAdminSupabaseClient();
-  if (!isLiveMode || !admin || !resend) return { success: false, message: "unavailable" };
+  if (!isLiveMode || !admin || !resend || !env.VERIFICATION_HMAC_KEY) return { success: false, message: "unavailable" };
 
   const user = await getCurrentUser();
   const domain = email.split("@")[1];
@@ -64,7 +72,7 @@ export async function sendUniversityCodeAction(
   const { data: taken } = await admin
     .from("users")
     .select("id")
-    .eq("university_email_sha256", sha256(email))
+    .eq("university_email_sha256", emailHash(email))
     .neq("id", user.id)
     .maybeSingle();
   if (taken) return { success: false, message: "alreadyUsed" };
@@ -113,7 +121,7 @@ export async function confirmUniversityCodeAction(
 ): Promise<UniversityEmailResult> {
   const code = String(formData.get("code") ?? "").replace(/\D/g, "");
   const admin = createAdminSupabaseClient();
-  if (!isLiveMode || !admin) return { success: false, message: "unavailable" };
+  if (!isLiveMode || !admin || !env.VERIFICATION_HMAC_KEY) return { success: false, message: "unavailable" };
 
   const user = await getCurrentUser();
   const { data: row } = await admin
@@ -128,13 +136,17 @@ export async function confirmUniversityCodeAction(
     await admin.from("university_email_codes").delete().eq("user_id", user.id);
     return { success: false, message: "expired" };
   }
-  if (row.attempts >= MAX_CODE_ATTEMPTS) return { success: false, message: "tooManyAttempts", email };
 
   if (code.length !== 6 || codeHash(user.id, code) !== row.code_sha256) {
-    await admin
-      .from("university_email_codes")
-      .update({ attempts: row.attempts + 1 })
-      .eq("user_id", user.id);
+    if (row.attempts + 1 >= MAX_CODE_ATTEMPTS) {
+      // Out of tries: forget the address straight away.
+      await admin.from("university_email_codes").delete().eq("user_id", user.id);
+    } else {
+      await admin
+        .from("university_email_codes")
+        .update({ attempts: row.attempts + 1 })
+        .eq("user_id", user.id);
+    }
     return {
       success: false,
       message: row.attempts + 1 >= MAX_CODE_ATTEMPTS ? "tooManyAttempts" : "wrongCode",
@@ -152,7 +164,7 @@ export async function confirmUniversityCodeAction(
     .from("users")
     .update({
       verification_status: "verified",
-      university_email_sha256: sha256(email),
+      university_email_sha256: emailHash(email),
       university_verified_at: new Date().toISOString(),
       ...(domain?.university_id ? { university_id: domain.university_id } : {})
     })
