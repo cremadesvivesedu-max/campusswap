@@ -5,6 +5,7 @@ import { isLiveMode } from "@/lib/env";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { assessListingRisk } from "@/server/services/moderation";
+import { summarizeDac7, type Dac7Sale } from "@/server/services/dac7";
 import {
   getWeekStarts,
   loadWeeklyMetrics,
@@ -584,6 +585,51 @@ export async function getAdminCategories() {
       typicalPriceRange: row.typical_price_range
     })
   );
+}
+
+/** DAC7: completed sales per seller in a calendar year, with who must be reported (see server/services/dac7.ts). */
+export async function getAdminDac7(year: number) {
+  const names = new Map<string, { name: string; email: string }>();
+  let sales: Dac7Sale[] = [];
+
+  if (!isLiveMode) {
+    for (const user of demoData.users) {
+      names.set(user.id, { name: user.profile?.fullName ?? "CampusSwap user", email: user.email });
+    }
+    sales = demoData.transactions
+      .filter((t) => t.state === "completed" && t.completedAt)
+      .map((t) => ({ sellerId: t.sellerId, completedAt: t.completedAt as string, amount: t.amount ?? 0, platformFee: t.platformFee ?? 0 }));
+  } else {
+    await requireAdminAccess();
+    // Emails are hidden from normal sessions: read with the service role, only after the admin check above.
+    const supabase = createAdminSupabaseClient() ?? (await createServerSupabaseClient());
+    if (!supabase) {
+      return [];
+    }
+    const { data } = await supabase
+      .from("transactions")
+      .select("seller_id, completed_at, amount, platform_fee")
+      .eq("state", "completed")
+      .gte("completed_at", `${year}-01-01T00:00:00Z`)
+      .lt("completed_at", `${year + 1}-01-01T00:00:00Z`);
+    sales = ((data as { seller_id: string; completed_at: string; amount: number | null; platform_fee: number | null }[] | null) ?? []).map(
+      (row) => ({ sellerId: row.seller_id, completedAt: row.completed_at, amount: Number(row.amount ?? 0), platformFee: Number(row.platform_fee ?? 0) })
+    );
+    const ids = [...new Set(sales.map((s) => s.sellerId))];
+    if (ids.length) {
+      const { data: users } = await supabase.from("users").select("id, email, profile:profiles (full_name)").in("id", ids);
+      for (const row of (users as { id: string; email: string; profile: { full_name: string } | { full_name: string }[] | null }[] | null) ?? []) {
+        const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
+        names.set(row.id, { name: profile?.full_name ?? "CampusSwap user", email: row.email });
+      }
+    }
+  }
+
+  return summarizeDac7(sales, year).map((row) => ({
+    ...row,
+    name: names.get(row.sellerId)?.name ?? "CampusSwap user",
+    email: names.get(row.sellerId)?.email ?? ""
+  }));
 }
 
 export async function getAdminSponsors() {

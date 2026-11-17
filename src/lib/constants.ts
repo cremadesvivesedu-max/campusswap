@@ -26,6 +26,7 @@ export const adminNav = [
   { href: "/admin/listings", key: "listings" },
   { href: "/admin/reports", key: "reports" },
   { href: "/admin/analytics", key: "analytics" },
+  { href: "/admin/dac7", key: "dac7" },
   { href: "/admin/settings", key: "settings" }
 ] as const;
 

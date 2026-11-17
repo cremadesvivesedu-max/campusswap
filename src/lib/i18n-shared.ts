@@ -50,7 +50,7 @@ export const dictionaries = {
     nav: {
       public: { categories: "Categories", featured: "Featured", outlet: "Outlet", trustSafety: "Trust & Safety", faq: "FAQ", join: "Join" },
       app: { home: "Home", forYou: "For You", search: "Search", saved: "Saved", messages: "Messages", support: "Support", settings: "Settings" },
-      admin: { dashboard: "Dashboard", users: "Users", listings: "Listings", reports: "Reports", analytics: "Analytics", settings: "Settings" }
+      admin: { dashboard: "Dashboard", users: "Users", listings: "Listings", reports: "Reports", analytics: "Analytics", dac7: "DAC7", settings: "Settings" }
     },
     site: {
       publicTagline: "Student-first marketplace for Maastricht",
@@ -1031,7 +1031,7 @@ mutableDictionaries.es = {
     ...mutableDictionaries.en.nav,
     public: { ...mutableDictionaries.en.nav.public, categories: "Categorias", featured: "Destacados", trustSafety: "Confianza y seguridad", join: "Unirse" },
     app: { ...mutableDictionaries.en.nav.app, home: "Inicio", forYou: "Para ti", search: "Buscar", saved: "Guardados", messages: "Mensajes", settings: "Ajustes" },
-    admin: { ...mutableDictionaries.en.nav.admin, dashboard: "Panel", users: "Usuarios", listings: "Anuncios", reports: "Reportes", analytics: "Analitica", settings: "Ajustes" }
+    admin: { ...mutableDictionaries.en.nav.admin, dashboard: "Panel", users: "Usuarios", listings: "Anuncios", reports: "Reportes", analytics: "Analitica", dac7: "DAC7 (Hacienda)", settings: "Ajustes" }
   },
   site: { ...mutableDictionaries.en.site, publicTagline: "Marketplace estudiantil para Maastricht", adminTagline: "Centro de control de moderacion, crecimiento y monetizacion", logIn: "Entrar", sellItem: "Vender un articulo" },
   common: {
@@ -1533,7 +1533,7 @@ mutableDictionaries.nl = {
     ...mutableDictionaries.en.nav,
     public: { ...mutableDictionaries.en.nav.public, categories: "Categorieen", featured: "Uitgelicht", trustSafety: "Vertrouwen en veiligheid", join: "Meedoen" },
     app: { ...mutableDictionaries.en.nav.app, forYou: "Voor jou", search: "Zoeken", saved: "Opgeslagen", messages: "Berichten", settings: "Instellingen" },
-    admin: { ...mutableDictionaries.en.nav.admin, users: "Gebruikers", listings: "Advertenties", reports: "Meldingen", settings: "Instellingen" }
+    admin: { ...mutableDictionaries.en.nav.admin, users: "Gebruikers", listings: "Advertenties", reports: "Meldingen", dac7: "DAC7 (Belastingdienst)", settings: "Instellingen" }
   },
   site: { ...mutableDictionaries.en.site, publicTagline: "Studentgerichte marktplaats voor Maastricht", adminTagline: "Controlecentrum voor moderatie, groei en monetisatie", logIn: "Inloggen", sellItem: "Artikel verkopen" },
   common: {
