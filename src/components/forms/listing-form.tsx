@@ -18,6 +18,8 @@ import { friendlyError } from "@/lib/friendly-error";
 import { parsePriceRange, suggestCategory } from "@/features/listings/suggest-category";
 import type { PriceSuggestion } from "@/features/listings/price-suggestion";
 import { getPriceSuggestionAction } from "@/server/actions/pricing";
+import { proposeFromPredictions, type PhotoLocale } from "@/features/listings/photo-recognition";
+import { trackFunnel } from "@/lib/funnel-events";
 import type { Category, Listing } from "@/types/domain";
 
 interface ListingFormProps {
@@ -70,6 +72,67 @@ export function ListingForm({
   const [priceSuggestion, setPriceSuggestion] = useState<PriceSuggestion | null>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
   const [isFree, setIsFree] = useState(initialListing?.price === 0);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [photoProposal, setPhotoProposal] = useState<
+    | { status: "looking" }
+    | { status: "ready"; title: string; category: string; categoryName: string; price: number | null; basis: PriceSuggestion["basis"] | null; count: number }
+    | null
+  >(null);
+
+  useEffect(() => {
+    if (state.success && !isEditing) trackFunnel("listing_created");
+  }, [state.success, isEditing]);
+
+  // Photo first: guess what the item is on this device and propose title, category and price.
+  async function proposeFromPhoto(file: File) {
+    if (isEditing || titleInputRef.current?.value.trim()) return;
+    setPhotoProposal({ status: "looking" });
+    try {
+      const { classifyPhoto } = await import("@/features/listings/photo-classifier");
+      const predictions = await classifyPhoto(file);
+      const proposal = proposeFromPredictions(
+        predictions,
+        (dictionary.localeCode as PhotoLocale) ?? "en",
+        categories.map((category) => category.slug)
+      );
+      if (!proposal || titleInputRef.current?.value.trim()) {
+        setPhotoProposal(null);
+        return;
+      }
+      const suggestion = await getPriceSuggestionAction(proposal.category, proposal.title).catch(() => null);
+      setPhotoProposal({
+        status: "ready",
+        title: proposal.title,
+        category: proposal.category,
+        categoryName: categories.find((category) => category.slug === proposal.category)?.name ?? proposal.category,
+        price: suggestion?.typical ?? null,
+        basis: suggestion?.basis ?? null,
+        count: suggestion?.count ?? 0
+      });
+    } catch {
+      setPhotoProposal(null);
+    }
+  }
+
+  function applyPhotoProposal(publish: boolean) {
+    if (photoProposal?.status !== "ready") return;
+    if (titleInputRef.current) titleInputRef.current.value = photoProposal.title;
+    setTitleText(photoProposal.title);
+    setCategorySlug(photoProposal.category);
+    setCategoryTouched(true);
+    setCategoryWasSuggested(true);
+    if (photoProposal.price && priceInputRef.current) {
+      priceInputRef.current.value = String(photoProposal.price);
+    }
+    setPhotoProposal(null);
+    if (publish) {
+      // Let React commit the category before the browser validates and submits.
+      window.setTimeout(() => formRef.current?.requestSubmit(), 0);
+    } else {
+      titleInputRef.current?.focus();
+    }
+  }
 
   // Ask for a price range once the seller pauses typing (title or category changed).
   useEffect(() => {
@@ -114,6 +177,7 @@ export function ListingForm({
 
   return (
     <form
+      ref={formRef}
       action={action}
       className="space-y-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-glow sm:rounded-[28px] sm:p-6"
     >
@@ -173,6 +237,8 @@ export function ListingForm({
                 Array.from(input.files ?? []).map((file) => URL.createObjectURL(file))
               );
             }
+            const firstPhoto = input.files?.[0];
+            if (firstPhoto) void proposeFromPhoto(firstPhoto);
           }}
         />
         {photoPreviews.length ? (
@@ -197,6 +263,44 @@ export function ListingForm({
           </span>
         ) : null}
       </label>
+      {photoProposal?.status === "looking" ? (
+        <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600" aria-live="polite">
+          {dictionary.photoSell.looking}
+        </p>
+      ) : null}
+      {photoProposal?.status === "ready" ? (
+        <div className="space-y-3 rounded-[24px] border border-emerald-200 bg-emerald-50 p-4" aria-live="polite">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
+            {dictionary.photoSell.eyebrow}
+          </p>
+          <p className="text-base font-semibold text-slate-900">
+            {photoProposal.title} · {photoProposal.categoryName}
+            {photoProposal.price ? ` · ${photoProposal.price} €` : ""}
+          </p>
+          {photoProposal.price ? (
+            <p className="text-xs text-slate-600">
+              {(photoProposal.basis === "similar" ? dictionary.photoSell.priceSimilar : dictionary.photoSell.priceCategory)
+                .replace("{count}", String(photoProposal.count))}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => applyPhotoProposal(true)} disabled={isSubmitting || compressingPhotos}>
+              {dictionary.photoSell.publish}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => applyPhotoProposal(false)}>
+              {dictionary.photoSell.edit}
+            </Button>
+            <button
+              type="button"
+              className="px-2 text-sm font-medium text-slate-500 underline"
+              onClick={() => setPhotoProposal(null)}
+            >
+              {dictionary.photoSell.dismiss}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">{dictionary.photoSell.privacy}</p>
+        </div>
+      ) : null}
       {isEditing && initialListing?.images.length ? (
         <label className="flex min-h-12 items-center rounded-2xl border border-border bg-slate-50 p-4 text-sm text-slate-700">
           <input className="mr-2 h-4 w-4" name="replaceImages" type="checkbox" />{" "}
@@ -204,6 +308,7 @@ export function ListingForm({
         </label>
       ) : null}
       <Input
+        ref={titleInputRef}
         name="title"
         required
         maxLength={120}

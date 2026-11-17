@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Gift, Megaphone, PackageOpen, Search } from "lucide-react";
 import { ListingCard } from "@/components/marketplace/listing-card";
 import { MovingSeasonBanner } from "@/components/marketplace/moving-season-banner";
+import { CampaignBanner } from "@/components/marketplace/campaign-banner";
 import { PartnerBanner } from "@/components/marketplace/partner-banner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export default async function AppHomePage() {
       </Link>
 
       <MovingSeasonBanner title={dictionary.movingOut.bannerTitle} body={dictionary.movingOut.bannerBody} />
+      <CampaignBanner copy={dictionary.campaigns} />
 
       {listedPartners.map((partner) => (
         <PartnerBanner key={partner.slug} partner={partner} locale={locale} />

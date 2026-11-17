@@ -38,6 +38,8 @@ export async function GET(request: Request) {
   const orders = await runDailyOrderJobs(admin, now);
   const priceNudges = await sendPriceDropNudges(admin, now);
   const chatReminders = await sendUnansweredChatReminders(admin, now);
+  // University email codes are only needed for 15 minutes: forget the address once expired.
+  await admin.from("university_email_codes").delete().lt("expires_at", now.toISOString());
   // Sunday morning digest for everyone who keeps it on.
   const digests = now.getUTCDay() === 0 ? await sendWeeklyDigest(admin, now) : 0;
   let mondaySummary: string | null = null;
