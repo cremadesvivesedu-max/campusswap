@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClearanceTag } from "@/components/marketplace/seller-tools";
+import { co2ForCategory } from "@/features/impact/seller-tools";
 import { ChevronRight, Clock, Eye, Flame, Heart, MapPin, MessageCircle, ShieldCheck, Truck } from "lucide-react";
 import {
   getConditionLabel,
@@ -130,12 +132,20 @@ export default async function ListingDetailPage({
               </span>
             ) : null}
             {listing.featured ? (
-              <span className="rounded-full bg-amber-400 px-2.5 py-1 text-xs font-bold text-slate-950">
+              <span className="rounded-full bg-amber-400 px-2.5 py-1 text-xs font-bold text-ink">
                 {dictionary.listing.featured}
               </span>
             ) : null}
           </div>
           <p className="text-3xl font-extrabold text-slate-950">{formatListingPrice(listing.price, dictionary.giveaway.free)}</p>
+          {listing.clearanceUntil ? (
+            <ClearanceTag until={listing.clearanceUntil} originalPrice={listing.clearanceOriginalPrice} />
+          ) : null}
+          {listing.status === "active" && !isOwnListing ? (
+            <p className="text-sm font-medium text-emerald-700">
+              🌱 {dictionary.innov.impact.listingLine.replace("{kg}", String(co2ForCategory(listing.categorySlug)))}
+            </p>
+          ) : null}
           {listing.price === 0 && !isOwnListing ? (
             <p className="text-sm text-slate-600">{dictionary.giveaway.arrange}</p>
           ) : null}

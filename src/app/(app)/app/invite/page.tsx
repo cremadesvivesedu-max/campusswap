@@ -5,10 +5,13 @@ import { getDictionaryForRequest } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/site-url";
 import { getCurrentUser } from "@/server/queries/marketplace";
 import { getInviteStats } from "@/server/queries/referrals";
+import { getAmbassadors } from "@/server/queries/campus-impact";
+import { AmbassadorCard } from "@/components/marketplace/ambassador-card";
+import Link from "next/link";
 
 export default async function InvitePage() {
   const user = await getCurrentUser();
-  const [dictionary, stats] = await Promise.all([getDictionaryForRequest(), getInviteStats(user.id)]);
+  const [dictionary, stats, ambassadors] = await Promise.all([getDictionaryForRequest(), getInviteStats(user.id), getAmbassadors()]);
   const copy = dictionary.invite;
   const link = `${getSiteUrl()}/signup?ref=${referralCodeFor(user.id)}`;
 
@@ -23,6 +26,11 @@ export default async function InvitePage() {
         <p className="font-bold text-slate-950">{copy.yourLink}</p>
         <InviteShare link={link} />
       </section>
+
+      <AmbassadorCard dictionary={dictionary} invites={stats.invitedTotal} ambassadors={ambassadors} />
+      <p className="text-sm">
+        <Link href="/app/impact" className="font-semibold text-emerald-700 hover:underline">🌱 {dictionary.innov.impact.entry}</Link>
+      </p>
 
       <section className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-white p-4">

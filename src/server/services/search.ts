@@ -53,7 +53,7 @@ export function searchListings(input: ListingSearchInput) {
   return [...results].sort((left, right) => {
     if (sort === "price-low-high") return left.price - right.price;
     if (sort === "price-high-low") return right.price - left.price;
-    if (sort === "newest") return Date.parse(right.createdAt) - Date.parse(left.createdAt);
+    if (sort === "newest") return Date.parse(right.sortAt ?? right.createdAt) - Date.parse(left.sortAt ?? left.createdAt);
     if (sort === "recommended") return right.saveCount + right.viewCount - (left.saveCount + left.viewCount);
     return relevanceScore(right, query) - relevanceScore(left, query);
   });

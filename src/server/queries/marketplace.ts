@@ -116,6 +116,9 @@ interface DbListingRow {
   removed_at: string | null;
   created_at: string;
   updated_at: string;
+  bumped_at?: string | null;
+  clearance_until?: string | null;
+  clearance_original_price?: number | string | null;
 }
 
 interface DbListingWithRelations extends DbListingRow {
@@ -295,6 +298,9 @@ const listingSelect = `
   removed_at,
   created_at,
   updated_at,
+  bumped_at,
+  clearance_until,
+  clearance_original_price,
   listing_images (
     id,
     url,
@@ -804,6 +810,13 @@ function mapListing(
     tags: row.tags ?? [],
     analytics: options?.listingAnalyticsByListingId?.get(row.id),
     removedAt: row.removed_at ?? undefined,
+    bumpedAt: row.bumped_at ?? undefined,
+    sortAt: row.bumped_at && Date.parse(row.bumped_at) > Date.parse(row.created_at) ? row.bumped_at : row.created_at,
+    clearanceUntil: row.clearance_until && Date.parse(row.clearance_until) > Date.now() ? row.clearance_until : undefined,
+    clearanceOriginalPrice:
+      row.clearance_until && Date.parse(row.clearance_until) > Date.now() && row.clearance_original_price
+        ? numberValue(row.clearance_original_price)
+        : undefined,
     images: images.map((image) => ({
       id: image.id,
       url: image.url,
@@ -968,13 +981,13 @@ function sortFeaturedListingsFirst(listings: Listing[]) {
       return Number(right.featured) - Number(left.featured);
     }
 
-    return Date.parse(right.createdAt) - Date.parse(left.createdAt);
+    return Date.parse(right.sortAt ?? right.createdAt) - Date.parse(left.sortAt ?? left.createdAt);
   });
 }
 
 function sortFeaturedOnlyByRecency(listings: Listing[]) {
   return [...listings].sort(
-    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)
+    (left, right) => Date.parse(right.sortAt ?? right.createdAt) - Date.parse(left.sortAt ?? left.createdAt)
   );
 }
 
@@ -1122,13 +1135,13 @@ async function fetchListingRows(
   }
 
   if (input.sort === "newest") {
-    query = query.order("created_at", { ascending: false });
+    query = query.order("sort_at", { ascending: false });
   } else if (input.sort === "price-low-high") {
     query = query.order("price", { ascending: true });
   } else if (input.sort === "price-high-low") {
     query = query.order("price", { ascending: false });
   } else {
-    query = query.order("created_at", { ascending: false });
+    query = query.order("sort_at", { ascending: false });
   }
 
   const queryLimit = input.limit ?? (input.pickupArea ? 120 : 60);

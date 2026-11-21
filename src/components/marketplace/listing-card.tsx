@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { ClearanceTag } from "@/components/marketplace/seller-tools";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
@@ -33,7 +34,7 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
       : listing.outlet
         ? { label: dictionary.listing.outlet, tone: "bg-rose-600 text-white" }
         : listing.featured
-          ? { label: dictionary.listing.featured, tone: "bg-amber-400 text-slate-950" }
+          ? { label: dictionary.listing.featured, tone: "bg-amber-400 text-ink" }
           : null;
 
   return (
@@ -61,6 +62,9 @@ function ListingCardComponent({ listing, reason, publicLink = false }: ListingCa
         <p className="text-lg font-extrabold leading-6 text-slate-950">
           {formatListingPrice(listing.price, dictionary.giveaway.free)}
         </p>
+        {listing.clearanceUntil ? (
+          <ClearanceTag until={listing.clearanceUntil} originalPrice={listing.clearanceOriginalPrice} compact />
+        ) : null}
         <p className="line-clamp-1 text-sm text-slate-700 group-hover:underline">{listing.title}</p>
         <p className="flex items-center gap-1 truncate text-xs text-slate-500">
           <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />

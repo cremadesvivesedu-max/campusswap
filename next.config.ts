@@ -40,7 +40,9 @@ const supabaseSocket = supabaseHostname ? `wss://${supabaseHostname}` : "";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com https://vercel.live`,
+  // 'wasm-unsafe-eval' lets the self-hosted MediaPipe WebAssembly run (background removal on
+  // the seller's device). It does not allow eval() of JavaScript.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com https://vercel.live`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: https://images.unsplash.com ${supabaseOrigin} https://vercel.live https://vercel.com`,
   "font-src 'self' data: https://vercel.live",

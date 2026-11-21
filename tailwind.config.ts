@@ -1,6 +1,18 @@
 ﻿import type { Config } from "tailwindcss";
 
+// Dark mode without touching every component: bg-white, bg-slate-*, text-slate-500…950 and
+// border-slate-* read CSS variables (globals.css) that change when the theme is dark.
+// text-slate-100…400 and text-white stay as they are: they sit on dark surfaces in both themes.
+const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+const scale = (prefix: string, steps = STEPS) => Object.fromEntries(steps.map((n) => [n, v(`${prefix}-${n}`)]));
+
+// Light status colours (notices, badges) get dark-theme versions too.
+const TINTS = ["emerald", "amber", "rose", "sky"];
+const tints = (kind: string, steps: number[]) => Object.fromEntries(TINTS.map((c) => [c, scale(`${kind}-${c}`, steps)]));
+
 const config: Config = {
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -19,6 +31,9 @@ const config: Config = {
         warning: "var(--warning)",
         danger: "var(--danger)"
       },
+      backgroundColor: { white: v("bg-white"), slate: scale("bg-slate"), ...tints("bg", [50, 100, 200]) },
+      textColor: { slate: scale("tx-slate", [500, 600, 700, 800, 900, 950]), ...tints("tx", [600, 700, 800, 900]), ink: "#020617" },
+      borderColor: { slate: scale("bd-slate"), ...tints("bd", [100, 200, 300]) },
       fontFamily: {
         display: ["var(--font-body)"],
         body: ["var(--font-body)"]

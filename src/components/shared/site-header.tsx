@@ -49,7 +49,7 @@ export async function SiteHeader() {
             <nav className="absolute right-0 top-12 grid w-56 gap-1 rounded-3xl border border-white/12 bg-slate-950 p-2 shadow-[0_24px_60px_rgba(15,23,42,0.45)]">
               <Link
                 href="/signup"
-                className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-slate-950 sm:hidden"
+                className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink sm:hidden"
               >
                 {dictionary.site.sellItem}
               </Link>

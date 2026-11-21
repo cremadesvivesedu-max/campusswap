@@ -16,6 +16,223 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+  color-scheme: light;
+  /* Palette used by bg-white, bg-slate-*, text-slate-500…950, border-slate-* (tailwind.config.ts). */
+  --bg-white: 255 255 255;
+  --bg-slate-50: 248 250 252;
+  --bg-slate-100: 241 245 249;
+  --bg-slate-200: 226 232 240;
+  --bg-slate-300: 203 213 225;
+  --bg-slate-400: 148 163 184;
+  --bg-slate-500: 100 116 139;
+  --bg-slate-600: 71 85 105;
+  --bg-slate-700: 51 65 85;
+  --bg-slate-800: 30 41 59;
+  --bg-slate-900: 15 23 42;
+  --bg-slate-950: 2 6 23;
+  --tx-slate-500: 100 116 139;
+  --tx-slate-600: 71 85 105;
+  --tx-slate-700: 51 65 85;
+  --tx-slate-800: 30 41 59;
+  --tx-slate-900: 15 23 42;
+  --tx-slate-950: 2 6 23;
+  --bd-slate-50: 248 250 252;
+  --bd-slate-100: 241 245 249;
+  --bd-slate-200: 226 232 240;
+  --bd-slate-300: 203 213 225;
+  --bd-slate-400: 148 163 184;
+  --bd-slate-500: 100 116 139;
+  --bd-slate-600: 71 85 105;
+  --bd-slate-700: 51 65 85;
+  --bd-slate-800: 30 41 59;
+  --bd-slate-900: 15 23 42;
+  --bd-slate-950: 2 6 23;
+  --bg-emerald-50: 236 253 245;
+  --bg-emerald-100: 209 250 229;
+  --bg-emerald-200: 167 243 208;
+  --tx-emerald-600: 5 150 105;
+  --tx-emerald-700: 4 120 87;
+  --tx-emerald-800: 6 95 70;
+  --tx-emerald-900: 6 78 59;
+  --bd-emerald-100: 209 250 229;
+  --bd-emerald-200: 167 243 208;
+  --bd-emerald-300: 110 231 183;
+  --bg-amber-50: 255 251 235;
+  --bg-amber-100: 254 243 199;
+  --bg-amber-200: 253 230 138;
+  --tx-amber-600: 217 119 6;
+  --tx-amber-700: 180 83 9;
+  --tx-amber-800: 146 64 14;
+  --tx-amber-900: 120 53 15;
+  --bd-amber-100: 254 243 199;
+  --bd-amber-200: 253 230 138;
+  --bd-amber-300: 252 211 77;
+  --bg-rose-50: 255 241 242;
+  --bg-rose-100: 255 228 230;
+  --bg-rose-200: 254 205 211;
+  --tx-rose-600: 225 29 72;
+  --tx-rose-700: 190 18 60;
+  --tx-rose-800: 159 18 57;
+  --tx-rose-900: 136 19 55;
+  --bd-rose-100: 255 228 230;
+  --bd-rose-200: 254 205 211;
+  --bd-rose-300: 253 164 175;
+  --bg-sky-50: 240 249 255;
+  --bg-sky-100: 224 242 254;
+  --bg-sky-200: 186 230 253;
+  --tx-sky-600: 2 132 199;
+  --tx-sky-700: 3 105 161;
+  --tx-sky-800: 7 89 133;
+  --tx-sky-900: 12 74 110;
+  --bd-sky-100: 224 242 254;
+  --bd-sky-200: 186 230 253;
+  --bd-sky-300: 125 211 252;
+}
+
+/* Dark theme: follows the device unless the user picked one in Settings (data-theme on <html>). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: #0d1117;
+    --foreground: #e6edf3;
+    --card: #161b22;
+    --border: rgba(255, 255, 255, 0.08);
+    --muted: #21262d;
+    --bg-white: 22 27 34;
+    --bg-slate-50: 28 33 41;
+    --bg-slate-100: 33 39 48;
+    --bg-slate-200: 45 52 64;
+    --bg-slate-300: 60 69 84;
+    --bg-slate-400: 100 116 139;
+    --bg-slate-500: 100 116 139;
+    --bg-slate-600: 71 85 105;
+    --bg-slate-700: 61 72 92;
+    --bg-slate-800: 55 66 86;
+    --bg-slate-900: 51 63 84;
+    --bg-slate-950: 44 56 77;
+    --tx-slate-500: 148 163 184;
+    --tx-slate-600: 168 180 196;
+    --tx-slate-700: 196 206 219;
+    --tx-slate-800: 214 222 232;
+    --tx-slate-900: 226 232 240;
+    --tx-slate-950: 241 245 249;
+    --bd-slate-50: 28 33 41;
+    --bd-slate-100: 33 39 48;
+    --bd-slate-200: 48 54 64;
+    --bd-slate-300: 64 72 86;
+    --bd-slate-400: 100 116 139;
+    --bg-emerald-50: 13 41 38;
+    --bg-emerald-100: 14 51 44;
+    --bg-emerald-200: 14 64 53;
+    --tx-emerald-600: 52 211 153;
+    --tx-emerald-700: 110 231 183;
+    --tx-emerald-800: 167 243 208;
+    --tx-emerald-900: 209 250 229;
+    --bd-emerald-100: 14 67 55;
+    --bd-emerald-200: 14 84 65;
+    --bd-emerald-300: 15 101 76;
+    --bg-amber-50: 45 37 21;
+    --bg-amber-100: 59 45 21;
+    --bg-amber-200: 78 56 20;
+    --tx-amber-600: 251 191 36;
+    --tx-amber-700: 252 211 77;
+    --tx-amber-800: 253 230 138;
+    --tx-amber-900: 254 243 199;
+    --bd-amber-100: 83 59 19;
+    --bd-amber-200: 106 73 18;
+    --bd-amber-300: 129 88 17;
+    --bg-rose-50: 45 23 33;
+    --bg-rose-100: 59 26 37;
+    --bg-rose-200: 78 30 43;
+    --tx-rose-600: 251 113 133;
+    --tx-rose-700: 253 164 175;
+    --tx-rose-800: 254 205 211;
+    --tx-rose-900: 255 228 230;
+    --bd-rose-100: 82 31 44;
+    --bd-rose-200: 105 35 51;
+    --bd-rose-300: 129 40 59;
+    --bg-sky-50: 13 38 52;
+    --bg-sky-100: 13 47 65;
+    --bg-sky-200: 13 58 82;
+    --tx-sky-600: 56 189 248;
+    --tx-sky-700: 125 211 252;
+    --tx-sky-800: 186 230 253;
+    --tx-sky-900: 224 242 254;
+    --bd-sky-100: 13 61 86;
+    --bd-sky-200: 13 76 107;
+    --bd-sky-300: 14 91 128;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --card: #161b22;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #21262d;
+  --bg-white: 22 27 34;
+  --bg-slate-50: 28 33 41;
+  --bg-slate-100: 33 39 48;
+  --bg-slate-200: 45 52 64;
+  --bg-slate-300: 60 69 84;
+  --bg-slate-400: 100 116 139;
+  --bg-slate-500: 100 116 139;
+  --bg-slate-600: 71 85 105;
+  --bg-slate-700: 61 72 92;
+  --bg-slate-800: 55 66 86;
+  --bg-slate-900: 51 63 84;
+  --bg-slate-950: 44 56 77;
+  --tx-slate-500: 148 163 184;
+  --tx-slate-600: 168 180 196;
+  --tx-slate-700: 196 206 219;
+  --tx-slate-800: 214 222 232;
+  --tx-slate-900: 226 232 240;
+  --tx-slate-950: 241 245 249;
+  --bd-slate-50: 28 33 41;
+  --bd-slate-100: 33 39 48;
+  --bd-slate-200: 48 54 64;
+  --bd-slate-300: 64 72 86;
+  --bd-slate-400: 100 116 139;
+  --bg-emerald-50: 13 41 38;
+  --bg-emerald-100: 14 51 44;
+  --bg-emerald-200: 14 64 53;
+  --tx-emerald-600: 52 211 153;
+  --tx-emerald-700: 110 231 183;
+  --tx-emerald-800: 167 243 208;
+  --tx-emerald-900: 209 250 229;
+  --bd-emerald-100: 14 67 55;
+  --bd-emerald-200: 14 84 65;
+  --bd-emerald-300: 15 101 76;
+  --bg-amber-50: 45 37 21;
+  --bg-amber-100: 59 45 21;
+  --bg-amber-200: 78 56 20;
+  --tx-amber-600: 251 191 36;
+  --tx-amber-700: 252 211 77;
+  --tx-amber-800: 253 230 138;
+  --tx-amber-900: 254 243 199;
+  --bd-amber-100: 83 59 19;
+  --bd-amber-200: 106 73 18;
+  --bd-amber-300: 129 88 17;
+  --bg-rose-50: 45 23 33;
+  --bg-rose-100: 59 26 37;
+  --bg-rose-200: 78 30 43;
+  --tx-rose-600: 251 113 133;
+  --tx-rose-700: 253 164 175;
+  --tx-rose-800: 254 205 211;
+  --tx-rose-900: 255 228 230;
+  --bd-rose-100: 82 31 44;
+  --bd-rose-200: 105 35 51;
+  --bd-rose-300: 129 40 59;
+  --bg-sky-50: 13 38 52;
+  --bg-sky-100: 13 47 65;
+  --bg-sky-200: 13 58 82;
+  --tx-sky-600: 56 189 248;
+  --tx-sky-700: 125 211 252;
+  --tx-sky-800: 186 230 253;
+  --tx-sky-900: 224 242 254;
+  --bd-sky-100: 13 61 86;
+  --bd-sky-200: 13 76 107;
+  --bd-sky-300: 14 91 128;
 }
 
 * {
@@ -46,3 +263,17 @@ img {
 main {
   min-height: calc(100vh - 200px);
 }
+
+/* Soft page entrance on every navigation inside the app (template.tsx). */
+@keyframes cs-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.cs-page-in {
+  animation: cs-page-in 180ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-page-in { animation: none; }
+  html { scroll-behavior: auto; }
+}
+

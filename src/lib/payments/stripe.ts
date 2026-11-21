@@ -88,6 +88,54 @@ export async function createFeaturedCheckoutSession({
   });
 }
 
+/** EUR 0.99 "bump": the listing goes back to the top of "newest". Confirmed by the webhook. */
+export async function createBumpCheckoutSession({
+  listingId,
+  sellerId,
+  promotionPurchaseId,
+  listingTitle,
+  amount,
+  returnPath
+}: {
+  listingId: string;
+  sellerId: string;
+  promotionPurchaseId: string;
+  listingTitle: string;
+  amount: number;
+  returnPath: string;
+}) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  return stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    client_reference_id: promotionPurchaseId,
+    success_url: buildSiteUrl(`${returnPath}?bump=paid`),
+    cancel_url: buildSiteUrl(`${returnPath}?bump=cancelled`),
+    metadata: {
+      listing_id: listingId,
+      seller_id: sellerId,
+      promotion_type: "bump",
+      promotion_purchase_id: promotionPurchaseId
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "eur",
+          unit_amount: toMinorUnit(amount),
+          product_data: {
+            name: "CampusSwap bump",
+            description: `Move "${listingTitle.slice(0, 80)}" back to the top of the newest listings.`
+          }
+        }
+      }
+    ]
+  });
+}
+
 export async function createBuyerCheckoutSession({
   transactionId,
   listingId,

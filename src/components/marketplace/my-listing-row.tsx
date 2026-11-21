@@ -15,6 +15,7 @@ import { friendlyError } from "@/lib/friendly-error";
 import { MarkSoldSheet } from "@/components/marketplace/mark-sold-sheet";
 import { daysListed, isStaleListing, suggestPriceDrop } from "@/features/listings/price-suggestion";
 import { dropListingPriceAction, giveAwayListingAction } from "@/server/actions/forms";
+import { BumpMenuItem, ClearanceTag, MinPricePanel } from "@/components/marketplace/seller-tools";
 
 const statusTone: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -40,6 +41,7 @@ export function MyListingRow({
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [removed, setRemoved] = useState(false);
   const [showSold, setShowSold] = useState(false);
+  const [showMinPrice, setShowMinPrice] = useState(false);
   const cover = listing.images.find((image) => image.isPrimary) ?? listing.images[0];
 
   if (removed) {
@@ -133,6 +135,21 @@ export function MyListingRow({
                     {dictionary.giveaway.donate}
                   </button>
                 ) : null}
+                {listing.status === "active" ? (
+                  <BumpMenuItem listingId={listing.id} onError={(text) => setMessage({ text, ok: false })} />
+                ) : null}
+                {canGiveAway ? (
+                  <button
+                    type="button"
+                    className="block w-full px-4 py-2.5 text-left hover:bg-slate-50"
+                    onClick={(event) => {
+                      event.currentTarget.closest("details")?.removeAttribute("open");
+                      setShowMinPrice(true);
+                    }}
+                  >
+                    {dictionary.innov.minPrice.menu}
+                  </button>
+                ) : null}
                 {canToggle ? (
                   <button
                     type="button"
@@ -167,6 +184,9 @@ export function MyListingRow({
             </details>
           </div>
           <p className="truncate text-sm text-slate-700">{listing.title}</p>
+          {listing.clearanceUntil ? (
+            <ClearanceTag until={listing.clearanceUntil} originalPrice={listing.clearanceOriginalPrice} compact />
+          ) : null}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span className={`rounded-full px-2 py-0.5 font-semibold ${statusTone[listing.status] ?? statusTone.hidden}`}>
               {getListingStatusLabel(dictionary, listing.status)}
@@ -222,6 +242,9 @@ export function MyListingRow({
             {dictionary.priceNudge.apply.replace("{price}", String(dropTo))}
           </button>
         </div>
+      ) : null}
+      {showMinPrice ? (
+        <MinPricePanel listingId={listing.id} price={listing.price} onClose={() => setShowMinPrice(false)} />
       ) : null}
       {showSold ? (
         <MarkSoldSheet listingId={listing.id} onClose={() => setShowSold(false)} />

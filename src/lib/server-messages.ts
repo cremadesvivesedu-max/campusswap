@@ -24,6 +24,7 @@ const messages: Record<string, Translation> = {
   "Notification marked as read.": { es: "Notificación marcada como leída.", nl: "Melding gemarkeerd als gelezen." },
   "Notification preferences saved.": { es: "Preferencias de notificación guardadas.", nl: "Meldingsvoorkeuren opgeslagen." },
   "Offer accepted. The agreed price is now reflected in the exchange.": { es: "Oferta aceptada. El precio acordado ya aparece en el intercambio.", nl: "Bod geaccepteerd. De afgesproken prijs staat nu in de ruil." },
+  "Offer accepted automatically: it reached the seller's price.": { es: "Oferta aceptada al momento: llegaba al precio que pedía el vendedor.", nl: "Bod direct geaccepteerd: het haalde de prijs van de verkoper." },
   "Offer declined.": { es: "Oferta rechazada.", nl: "Bod afgewezen." },
   "Offer sent.": { es: "Oferta enviada.", nl: "Bod verstuurd." },
   "Offer withdrawn.": { es: "Oferta retirada.", nl: "Bod ingetrokken." },

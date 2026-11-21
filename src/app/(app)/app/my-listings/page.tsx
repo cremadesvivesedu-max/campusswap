@@ -1,5 +1,6 @@
 import { MovingSaleCard } from "@/components/marketplace/moving-sale-card";
 import { MyListingRow } from "@/components/marketplace/my-listing-row";
+import { ClearanceCard } from "@/components/marketplace/seller-tools";
 import { SellerPreferencesCard } from "@/components/marketplace/seller-preferences-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -15,9 +16,11 @@ import { getMySellerPreferences } from "@/server/queries/seller-preferences";
 export default async function MyListingsPage({
   searchParams
 }: {
-  searchParams?: Promise<{ created?: string }>;
+  searchParams?: Promise<{ created?: string; bump?: string }>;
 }) {
-  const created = (await searchParams)?.created;
+  const params = await searchParams;
+  const created = params?.created;
+  const bump = params?.bump;
   const user = await getCurrentUser();
   const [listings, transactionsByListing, dictionary, moveOutDate, sellerPreferences] = await Promise.all([
     getListingsForSeller(user.id),
@@ -52,6 +55,16 @@ export default async function MyListingsPage({
             : dictionary.listingForm.createdReview}
         </p>
       ) : null}
+      {bump === "paid" || bump === "cancelled" ? (
+        <p
+          role="status"
+          className={`rounded-[22px] border px-5 py-4 text-sm font-medium ${
+            bump === "paid" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"
+          }`}
+        >
+          {bump === "paid" ? dictionary.innov.bump.paid : dictionary.innov.bump.cancelled}
+        </p>
+      ) : null}
       {listings.length ? (
         <ul className="grid gap-3 lg:grid-cols-2">
           {listings.map((listing) => (
@@ -73,6 +86,7 @@ export default async function MyListingsPage({
       {listings.length ? (
         <>
           <MovingSaleCard sellerId={user.id} initialMoveOutDate={moveOutDate} />
+          {listings.some((listing) => listing.status === "active" && listing.price > 0) ? <ClearanceCard /> : null}
           <SellerPreferencesCard initial={sellerPreferences} />
         </>
       ) : null}

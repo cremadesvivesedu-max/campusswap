@@ -142,6 +142,15 @@ export default async function ProfilePage({
             <span aria-hidden="true">→</span>
           </Link>
         ) : null}
+        {isOwnProfile ? (
+          <Link
+            href="/app/impact"
+            className="flex items-center justify-between rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
+          >
+            🌱 {dictionary.innov.impact.entry}
+            <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
       </section>
 
       <nav aria-label={copy.onSale} className="flex border-b border-slate-200">

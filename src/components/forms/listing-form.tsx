@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { PhotoTools } from "@/components/forms/photo-tools";
 import { Camera } from "lucide-react";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getConditionLabel } from "@/lib/i18n-shared";
@@ -66,6 +67,9 @@ export function ListingForm({
   const [categoryTouched, setCategoryTouched] = useState(isEditing || Boolean(prefill?.categorySlug));
   const [categoryWasSuggested, setCategoryWasSuggested] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  // Bumps on every new photo selection: the photo tools start fresh for the new cover.
+  const [photoBatch, setPhotoBatch] = useState(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const selectedCategory = categories.find((category) => category.slug === categorySlug);
   const priceRange = parsePriceRange(selectedCategory?.typicalPriceRange);
   const [titleText, setTitleText] = useState(initialListing?.title ?? prefill?.title ?? "");
@@ -221,6 +225,7 @@ export function ListingForm({
           {dictionary.listingForm.photoFirstHelp}
         </span>
         <input
+          ref={photoInputRef}
           name="images"
           type="file"
           accept="image/*"
@@ -236,6 +241,7 @@ export function ListingForm({
               setPhotoPreviews(
                 Array.from(input.files ?? []).map((file) => URL.createObjectURL(file))
               );
+              setPhotoBatch((batch) => batch + 1);
             }
             const firstPhoto = input.files?.[0];
             if (firstPhoto) void proposeFromPhoto(firstPhoto);
@@ -263,6 +269,13 @@ export function ListingForm({
           </span>
         ) : null}
       </label>
+      {photoPreviews.length ? (
+        <PhotoTools
+          key={photoBatch}
+          inputRef={photoInputRef}
+          onFilesChanged={(files) => setPhotoPreviews(files.map((file) => URL.createObjectURL(file)))}
+        />
+      ) : null}
       {photoProposal?.status === "looking" ? (
         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600" aria-live="polite">
           {dictionary.photoSell.looking}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PhotoSearchButton } from "@/components/marketplace/photo-search-button";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -446,8 +447,8 @@ export function SearchExperience({
   return (
     <div className="space-y-4">
       {/* Phones: search box and a Filters button first, results right below. */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap gap-2">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
@@ -472,6 +473,13 @@ export function SearchExperience({
           {activeFilterChips.length ? activeFilterChips.length : null}
           <span className="sr-only">{dictionary.search.controls}</span>
         </button>
+        <PhotoSearchButton
+          categories={categories.map((category) => category.slug)}
+          onFound={(found, slug) => {
+            setQuery(found);
+            if (!lockedCategorySlug) setCategorySlug(slug);
+          }}
+        />
       </div>
     <div className="grid gap-6 lg:grid-cols-[0.34fr_0.66fr]">
       <div className={`space-y-6 ${showFilters ? "" : "hidden lg:block"}`}>
@@ -521,7 +529,7 @@ export function SearchExperience({
                       type="button"
                       className={`rounded-full px-3 py-2 text-sm font-medium transition ${
                         subcategorySlug === subcategory.slug
-                          ? "bg-primary text-slate-950"
+                          ? "bg-primary text-ink"
                           : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                       }`}
                       onClick={() =>

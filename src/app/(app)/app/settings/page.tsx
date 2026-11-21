@@ -9,6 +9,8 @@ import { env } from "@/lib/env";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getDictionaryForRequest } from "@/lib/i18n";
+import { ResidenceSelect, ThemeSwitcher } from "@/components/settings/theme-and-residence";
+import { getMyResidence } from "@/server/queries/campus-impact";
 import {
   getCurrentUser,
   getSellerStripeConnectStatusForUser
@@ -30,6 +32,7 @@ export default async function SettingsPage({
     getDictionaryForRequest(),
     getSellerStripeConnectStatusForUser()
   ]);
+  const residence = await getMyResidence(user.id);
 
   return (
     <div className="space-y-8">
@@ -64,6 +67,8 @@ export default async function SettingsPage({
             </h2>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
+            <ThemeSwitcher />
+            <ResidenceSelect initial={residence} />
             <UniversityEmailCard verified={user.verificationStatus === "verified"} />
             <LogoutButton />
             <AccountDataCard />

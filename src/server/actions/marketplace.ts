@@ -32,6 +32,7 @@ import {
   sendReviewRequests
 } from "@/server/services/order-protection";
 import { getCurrentUser } from "@/server/queries/marketplace";
+import { shouldAutoAccept } from "@/features/impact/seller-tools";
 import type {
   ExchangeStatus,
   FulfillmentMethod,
@@ -2201,6 +2202,17 @@ export async function submitOfferAction(
       text: `Offer sent: EUR ${offerAmount.toFixed(2)}`
     });
 
+    // Hidden minimum: if the offer reaches it, the seller already said yes.
+    const autoAccepted = await autoAcceptIfAboveMinimum({
+      offerId: created.id,
+      listingId,
+      sellerId: listing.seller_id,
+      transactionId,
+      conversationId,
+      amount: offerAmount,
+      sellerStripe
+    }).catch(() => false);
+
     await recordAppEvent({
       eventName: "offer_sent",
       actorUserId: user.id,
@@ -2219,7 +2231,7 @@ export async function submitOfferAction(
 
     return {
       success: true,
-      message: "Offer sent.",
+      message: autoAccepted ? "Offer accepted automatically: it reached the seller's price." : "Offer sent.",
       conversationId,
       offerId: created.id
     };
@@ -2339,6 +2351,70 @@ export async function counterOfferAction(
           : "Unable to send the counteroffer right now."
     };
   }
+}
+
+/**
+ * Accepts a buyer's offer on the seller's behalf when it reaches the hidden minimum the
+ * seller set (listing_auto_accept). The minimum itself is never shown to the buyer.
+ */
+async function autoAcceptIfAboveMinimum(input: {
+  offerId: string;
+  listingId: string;
+  sellerId: string;
+  transactionId: string;
+  conversationId: string;
+  amount: number;
+  sellerStripe: Awaited<ReturnType<typeof getSellerStripeRoutingState>>;
+}) {
+  const admin = createAdminSupabaseClient();
+  if (!admin) return false;
+  const { data: rule } = await admin
+    .from("listing_auto_accept")
+    .select("min_amount")
+    .eq("listing_id", input.listingId)
+    .eq("seller_id", input.sellerId)
+    .maybeSingle();
+  if (!rule || !shouldAutoAccept(input.amount, Number(rule.min_amount))) return false;
+
+  const now = new Date().toISOString();
+  const { data: accepted } = await admin
+    .from("listing_offers")
+    .update({ state: "accepted", responded_at: now, updated_at: now })
+    .eq("id", input.offerId)
+    .eq("state", "open")
+    .select("id")
+    .maybeSingle();
+  if (!accepted) return false;
+
+  const { data: transactionPricing } = await admin
+    .from("transactions")
+    .select("shipping_amount")
+    .eq("id", input.transactionId)
+    .maybeSingle();
+  await admin
+    .from("transactions")
+    .update({
+      ...createOrderBreakdown({ itemAmount: input.amount, shippingAmount: numberValue(transactionPricing?.shipping_amount) }),
+      ...buildSellerPayoutFields(input.sellerStripe),
+      state: "pending",
+      updated_at: now
+    })
+    .eq("id", input.transactionId)
+    .neq("state", "completed");
+
+  await admin.from("messages").insert({
+    conversation_id: input.conversationId,
+    sender_id: input.sellerId,
+    text: `Offer accepted automatically at EUR ${input.amount.toFixed(2)}`
+  });
+  await admin.from("notifications").insert({
+    user_id: input.sellerId,
+    type: "message",
+    title: "Offer accepted automatically",
+    body: `An offer of EUR ${input.amount.toFixed(2)} reached your minimum price and was accepted.`,
+    destination_href: `/app/messages/${input.conversationId}`
+  });
+  return true;
 }
 
 export async function acceptOfferAction(offerId: string): Promise<OfferActionResult> {

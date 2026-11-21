@@ -182,6 +182,12 @@ export interface Listing {
   images: ListingImage[];
   analytics?: ListingAnalytics;
   removedAt?: string;
+  /** Latest of creation and paid bump: what "newest" sorts by. */
+  sortAt?: string;
+  bumpedAt?: string;
+  /** 48-hour moving-out clearance: price already cut, original kept for display. */
+  clearanceUntil?: string;
+  clearanceOriginalPrice?: number;
 }
 
 export interface Favorite {

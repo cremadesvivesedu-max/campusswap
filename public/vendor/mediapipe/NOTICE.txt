@@ -1,0 +1,3 @@
+MediaPipe Tasks Vision 1.2.3 (@mediapipe/tasks-vision), Apache License 2.0, (c) Google LLC.
+Self-hosted so listing photos are processed on the seller's device and never leave it.
+Model: interactive_segmenter/magic_touch (float32), from storage.googleapis.com/mediapipe-models.

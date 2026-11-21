@@ -20,6 +20,8 @@ const bodyFont = Figtree({
 
 export const metadata: Metadata = defaultMetadata;
 
+const themeScript = `try{var t=localStorage.getItem("cs-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default async function RootLayout({
   children
 }: {
@@ -31,7 +33,12 @@ export default async function RootLayout({
   ]);
 
   return (
-    <html lang={locale}>
+    // suppressHydrationWarning: the theme script below sets data-theme before React loads.
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        {/* Applies the theme picked in Settings before the first paint (no white flash). */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${bodyFont.variable} font-body`}>
         <LocaleProvider locale={locale} dictionary={dictionary}>
           {children}

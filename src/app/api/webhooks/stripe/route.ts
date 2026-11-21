@@ -255,6 +255,11 @@ async function handleCompletedPromotionCheckout(
 ) {
   const metadata = getPromotionCheckoutMetadata(session);
 
+  if (metadata.promotionType === "bump") {
+    await handleCompletedBumpCheckout(admin, session, metadata);
+    return;
+  }
+
   if (
     !metadata.listingId ||
     !metadata.sellerId ||
@@ -322,6 +327,60 @@ async function handleCompletedPromotionCheckout(
       href: `/app/listings/${metadata.listingId}`
     })
   ]);
+}
+
+/** Paid bump: mark the purchase and move the listing to the top (bumped_at feeds sort_at). */
+async function handleCompletedBumpCheckout(
+  admin: AdminClient,
+  session: Stripe.Checkout.Session,
+  metadata: ReturnType<typeof getPromotionCheckoutMetadata>
+) {
+  if (!metadata.listingId || !metadata.sellerId || !metadata.purchaseId || session.payment_status !== "paid") {
+    return;
+  }
+
+  const { data: purchase } = await admin
+    .from("promotion_purchases")
+    .select("id, status, active")
+    .eq("id", metadata.purchaseId)
+    .eq("listing_id", metadata.listingId)
+    .eq("seller_id", metadata.sellerId)
+    .eq("type", "bump")
+    .maybeSingle();
+
+  if (!purchase || purchase.status === "paid") {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  await admin
+    .from("promotion_purchases")
+    .update({
+      status: "paid",
+      active: true,
+      stripe_checkout_session_id: session.id,
+      stripe_payment_intent_id: getPaymentIntentId(session) ?? null,
+      paid_at: now,
+      updated_at: now
+    })
+    .eq("id", purchase.id);
+
+  await admin
+    .from("listings")
+    .update({ bumped_at: now })
+    .eq("id", metadata.listingId)
+    .eq("seller_id", metadata.sellerId)
+    .eq("status", "active");
+
+  await notifyUserEvent(admin, {
+    userId: metadata.sellerId,
+    dedupeKey: `promotion-bump:${purchase.id}`,
+    type: "promotion",
+    preference: "promotions",
+    title: "Your listing is back at the top",
+    body: "The EUR 0.99 bump was paid: your listing now shows first in the newest listings.",
+    href: `/app/listings/${metadata.listingId}`
+  });
 }
 
 async function handleCompletedBuyerCheckout(
